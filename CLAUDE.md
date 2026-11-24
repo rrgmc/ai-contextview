@@ -58,8 +58,7 @@ Read-only work (reading code, answering questions) needs no worktree.
 | `internal/identity/` | Workspace id, project name, Claude and ancestor process ids |
 | `internal/e2e/` | End-to-end tests, including the multi-process test |
 | `protocol/` | Golden message fixtures and quote-matching fixtures |
-| `plugin/` | The Claude Code plugin: `.mcp.json`, `hooks/`, `skills/spec-elaborate/`, launcher script |
-| `plugin-pane/` | The pane mod `ai-specview-pane`: TypeScript hooks module, state contract, tests |
+| `plugin/` | The Claude Code plugin: `.mcp.json`, launcher script, `skills/spec-elaborate/` (browser) and `skills/spec-elaborate-mod/` (pane), `hooks/` (the `PreToolUse` hook and the pane mod's TypeScript module), `types/` and `tests/` of the mod |
 | `.claude-plugin/` | `marketplace.json`: the repository is a plugin marketplace |
 | `tools/changelog/` | Release tool: merges `changelog.d/` into `CHANGELOG.md`, checks a tag, prints release notes |
 | `.github/workflows/` | `ci.yml` (tests) and `release.yml` (on `v*` tags) |
@@ -82,12 +81,12 @@ go test ./...
   `claude plugin validate ./plugin` and `claude plugin validate .`. Bump
   `version` in `plugin/.claude-plugin/plugin.json` when plugin files change,
   or installed copies keep the cached version.
-- After changing `plugin-pane/`, run `claude plugin validate ./plugin-pane`
-  and `claude plugin test ./plugin-pane`, and bump its version the same way.
-  It hooks the MCP tools by name and, in `pane` mode, serves them itself, so a
-  renamed tool, a changed tool result or message updates
-  `plugin-pane/hooks/register.tsx`, and a changed input rule in
-  `internal/validate` updates `plugin-pane/hooks/validate.ts` (docs/06-pane-mod.md).
+- After changing the pane mod (`plugin/hooks/*.ts*`, `plugin/types/`), also
+  run `claude plugin test ./plugin`. Its tools mirror the bridge's, so a
+  changed tool input, result or message updates `plugin/hooks/tools.ts` and
+  `register.tsx`, a changed input rule in `internal/validate` updates
+  `plugin/hooks/validate.ts`, and a change to one skill's workflow updates the
+  other skill too (docs/06-pane-mod.md).
 
 The `CI` workflow (`.github/workflows/ci.yml`) runs gofmt, `go vet` and
 `go test -race ./...` on Linux and macOS for pushes to `master` and pull

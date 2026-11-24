@@ -1,0 +1,186 @@
+// The pane's own tools, registered by the mod: the inputs of the bridge's MCP
+// tools (internal/protocol/mcp.go), with descriptions that name the pane.
+// Claude Code lists them as mcp__<plugin>__<name>.
+
+const codeRefs = {
+  type: 'array',
+  description: 'code to open; each needs path and exactly one of symbol or lines',
+  items: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['path'],
+    properties: {
+      path: { type: 'string', description: 'file path, relative to the project directory or absolute' },
+      symbol: {
+        type: 'string',
+        description: 'Go symbol: pkg.Func, pkg.Type, pkg.(*Type).Method, pkg.Type.Method or pkg.Var',
+      },
+      lines: { type: 'string', description: 'line or line range: N or N-M' },
+    },
+  },
+}
+
+const docRefs = {
+  type: 'array',
+  description: 'passages of other markdown artifacts',
+  items: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['quote'],
+    properties: {
+      path: {
+        type: 'string',
+        description:
+          'markdown file relative to the spec_show folder (or project dir for a single file); omit for the primary spec file',
+      },
+      quote: { type: 'string', description: 'verbatim passage copied from the file (3-300 characters)' },
+      section: { type: 'string', description: 'heading of the section containing the quote' },
+    },
+  },
+}
+
+export type ToolDef = { name: string; description: string; inputSchema: Record<string, unknown> }
+
+export const TOOLS: readonly ToolDef[] = [
+  {
+    name: 'spec_show',
+    description:
+      'Show a spec in the ai-specview pane beside the chat. ' +
+      'Call it as soon as the spec path is known and again after every edit, with the headings you changed. ' +
+      'The path is a markdown file or a folder of markdown artifacts. Returns the section names.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['path'],
+      properties: {
+        path: {
+          type: 'string',
+          description: 'a .md file or a folder of markdown artifacts, relative to the project directory or absolute',
+        },
+        primary: { type: 'string', description: 'folders only: the file shown first and used by refs without a path' },
+        changed_sections: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'headings you just changed in the primary file',
+        },
+        changed: {
+          type: 'array',
+          description: 'folders only: other files you just created or edited',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['path'],
+            properties: {
+              path: { type: 'string', description: 'file path relative to the folder' },
+              sections: { type: 'array', items: { type: 'string' }, description: 'headings changed in that file' },
+            },
+          },
+        },
+      },
+    },
+  },
+  {
+    name: 'focus',
+    description:
+      'Highlight a spec passage and open code in the ai-specview pane, without asking anything. ' +
+      'Quotes must be copied verbatim from the file.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        spec_quote: { type: 'string', description: 'verbatim passage of the primary spec file' },
+        spec_section: { type: 'string', description: 'heading of the section containing spec_quote' },
+        doc_refs: docRefs,
+        code_refs: codeRefs,
+      },
+    },
+  },
+  {
+    name: 'ask',
+    description:
+      'Ask the user 1-6 clarifying questions in the ai-specview pane and wait for the answers. ' +
+      'Use this for every clarifying question instead of asking in chat. Each question needs refs: ' +
+      'spec_quote (copied verbatim from the spec, with spec_section), doc_refs into other artifacts, ' +
+      'and/or code_refs (Go: symbol like pkg.(*Type).Method; other files: lines N-M). ' +
+      'Results: answered (apply the answers), in_chat (wait for the user\'s chat message), ' +
+      'pending (call ask_wait with question_set_id), dismissed (continue without it). ' +
+      'An answered result may list deferred questions (the user chose Decide later): record them as open questions and ask again before finishing. ' +
+      'Mark the option you recommend with recommended: true.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['questions'],
+      properties: {
+        title: { type: 'string', description: 'short title of the question set' },
+        questions: {
+          type: 'array',
+          description: '1-6 questions answered together',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['id', 'text', 'options'],
+            properties: {
+              id: { type: 'string', description: 'short unique id, e.g. q1' },
+              text: { type: 'string', description: 'the question' },
+              options: {
+                type: 'array',
+                description: '2-6 options',
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  required: ['label'],
+                  properties: {
+                    label: { type: 'string', description: 'short option label' },
+                    description: { type: 'string', description: 'optional longer explanation' },
+                    recommended: {
+                      type: 'boolean',
+                      description: 'true for the option you recommend (at most one per question)',
+                    },
+                  },
+                },
+              },
+              multi_select: { type: 'boolean', description: 'allow several options' },
+              allow_other: { type: 'boolean', description: 'allow a free-text Other answer' },
+              spec_quote: {
+                type: 'string',
+                description: 'verbatim passage (3-300 characters) of the primary spec file this question is about',
+              },
+              spec_section: { type: 'string', description: 'heading of the section containing spec_quote' },
+              doc_refs: { ...docRefs, description: 'up to 4 passages of other markdown artifacts' },
+              code_refs: { ...codeRefs, description: 'up to 4 code refs; each needs path and exactly one of symbol or lines' },
+            },
+          },
+        },
+      },
+    },
+  },
+  {
+    name: 'ask_wait',
+    description: 'Keep waiting for a pending question set returned by ask. Same result shape as ask.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['question_set_id'],
+      properties: { question_set_id: { type: 'string', description: 'the id returned by a pending ask' } },
+    },
+  },
+  {
+    name: 'spec_done',
+    description:
+      'Tell the ai-specview pane the spec is finished and no more questions are coming. ' +
+      'Call it once at the end of a spec session, with a summary as markdown with a **Decided** heading and a **Still open** heading, ' +
+      'each followed by a bullet list with one item per decision or open point (never a run-on paragraph). ' +
+      'The pane shows it as a finished banner. Asking again later reopens the session.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        summary: {
+          type: 'string',
+          description:
+            'summary of the finished spec as markdown with a **Decided** heading and a **Still open** heading, each followed by a bullet list',
+        },
+      },
+    },
+  },
+]

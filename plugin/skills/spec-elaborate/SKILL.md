@@ -1,6 +1,6 @@
 ---
 name: spec-elaborate
-description: Elaborate a feature spec with the user, showing the spec and the code side by side in the ai-specview viewer. Use when asked to "spec", "write a spec for", "elaborate the spec", or "design" a change before writing code. Asks every clarifying question through the ai-specview `ask` tool, with the spec passage and the code it is about. Do NOT use for writing the code itself.
+description: Elaborate a feature spec with the user, showing the spec and the code side by side in the ai-specview viewer. Use when asked to "spec", "write a spec for", "elaborate the spec", or "design" a change before writing code. Asks every clarifying question through the ai-specview `ask` tool, with the spec passage and the code it is about. Do NOT use for writing the code itself, or when the user wants the spec in a pane beside the chat (use spec-elaborate-mod).
 ---
 
 # Spec elaboration with ai-specview

@@ -1,16 +1,11 @@
-// ai-specview-pane: draws the ai-specview spec, code and questions in a pane
-// beside the chat.
+// The pane mode of ai-specview: a Claude Code mod that draws the spec, the
+// code and the questions in a pane beside the chat.
 //
-// It hooks the ai-specview MCP tools by name, so the model, the skill and the
-// browser viewer stay as they are. The mode picks who serves them:
-//
-//   browser  the MCP bridge alone (the mod does nothing)
-//   both     the bridge serves every tool; the pane mirrors spec_show and
-//            focus, using the bridge's resolved code ranges. Questions are
-//            answered in the browser.
-//   pane     the mod serves every tool itself and the daemon is not used:
-//            questions are answered in the pane, and the built-in
-//            AskUserQuestion is blocked while a spec is open.
+// It registers its own tools (spec_show, focus, ask, ask_wait, spec_done),
+// listed as mcp__<plugin>__<name>, beside the bridge's MCP tools of the same
+// names. The spec-elaborate-mod skill uses these; spec-elaborate uses the
+// bridge and the browser page. No daemon runs for the pane. While a spec is
+// open in the pane, the built-in AskUserQuestion is blocked.
 
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
@@ -20,19 +15,19 @@ import type {
   AskOutput,
   AskView,
   CodeView,
+  DocRefView,
   Draft,
-  Mode,
   PaneUi,
   QuestionView,
   QuoteView,
   SpecView,
 } from '../types'
 import * as spec from './spec'
+import { TOOLS } from './tools'
 import * as check from './validate'
 
 const PANE = 'ai-specview'
-const MODES: readonly Mode[] = ['both', 'pane', 'browser']
-const TOOL = /^mcp__.*ai-specview__(spec_show|focus|ask|ask_wait|spec_done)$/
+const TOOL_NAMES = new Set(TOOLS.map(t => t.name))
 
 // How long ask and ask_wait wait before answering pending, as the bridge's
 // AI_SPECVIEW_ASK_WAIT default. A tool.call hook may run 20 minutes.
@@ -45,17 +40,14 @@ const ASK_WAIT_MS = 10 * 60_000
 const PAUSE = ['/bin/sleep', '1'] as const
 
 // Change a tag when the stored shape changes: it declines an older value.
-const viewAtom = atom({ plugin: 'ai-specview-pane', key: 'view' } as const, null as SpecView | null, {
-  shape: 'view-3',
+const viewAtom = atom({ plugin: 'ai-specview', key: 'view' } as const, null as SpecView | null, {
+  shape: 'view-4',
 })
-const modeAtom = atom({ plugin: 'ai-specview-pane', key: 'mode' } as const, null as Mode | null, {
-  shape: 'mode-1',
+const uiAtom = atom({ plugin: 'ai-specview', key: 'ui' } as const, { file: '', shown: -1, codeTab: 0 } as PaneUi, {
+  shape: 'ui-2',
 })
-const uiAtom = atom({ plugin: 'ai-specview-pane', key: 'ui' } as const, { shown: -1, codeTab: 0 } as PaneUi, {
-  shape: 'ui-1',
-})
-const askAtom = atom({ plugin: 'ai-specview-pane', key: 'ask' } as const, null as AskView | null, {
-  shape: 'ask-1',
+const askAtom = atom({ plugin: 'ai-specview', key: 'ask' } as const, null as AskView | null, {
+  shape: 'ask-2',
 })
 
 // Messages returned to Claude, as internal/tools sends them.
@@ -73,7 +65,6 @@ const BLOCK_REASON =
   'spec_section, and point at the code with code_refs.'
 
 type Args = Record<string, unknown>
-type ResolvedRef = { path: string; start_line: number; end_line: number; symbol?: string }
 
 const MAX_MARKDOWN = 50_000
 const MAX_CODE = 40_000
@@ -81,14 +72,13 @@ const MAX_CODE = 40_000
 const WIDE = 100
 
 type Ctx = {
-  configured: Mode
   cwd: string
   // Outcomes the person chose, by question set, for the hook that waits on it.
   results: Map<string, AskOutput>
 }
 
 // Module state: it starts over on a reload, and session.start sets cwd again.
-const ctx: Ctx = { configured: 'both', cwd: '', results: new Map() }
+const ctx: Ctx = { cwd: '', results: new Map() }
 
 const abs = (p: string) => (p.startsWith('/') ? p : `${ctx.cwd.replace(/\/$/, '')}/${p}`)
 const rel = (p: string) => (ctx.cwd && p.startsWith(ctx.cwd + '/') ? p.slice(ctx.cwd.length + 1) : p)
@@ -113,47 +103,97 @@ function locate(text: string, quote: string, section: string, file: string, labe
 
 const sectionOf = (text: string, q: QuoteView) => (q.quoteStart >= 0 ? spec.sectionAt(text, q.quoteStart).start : -1)
 
-async function modeOf($: EngineInterface): Promise<Mode> {
-  return (await read($, modeAtom)) ?? ctx.configured
+const MARKDOWN = /\.(md|markdown)$/i
+// How deep a folder spec is listed, as internal/specsrc.
+const MAX_DEPTH = 3
+
+const join = (dir: string, p: string) => `${dir.replace(/\/$/, '')}/${p}`
+const dirOf = (p: string) => p.replace(/\/[^/]*$/, '') || '/'
+
+/** Resolves . and .. in an absolute path. */
+function clean(p: string): string {
+  const out: string[] = []
+  for (const part of p.split('/')) {
+    if (part === '' || part === '.') continue
+    if (part === '..') out.pop()
+    else out.push(part)
+  }
+  return '/' + out.join('/')
 }
 
-async function primaryFile($: EngineInterface, path: string, primary?: string): Promise<string> {
-  const p = abs(path)
+/** The path of p from dir, or p itself when it is outside dir. */
+const under = (dir: string, p: string) => (p.startsWith(dir.replace(/\/$/, '') + '/') ? p.slice(dir.replace(/\/$/, '').length + 1) : p)
+
+/** Markdown files under dir, up to MAX_DEPTH deep, dot-entries skipped; relative and sorted. */
+async function listMarkdown($: EngineInterface, dir: string, prefix = '', depth = 1): Promise<string[]> {
+  const out: string[] = []
+  for (const f of await $.fs.list(prefix ? join(dir, prefix) : dir)) {
+    if (f.name.startsWith('.')) continue
+    const relPath = prefix ? `${prefix}/${f.name}` : f.name
+    if (f.kind === 'dir') {
+      if (depth < MAX_DEPTH) out.push(...(await listMarkdown($, dir, relPath, depth + 1)))
+    } else if (MARKDOWN.test(f.name)) {
+      out.push(relPath)
+    }
+  }
+  return out.sort()
+}
+
+/** The spec's files as the bridge's LoadRoot finds them: a markdown file, or a folder of them. */
+async function loadRoot($: EngineInterface, path: string, primary?: string) {
+  const p = clean(abs(path))
   const st = await $.fs.stat(p)
-  if (st.kind !== 'dir') return p
-  if (primary) return `${p}/${primary}`
-  const md = (await $.fs.list(p))
-    .map((f: { name: string }) => f.name)
-    .filter((n: string) => n.toLowerCase().endsWith('.md'))
-    .sort()
-  const pick = md.find((n: string) => /^(readme|spec)\.md$/i.test(n)) ?? md[0]
-  if (!pick) throw new Error(`${path}: the folder holds no markdown file`)
-  return `${p}/${pick}`
+  if (st.kind !== 'dir') {
+    if (primary) throw new Error('primary is only allowed for folders')
+    if (!MARKDOWN.test(p)) throw new Error(`${p} is not a markdown file (.md or .markdown)`)
+    return { dir: dirOf(p), isDir: false, primary: p, files: [p] }
+  }
+  const names = await listMarkdown($, p)
+  if (names.length === 0) throw new Error(`${p} contains no markdown files`)
+  let pick: string | undefined
+  if (primary) {
+    const want = primary.startsWith('/') ? under(p, clean(primary)) : clean(join(p, primary)).slice(p.length + 1)
+    if (!names.includes(want)) throw new Error(`primary "${primary}" is not a markdown file inside ${p}`)
+    pick = want
+  } else {
+    pick = ['proposal.md', 'spec.md', 'README.md'].find(n => names.includes(n)) ?? names[0]
+  }
+  const first = join(p, pick ?? '')
+  return { dir: p, isDir: true, primary: first, files: [first, ...names.map(n => join(p, n)).filter(f => f !== first)] }
 }
 
-async function showSpec($: EngineInterface, args: Args, via: SpecView['via']) {
-  const file = await primaryFile($, String(args.path ?? ''), args.primary as string | undefined)
+async function showSpec($: EngineInterface, args: Args) {
+  const root = await loadRoot($, String(args.path ?? ''), args.primary as string | undefined)
+  if (!root.isDir && Array.isArray(args.changed) && args.changed.length > 0) {
+    throw new Error('changed is only allowed when path is a folder; use changed_sections')
+  }
+  const file = root.primary
   const text: string = await $.fs.read(file)
+  const changed = (args.changed as { path?: string }[] | undefined) ?? []
   const view: SpecView = {
     ...noQuote,
     specPath: file,
     title: rel(file),
+    dir: root.dir,
+    isDir: root.isDir,
+    files: root.files,
+    changedFiles: changed.filter(c => c.path).map(c => clean(join(root.dir, c.path ?? ''))),
+    docs: [],
     text,
     changedSections: (args.changed_sections as string[] | undefined) ?? [],
     match: '',
     code: [],
-    via,
     error: '',
     isDone: false,
     summary: '',
   }
   await update($, viewAtom, () => view)
   // Open on the first changed section, else the whole spec.
-  const changed = view.changedSections[0]
-  const at = changed ? (spec.sectionByTitle(text, changed)?.start ?? -1) : -1
-  await update($, uiAtom, () => ({ shown: at, codeTab: 0 }))
+  const first = view.changedSections[0]
+  const at = first ? (spec.sectionByTitle(text, first)?.start ?? -1) : -1
+  await update($, uiAtom, () => ({ file: '', shown: at, codeTab: 0 }))
   void $.ui.open({ id: PANE, title: 'Spec' })
-  return { file, text }
+  return { root, file, text }
 }
 
 async function codeView($: EngineInterface, path: string, start: number, end: number, label: string): Promise<CodeView> {
@@ -191,38 +231,74 @@ async function resolveCode($: EngineInterface, label: string, refs: check.CodeRe
   return out
 }
 
+/**
+ * Resolves doc_refs into the spec's markdown files, as the bridge's
+ * resolveDocs: a path relative to the folder of a folder spec, else to the
+ * project directory; none means the primary file. Problems go to errs.
+ */
+async function resolveDocs($: EngineInterface, view: SpecView, label: string, refs: check.DocRefArg[], errs: string[]): Promise<DocRefView[]> {
+  const out: DocRefView[] = []
+  for (const d of refs) {
+    const given = d.path ?? ''
+    const p = !given ? view.specPath : given.startsWith('/') ? clean(given) : clean(view.isDir ? join(view.dir, given) : abs(given))
+    if (!MARKDOWN.test(p)) {
+      errs.push(`${label}: doc ref ${given} is not a markdown file`)
+      continue
+    }
+    if (view.isDir && under(view.dir, p) === p) {
+      errs.push(`${label}: doc ref ${given} is outside the shown folder ${view.dir}`)
+      continue
+    }
+    if (!(await $.fs.exists(p))) {
+      errs.push(`${label}: doc ref ${given} does not exist`)
+      continue
+    }
+    const text: string = p === view.specPath ? view.text : await $.fs.read(p)
+    const { how: _how, ...q } = locate(text, d.quote ?? '', d.section ?? '', p, label, errs)
+    if (q.quoteStart >= 0) out.push({ ...q, path: p, shownAt: sectionOf(text, q) })
+  }
+  return out
+}
+
+/** Where the pane goes for a focus or a question: the primary quote, else the first doc ref. */
+function targetOf(view: SpecView, q: QuoteView, docs: DocRefView[], section = ''): Omit<PaneUi, 'codeTab'> {
+  if (q.quoteStart >= 0) return { file: '', shown: sectionOf(view.text, q) }
+  const d = docs[0]
+  if (d) return { file: d.path === view.specPath ? '' : d.path, shown: d.shownAt }
+  return { file: '', shown: section ? (spec.sectionByTitle(view.text, section)?.start ?? -1) : -1 }
+}
+
 function scrollToQuote($: EngineInterface) {
   // Bring the focused block into view once the pane has drawn it.
   $.clock.after(250, () => void $.ui.scroll({ to: { key: 'quote' }, in: PANE, block: 'center' }).catch(() => undefined))
 }
 
-async function focus($: EngineInterface, args: Args, via: SpecView['via'], resolved: ResolvedRef[] | null) {
+async function focus($: EngineInterface, args: Args) {
   const prev = await read($, viewAtom)
   if (!prev) throw new Error('focus: no spec is shown yet; call spec_show first')
-  const errs = via === 'pane' ? check.focus(args) : []
+  const errs = check.focus(args)
   if (errs.length > 0) throw new Error('invalid input:\n- ' + errs.join('\n- '))
   const text: string = await $.fs.read(prev.specPath)
   const section = String(args.spec_section ?? '')
   const q = locate(text, String(args.spec_quote ?? ''), section, prev.specPath, 'focus', errs)
-  const shown = q.quoteStart >= 0 ? sectionOf(text, q) : section ? (spec.sectionByTitle(text, section)?.start ?? -1) : -1
+  const docs = await resolveDocs($, { ...prev, text }, 'focus', (args.doc_refs as check.DocRefArg[] | undefined) ?? [], errs)
 
-  const code = resolved
-    ? await Promise.all(
-        resolved.map(r =>
-          codeView($, r.path, r.start_line, r.end_line, `${rel(r.path)}${r.symbol ? ' ' + r.symbol : `:${r.start_line}-${r.end_line}`}`),
-        ),
-      )
-    : await resolveCode($, 'focus', (args.code_refs as check.CodeRefArg[] | undefined) ?? [], errs)
-
-  // In pane mode a bad ref fails the call, as the bridge's does.
-  if (via === 'pane' && errs.length > 0) fail(errs)
+  const code = await resolveCode($, 'focus', (args.code_refs as check.CodeRefArg[] | undefined) ?? [], errs)
+  // A bad ref fails the call, as the bridge's does.
+  if (errs.length > 0) fail(errs)
 
   const { how, ...quote } = q
-  await update($, viewAtom, () => ({ ...prev, ...quote, text, match: how, code, via, error: errs.join('; ') }))
-  await update($, uiAtom, () => ({ shown, codeTab: 0 }))
+  const next = { ...prev, ...quote, text, docs, match: how, code, error: '' }
+  await update($, viewAtom, () => next)
+  await update($, uiAtom, () => ({ ...targetOf(next, quote, docs, section), codeTab: 0 }))
   void $.ui.open({ id: PANE, title: 'Spec' })
-  if (q.quoteStart >= 0) scrollToQuote($)
-  return { ok: true, spec_match: how || undefined, docs: [], code: code.map(c => ({ path: c.path, start_line: c.startLine })) }
+  if (q.quoteStart >= 0 || docs.length > 0) scrollToQuote($)
+  return {
+    ok: true,
+    spec_match: how || undefined,
+    docs: docs.map(d => ({ path: prev.isDir ? under(prev.dir, d.path) : rel(d.path), match: 'exact' })),
+    code: code.map(c => ({ path: c.path, start_line: c.startLine })),
+  }
 }
 
 // ---------------------------------------------------------------- questions
@@ -247,6 +323,7 @@ async function ask($: EngineInterface, args: Args, signal: AbortSignal): Promise
       multi: !!q.multi_select,
       allowOther: !!q.allow_other,
       code: await resolveCode($, label, q.code_refs ?? [], errs),
+      docs: await resolveDocs($, { ...prev, text }, label, q.doc_refs ?? [], errs),
     })
   }
   if (errs.length > 0) fail(errs)
@@ -263,11 +340,12 @@ async function ask($: EngineInterface, args: Args, signal: AbortSignal): Promise
     result: null,
   }))
   // Asking again reopens a finished spec.
+  const opened = { ...prev, text, isDone: false }
   await update($, viewAtom, v => (v ? { ...v, text, isDone: false } : v))
-  await update($, uiAtom, () => ({ shown: first ? sectionOf(text, first) : -1, codeTab: 0 }))
+  await update($, uiAtom, () => ({ ...(first ? targetOf(opened, first, first.docs) : { file: '', shown: -1 }), codeTab: 0 }))
   void $.ui.open({ id: PANE, title: 'Spec' })
   $.ui.toast(`Claude asks ${questions.length === 1 ? 'a question' : `${questions.length} questions`} in the ai-specview pane`)
-  if (first && first.quoteStart >= 0) scrollToQuote($)
+  if (first && (first.quoteStart >= 0 || first.docs.length > 0)) scrollToQuote($)
   return waitFor($, qsId, signal)
 }
 
@@ -299,8 +377,8 @@ async function specDone($: EngineInterface, args: Args) {
   const summary = String(args.summary ?? '').trim()
   const n = check.utf8Length(summary)
   if (n > check.MAX_SUMMARY) throw new Error(`done: summary is ${n} bytes, at most ${check.MAX_SUMMARY}`)
-  await update($, viewAtom, v => (v ? { ...v, ...noQuote, match: '', code: [], isDone: true, summary } : v))
-  await update($, uiAtom, () => ({ shown: -1, codeTab: 0 }))
+  await update($, viewAtom, v => (v ? { ...v, ...noQuote, match: '', code: [], docs: [], isDone: true, summary } : v))
+  await update($, uiAtom, () => ({ file: '', shown: -1, codeTab: 0 }))
   void $.ui.open({ id: PANE, title: 'Spec' })
   return { ok: true }
 }
@@ -342,8 +420,8 @@ async function gotoQuestion($: EngineInterface, k: number) {
   if (!a || !q) return
   await update($, askAtom, cur => (cur ? { ...cur, index: k } : cur))
   const v = await read($, viewAtom)
-  await update($, uiAtom, () => ({ shown: v ? sectionOf(v.text, q) : -1, codeTab: 0 }))
-  if (q.quoteStart >= 0) scrollToQuote($)
+  await update($, uiAtom, () => ({ ...(v ? targetOf(v, q, q.docs) : { file: '', shown: -1 }), codeTab: 0 }))
+  if (q.quoteStart >= 0 || q.docs.length > 0) scrollToQuote($)
 }
 
 async function editDraft($: EngineInterface, id: string, fn: (d: Draft) => Draft) {
@@ -408,27 +486,13 @@ async function skip($: EngineInterface) {
 
 // ------------------------------------------------------------------ register
 
-export const register: Register = (on, options) => {
-  ctx.configured = MODES.includes(options.mode as Mode) ? (options.mode as Mode) : 'both'
-
+export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     ctx.cwd = e.cwd
-    await $.command.register({
-      name: 'specview-mode',
-      description: 'Show or set where ai-specview draws: both, pane or browser',
-    })
     await $.command.register({ name: 'specview-pane', description: 'Open the ai-specview pane' })
+    for (const t of TOOLS) await $.tool.register(t)
     if (await read($, viewAtom)) void $.ui.open({ id: PANE, title: 'Spec' })
     return next(e)
-  })
-
-  on('command.run', { command: 'specview-mode' }, async ($, e) => {
-    const want = e.args.trim() as Mode
-    if (!want) return { text: `ai-specview mode: ${await modeOf($)} (configured default: ${ctx.configured}).` }
-    if (!MODES.includes(want)) return { text: `Unknown mode "${want}". Use both, pane or browser.` }
-    await update($, modeAtom, () => want)
-    if (want === 'browser') await $.ui.close({ id: PANE }).catch(() => undefined)
-    return { text: `ai-specview mode set to ${want} for this session.` }
   })
 
   on('command.run', { command: 'specview-pane' }, async $ => {
@@ -437,53 +501,32 @@ export const register: Register = (on, options) => {
   })
 
   on('tool.call', async ($, e, next) => {
-    // In pane mode no daemon answers ai-specview's hook, so the mod blocks the
-    // built-in question tool itself while a spec is open.
+    // ai-specview's hook asks the daemon, which the pane does not use, so the
+    // mod blocks the built-in question tool itself while a spec is open here.
     if (e.tool === 'AskUserQuestion') {
-      if ((await modeOf($)) !== 'pane') return next(e)
       const v = await read($, viewAtom)
       return v && !v.isDone ? { deny: BLOCK_REASON } : next(e)
     }
 
-    const hit = TOOL.exec(e.tool)
-    if (!hit) return next(e)
-    const mode = await modeOf($)
-    if (mode === 'browser') return next(e)
-    const name = hit[1]
+    const prefix = `mcp__${$.plugin.name}__`
+    const name = e.tool.startsWith(prefix) ? e.tool.slice(prefix.length) : ''
+    if (!TOOL_NAMES.has(name)) return next(e)
     const args = e as unknown as Args
 
-    if (mode === 'both') {
-      const ran = await next(e)
-      if (ran.deny !== undefined || ran.isError) return ran
-      try {
-        if (name === 'spec_show') {
-          await showSpec($, args, 'bridge')
-        } else if (name === 'focus') {
-          let resolved: ResolvedRef[] | null = null
-          try {
-            resolved = (JSON.parse(ran.text ?? '{}').code as ResolvedRef[] | undefined) ?? null
-          } catch {
-            resolved = null
-          }
-          await focus($, args, 'bridge', resolved)
-        } else if (name === 'spec_done') {
-          await specDone($, args)
-        }
-      } catch (err) {
-        $.ui.status(`ai-specview pane: ${(err as Error).message.slice(0, 80)}`)
-      }
-      return ran
-    }
-
-    // Pane mode: the mod serves every tool. An MCP tool's result is text, so
-    // each answer is the JSON the bridge would send.
+    // The mod's own tools: an answer here serves the call. An MCP tool's
+    // result is text, so each answer is the JSON the bridge would send.
     try {
       let out: unknown
       if (name === 'spec_show') {
-        const { file, text } = await showSpec($, args, 'pane')
-        out = { ok: true, primary: rel(file), sections: spec.headings(text).map(h => h.title), artifacts: [] }
+        const { root, file, text } = await showSpec($, args)
+        const artifacts = []
+        for (const f of root.files) {
+          const body: string = f === file ? text : await $.fs.read(f)
+          artifacts.push({ path: under(root.dir, f), kind: 'other', sections: spec.headings(body).map(h => h.title) })
+        }
+        out = { ok: true, primary: under(root.dir, file), sections: spec.headings(text).map(h => h.title), artifacts }
       } else if (name === 'focus') {
-        out = await focus($, args, 'pane', null)
+        out = await focus($, args)
       } else if (name === 'ask') {
         out = await ask($, args, next.signal)
       } else if (name === 'ask_wait') {
@@ -495,10 +538,10 @@ export const register: Register = (on, options) => {
     } catch (err) {
       return { deny: (err as Error).message }
     }
-  }).catch(async ($, e, next) => {
+  }).catch(($, e, next) => {
     if (next.called) return next(e)
-    // In pane mode the bridge must not get a call the pane serves: it has no spec.
-    if (TOOL.test(e.tool) && (await modeOf($)) === 'pane') {
+    // A call of the mod's own tools has nothing beneath to go to.
+    if (e.tool.startsWith(`mcp__${$.plugin.name}__`)) {
       return { deny: 'ai-specview pane: the call was interrupted or failed. Call it again.' }
     }
     $.ui.status('ai-specview pane: a hook failed; the call went on without it')
@@ -510,39 +553,71 @@ export const register: Register = (on, options) => {
     const view = await read($, viewAtom)
     const ui = await read($, uiAtom)
     const a = await read($, askAtom)
-    const mode = await modeOf($)
-    if (!view) return <Text dimColor>No spec shown yet. Mode: {mode}.</Text>
+    if (!view) return <Text dimColor>No spec shown yet.</Text>
 
-    const text = view.text
-    const asking = a && !a.result && mode === 'pane' ? a : null
+    const asking = a && !a.result ? a : null
     const question = asking ? asking.questions[asking.index] : undefined
     // What the spec and code columns show: the current question's refs while
     // questions wait, else the last focus.
     const at: QuoteView = question ?? view
     const codes = question ? question.code : view.code
+    const docs = question ? question.docs : view.docs
+
+    // The file shown: the primary, or another file of the spec.
+    const primary = view.specPath
+    const shownFile = ui.file || primary
+    let text = view.text
+    let fileError = ''
+    if (shownFile !== primary) {
+      try {
+        text = await $.fs.read(shownFile)
+      } catch (err) {
+        text = ''
+        fileError = `Cannot read ${shownFile}: ${(err as Error).message}`
+      }
+    }
+    // The quote framed in that file, if it holds one.
+    const quoted: QuoteView | undefined =
+      shownFile === primary && at.quoteStart >= 0 ? at : docs.find(d => d.path === shownFile)
+    const target = targetOf(view, at, docs)
+    const label = (p: string) => (view.isDir ? under(view.dir, p) : rel(p))
 
     const heads = spec.headings(text)
     const section = ui.shown >= 0 ? spec.sectionAt(text, ui.shown) : null
     const lo = section?.start ?? 0
     const hi = section?.end ?? text.length
     const shownText = text.slice(lo, hi)
-    const hasQuote = at.quoteStart >= lo && at.quoteEnd <= hi && at.quoteStart >= 0
-    const parts = hasQuote
-      ? spec.splitAround(shownText, at.quoteStart - lo, at.quoteEnd - lo)
+    const parts =
+      quoted && quoted.quoteStart >= lo && quoted.quoteEnd <= hi
+        ? spec.splitAround(shownText, quoted.quoteStart - lo, quoted.quoteEnd - lo)
       : { before: shownText, focus: '', after: '' }
     const wide = e.props.placement === 'dock' && e.props.bodyColumns >= WIDE
     const tab = Math.min(ui.codeTab, Math.max(0, codes.length - 1))
     const active = codes[tab]
-    const focusAt = sectionOf(text, at)
     const showSection = (where: number) => update($, uiAtom, u => ({ ...u, shown: where }))
+    const showFile = (file: string) => {
+      const d = docs.find(one => one.path === file)
+      const atQuote = file === primary ? (at.quoteStart >= 0 ? sectionOf(view.text, at) : -1) : (d?.shownAt ?? -1)
+      return update($, uiAtom, u => ({ ...u, file: file === primary ? '' : file, shown: atQuote }))
+    }
+    const hasTarget = at.quoteStart >= 0 || docs.length > 0
+    const awayFromTarget = (ui.file || '') !== target.file || (ui.shown !== -1 && ui.shown !== target.shown)
 
     const options = [
-      { value: '-1', label: 'Whole spec' },
+      { value: '-1', label: shownFile === primary ? 'Whole spec' : 'Whole file' },
       ...heads.map(h => ({
         value: String(h.offset),
-        label: `${'  '.repeat(h.level - 1)}${h.title}${view.changedSections.includes(h.title) ? '  (changed)' : ''}`,
+        label: `${'  '.repeat(h.level - 1)}${h.title}${shownFile === primary && view.changedSections.includes(h.title) ? '  (changed)' : ''}`,
       })),
     ]
+    // Every file of the spec, and any other file a doc ref quotes.
+    const files = [...view.files, ...docs.map(d => d.path).filter(p => !view.files.includes(p))].filter(
+      (p, i, all) => all.indexOf(p) === i,
+    )
+    const fileOptions = files.map(p => ({
+      value: p,
+      label: `${label(p)}${view.changedFiles.includes(p) ? '  (changed)' : ''}${docs.some(d => d.path === p) || (p === primary && at.quoteStart >= 0) ? '  (quoted)' : ''}`,
+    }))
 
     const specColumn = (
       <Box key="spec-col" flexDirection="column" width={wide ? '55%' : '100%'} flexShrink={1}>
@@ -551,7 +626,7 @@ export const register: Register = (on, options) => {
           <Box key="quote" flexDirection="column" borderStyle="round" borderColor="yellow" paddingX={1}>
             <Text color="yellow" size="caption">
               {question ? `Question ${asking!.index + 1}` : 'Focus'}
-              {at.quoteSection && section?.title !== at.quoteSection ? ` in ${at.quoteSection}` : ''}
+              {quoted?.quoteSection && section?.title !== quoted.quoteSection ? ` in ${quoted.quoteSection}` : ''}
             </Text>
             <Markdown key="quote-text" text={parts.focus} />
           </Box>
@@ -684,12 +759,11 @@ export const register: Register = (on, options) => {
     return (
       <Box flexDirection="column" rowGap={1}>
         <Box flexDirection="column">
-          <Text bold>{view.title}</Text>
-          <Text dimColor>
-            mode {mode}, last update from the {view.via}
-            {view.match && !question ? `, quote match ${view.match}` : ''}
-          </Text>
+          <Text bold>{label(shownFile)}</Text>
+          {shownFile !== primary && <Text dimColor>in the spec {view.title}</Text>}
+          {view.match !== '' && !question && shownFile === primary && <Text dimColor>quote match {view.match}</Text>}
           {view.error !== '' && <Text color="red">{view.error}</Text>}
+          {fileError !== '' && <Text color="red">{fileError}</Text>}
         </Box>
         {view.isDone && (
           <Box key="done" flexDirection="column" borderStyle="round" borderColor="green" paddingX={1}>
@@ -700,6 +774,9 @@ export const register: Register = (on, options) => {
           </Box>
         )}
         <Box flexDirection="row" flexWrap="wrap" columnGap={2} alignItems="center">
+          {files.length > 1 && (
+            <Select key="file" label="File" options={fileOptions} value={shownFile} onSelect={v => void showFile(v)} />
+          )}
           <Select
             key="outline"
             label="Section"
@@ -707,14 +784,26 @@ export const register: Register = (on, options) => {
             value={String(ui.shown)}
             onSelect={v => void showSection(Number(v))}
           />
-          {view.changedSections.length > 0 && <Text dimColor>Changed:</Text>}
-          {view.changedSections.map((title, i) => (
-            <Button key={`changed-${i}`} plain onPress={() => showSection(spec.sectionByTitle(text, title)?.start ?? -1)}>
-              {title}
-            </Button>
-          ))}
-          {at.quoteStart >= 0 && ui.shown !== focusAt && ui.shown !== -1 && (
-            <Button key="to-quote" plain onPress={() => showSection(focusAt)}>
+          {shownFile === primary && view.changedSections.length > 0 && <Text dimColor>Changed:</Text>}
+          {shownFile === primary &&
+            view.changedSections.map((title, i) => (
+              <Button key={`changed-${i}`} plain onPress={() => showSection(spec.sectionByTitle(text, title)?.start ?? -1)}>
+                {title}
+              </Button>
+            ))}
+          {docs
+            .filter(d => d.path !== shownFile)
+            .map((d, i) => (
+              <Button key={`doc-${i}`} plain onPress={() => showFile(d.path)}>
+                {`Quote in ${label(d.path)}`}
+              </Button>
+            ))}
+          {hasTarget && awayFromTarget && (
+            <Button
+              key="to-quote"
+              plain
+              onPress={() => update($, uiAtom, u => ({ ...u, file: target.file, shown: target.shown }))}
+            >
               {question ? 'Back to the question' : 'Back to the focus'}
             </Button>
           )}

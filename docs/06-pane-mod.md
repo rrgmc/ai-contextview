@@ -1,16 +1,24 @@
 # 06 — Pane mod
 
-`plugin-pane/` is a second plugin, `ai-specview-pane`: a Claude Code mod that
-draws the spec, the code and the questions in a pane beside the chat. It adds a viewer; it does
-not replace the browser page, the bridge or the daemon.
+The `ai-specview` plugin has two ways to show a spec:
+
+| Skill | Tools | Viewer |
+|---|---|---|
+| `ai-specview:spec-elaborate` | The bridge's MCP tools, `mcp__plugin_ai-specview_ai-specview__…` | The browser page served by the daemon |
+| `ai-specview:spec-elaborate-mod` | The mod's own tools, `mcp__ai-specview__…` | A pane beside the chat, drawn by a Claude Code mod |
+
+The mod is `plugin/hooks/register.tsx`, listed under `modules` in
+`plugin/hooks/hooks.json` beside the `PreToolUse` hook. It does not use the
+bridge or the daemon. Both skills run the same workflow; the user picks one by
+asking for the pane or the browser.
 
 ## 1. Why a mod
 
-A mod is a plugin with a TypeScript hooks module that Claude Code runs in its
-own process. It can hook tool calls, keep session state and draw panes with
-Claude Code's own elements (`Box`, `Text`, `Markdown`, `Code`, `Select`,
-`Button`). The pane sits in the Claude window, so the person does not switch to
-a browser tab.
+A mod is a plugin's TypeScript hooks module that Claude Code runs in its own
+process. It can register tools, hook tool calls, keep session state and draw
+panes with Claude Code's own elements (`Box`, `Text`, `Markdown`, `Code`,
+`Select`, `Button`, `Input`). The pane sits in the Claude window, so the person
+does not switch to a browser tab.
 
 What a mod cannot do, and the browser page can:
 
@@ -20,46 +28,46 @@ What a mod cannot do, and the browser page can:
 - Draw more than about 100,000 characters at once.
 - Show the workspaces of several Claude sessions in one place.
 
-## 2. How it hooks ai-specview
+## 2. The tools
 
-The mod registers no tools. Its `tool.call` hook matches the ai-specview MCP
-tools by name (`mcp__…ai-specview__spec_show`, `focus`, `ask`, `ask_wait`,
-`spec_done`), so the model, the tool descriptions and the `spec-elaborate`
-skill are the same in every mode.
+At `session.start` the mod registers `spec_show`, `focus`, `ask`, `ask_wait`
+and `spec_done` (`plugin/hooks/tools.ts`), with the bridge's input schemas
+(`internal/protocol/mcp.go`) and descriptions that name the pane. Claude Code
+lists them as `mcp__ai-specview__<name>`, behind ToolSearch like MCP tools. A
+`tool.call` hook answers them, so they need no permission prompt. Each answer
+is the JSON text the bridge would send: an MCP tool's result must be text, not
+an object.
 
-| Mode | `spec_show`, `focus` | `ask`, `ask_wait` | `spec_done` | `AskUserQuestion` |
-|---|---|---|---|---|
-| `browser` | Bridge | Bridge | Bridge | `ai-specview hook` |
-| `both` (default) | Bridge, then the pane mirrors the call | Bridge | Bridge, then the pane shows the banner | `ai-specview hook` |
-| `pane` | The mod | The mod | The mod | Blocked by the mod while a spec is open |
+- **Errors.** Bad input or a ref that is not found fails the call with the
+  bridge's wording ("invalid input" or "fix these and call again"). If a hook
+  fails or the person interrupts the call, the hook's `.catch` refuses it.
+- **`AskUserQuestion`.** `ai-specview hook` asks the daemon whether a spec is
+  open, and the pane does not use the daemon. So the mod blocks the built-in
+  question tool itself, with the hook's message, from `spec_show` to
+  `spec_done`.
+- **`/specview-pane`** opens the pane again after the person closed it.
 
-- **`both`.** The hook calls `next(e)`, so the bridge runs first. On success it
-  reads the spec file and, for `focus`, the bridge's resolved code ranges
-  (`code[].start_line`, `end_line` in the result JSON). A failure in the mirror
-  shows in the status line and never fails the tool call.
-- **`pane`.** The hook answers without `next(e)`. Its result is the JSON text
-  the bridge would send (an MCP tool's result must be text, not an object). A
-  quote not found or a bad code ref fails the call with the bridge's
-  "fix these and call again" list.
-- **No daemon in `pane` mode.** The bridge gets no call at all, so the daemon
-  is never started. `ai-specview hook` asks the daemon whether a spec is open
-  and allows `AskUserQuestion` when no daemon answers, so the mod blocks it
-  itself, with the hook's message, until `spec_done`.
-- **Interrupted calls.** If a hook fails or the person interrupts a call the
-  pane serves, the mod's `.catch` refuses the call rather than passing it to
-  the bridge, which knows no spec in that mode.
+## 3. Specs, doc refs and files
 
-The mode comes from the plugin's `mode` option. `/specview-mode` changes it for
-the session; the value lives in session state (`$.state`) and survives a reload
-of the mod.
+`spec_show` loads a spec as the bridge's `specsrc.LoadRoot` does: a markdown
+file, or a folder whose markdown files are listed up to 3 levels deep, dot
+entries skipped. In a folder the primary file is `primary`, else
+`proposal.md`, `spec.md`, `README.md`, else the first file. `changed` names
+other files of a folder that changed. The result lists each file as an
+artifact; the kind is always `other`, since the mod does not infer kinds.
 
-## 3. Questions in `pane` mode
+`doc_refs` in `focus` and in each question resolve as the bridge's
+`resolveDocs`: a path relative to the folder of a folder spec, else to the
+project directory; no path means the primary file. The file must be markdown,
+inside the folder for a folder spec, and hold the quote.
+
+## 4. Questions
 
 - **Input.** `ask` checks its input with the rules of `internal/validate`
-  (1-6 questions, 2-6 options, at most one recommended, refs required, quote
-  length) and turns a "(Recommended)" label suffix into the flag. Each
-  question's quote and code refs are resolved as `focus` resolves them; any
-  problem fails the call with the bridge's "fix these and call again" list.
+  (`plugin/hooks/validate.ts`: 1-6 questions, 2-6 options, at most one
+  recommended, refs required, quote length) and turns a "(Recommended)" label
+  suffix into the flag. Each question's quote, doc refs and code refs are
+  resolved as `focus` resolves them.
 - **Waiting.** The question set is stored in session state and the pane shows
   it. The `tool.call` hook then waits for the person's choice, checking once a
   second, for up to 10 minutes (the bridge's `AI_SPECVIEW_ASK_WAIT` default).
@@ -75,15 +83,15 @@ of the mod.
   and messages: `answered` with `answers` (and `deferred` for "Decide later"),
   `in_chat` for "Back to chat", which also copies the questions to the
   clipboard, and `dismissed` for "Skip". "Send answers" names the questions
-  still unanswered and goes to the first.
+  still unanswered and goes to the first. There is no `keep_open`.
 - **`spec_done`.** Checks the summary's length (8,000 bytes), clears the focus
   and shows a "Spec finished" banner with the summary. The next `spec_show` or
   `ask` reopens the spec.
 
-## 4. Matching without the bridge
+## 5. Matching without the bridge
 
-`hooks/spec.ts` is the subset of `internal/specsrc` and `internal/resolve` that
-`pane` mode needs:
+`plugin/hooks/spec.ts` is the subset of `internal/specsrc` and
+`internal/resolve` the pane needs:
 
 - Headings, with inline code marks dropped as the bridge drops them.
 - Quotes: exact, then with runs of whitespace collapsed. No fuzzy stage and no
@@ -92,38 +100,40 @@ of the mod.
   expression over the file (`func`, method receiver, `type`, `var`, `const`),
   doc comment included. A symbol in another file of the package is not found.
 
-## 5. The pane
+## 6. The pane
 
 | Part | What it does |
 |---|---|
-| Header | Spec path; the mode, where the last update came from and the quote match |
-| Section picker | `Select` over "Whole spec" and every heading, indented by level; changed sections are marked |
-| Changed buttons | One per entry of `changed_sections`; shows that section |
-| Back to the focus | Shown when another section is picked |
-| Spec column | The section shown, as markdown. The block that holds the quote is drawn in a yellow frame with the quote in bold |
-| Side column | In `pane` mode, the question form; then one `Button` tab per code ref and the `Code` of the active one, with line numbers |
+| Header | The file shown; the spec it belongs to when that is another file; the quote match |
+| File picker | `Select` over the spec's files and any other file a doc ref quotes, marked "(changed)" and "(quoted)"; shown when there is more than one |
+| Section picker | `Select` over "Whole spec" (or "Whole file") and every heading of the file shown, indented by level; changed sections are marked |
+| Buttons | One per changed section; "Quote in …" per doc ref in another file; "Back to the focus" or "Back to the question" after the person moved away |
+| Spec column | The section shown, as markdown. The block that holds the quote is framed in yellow, with the quote in bold |
+| Side column | The question form while questions wait; then one `Button` tab per code ref and the `Code` of the active one, with line numbers |
 | Banner | After `spec_done`, "Spec finished" with the summary |
 
 - **Columns.** Side by side (55% and 45%) when the pane is docked and at least
   100 cells wide. Otherwise the question form comes first, then the spec, then
   the code.
-- **The current question.** While questions wait, the spec and code columns
-  show the current question's quote and code, and moving between questions
-  moves the section shown.
+- **Where it opens.** A focus or a question opens on the primary quote's
+  section, else on the first doc ref's file and section. Moving between
+  questions moves the pane with them, and the pane scrolls the frame into view.
 - **Focus block.** `splitAround` cuts the section into before, focus and after
-  at blank lines outside code fences, so each part is whole markdown. After a
-  `focus` the pane scrolls the frame into view.
-- **State.** `view` holds the last spec and focus; `ui` holds the section shown
-  and the code tab; `ask` holds the question set, the drafts and the outcome. Both are session state with a shape tag, so a reload keeps
-  them and a changed shape discards the old value.
+  at blank lines outside code fences, so each part is whole markdown.
+- **State.** `view` holds the spec, its files and the last focus; `ui` holds
+  the file and section shown and the code tab; `ask` holds the question set,
+  the drafts and the outcome. All are session state with a shape tag, so a
+  reload keeps them and a changed shape discards the old value. A file other
+  than the primary is read when the pane draws.
 
-## 6. Tests
+## 7. Tests
 
-`claude plugin test ./plugin-pane` runs `tests/pane.test.tsx` against Claude
-Code's test kit. It covers the three modes, the error paths, the column layout at
-two widths, the section picker, the code tabs, the block splitter, the symbol
-lookup, and in `pane` mode answering, "Decide later", "Back to chat", "Skip",
-the `pending` timeout and `ask_wait`, input checks, the `AskUserQuestion` block
-and the `spec_done` banner. The tests use `mock.clock`, which holds the wait
-until the test moves the clock. The test kit does not check an MCP tool's
-result shape; the live run did.
+`claude plugin test ./plugin` runs `plugin/tests/pane.test.tsx` against
+Claude Code's test kit. It covers the layout at two widths, the section and
+file pickers, code tabs, doc refs in a file and in a folder spec, the error
+paths, answering, "Decide later", "Back to chat", "Skip", the `pending` timeout
+and `ask_wait`, input checks, the `AskUserQuestion` block and the `spec_done`
+banner. The tests use `mock.clock`, which holds each pause until the test
+moves the clock. The test kit does not check an MCP tool's result shape, and
+its clock costs no real time, so the result format and the time cap were
+found in live runs.

@@ -19,7 +19,7 @@ daemon are one Go binary, `ai-specview`.
 | 3 | [03-app-web.md](03-app-web.md) | `ai-specview serve`: the Go web viewer daemon (UI + state) |
 | 4 | [04-skill-integration.md](04-skill-integration.md) | Wiring it into Claude Code: MCP config, skill rules, hooks |
 | 5 | [05-milestones.md](05-milestones.md) | Build order, acceptance criteria, testing, risks |
-| 6 | [06-pane-mod.md](06-pane-mod.md) | `ai-specview-pane`: the Claude Code mod that draws the spec and code in a pane |
+| 6 | [06-pane-mod.md](06-pane-mod.md) | The pane: the Claude Code mod and the `spec-elaborate-mod` skill that show the spec, code and questions beside the chat |
 
 Read 00 → 01 first. 02 and 03 can then be built in parallel against 01.
 
@@ -33,7 +33,6 @@ ai-specview/
 ├── internal/             # protocol, specsrc, resolve, daemon, render, hook, …
 ├── protocol/             # golden message fixtures + quote fixtures
 ├── .claude-plugin/       # marketplace.json: this repo is a plugin marketplace
-├── plugin/               # the Claude Code plugin: MCP server, skill, hook
-├── plugin-pane/          # the pane mod: spec and code in a pane beside the chat
+├── plugin/               # the Claude Code plugin: MCP server, skills, hook, pane mod
 └── examples/             # manual setup: .mcp.json, settings, CLAUDE.md snippet
 ```

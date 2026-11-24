@@ -57,19 +57,14 @@ twice: `claude mcp remove ai-specview`, the `ai-specview hook` entry in
 
 Also raise the MCP tool timeout (see below); a plugin can't set it.
 
-### Optional: the pane
+### The pane instead of the browser
 
-`ai-specview-pane` is a Claude Code mod that shows the spec, the code and the
-questions in a pane beside the chat, as well as or instead of the browser page:
-
-```bash
-claude plugin install ai-specview-pane@ai-specview
-```
-
-Its `mode` option is `both` (default: the browser page and the pane), `pane`
-(the pane alone, questions included, with no daemon) or `browser`. `/specview-mode`
-changes it for one session. See [plugin-pane/README.md](plugin-pane/README.md)
-and [docs/06-pane-mod.md](docs/06-pane-mod.md).
+The plugin has a second skill, `ai-specview:spec-elaborate-mod`. It runs the
+same workflow, but shows the spec, the code and the questions in a pane beside
+the chat instead of the browser page. The pane is a Claude Code mod in the
+plugin; it needs neither the binary nor the daemon. Ask for the pane (for
+example "spec this in the pane") or name the skill. `/specview-pane` opens the
+pane again after you close it. See [docs/06-pane-mod.md](docs/06-pane-mod.md).
 
 ### Manual setup
 
@@ -196,8 +191,8 @@ bridge processes against a real daemon, restarts and kills it, and resumes a
 session (also skipped with `-short`).
 
 Check the plugin with `claude plugin validate ./plugin` and the marketplace
-with `claude plugin validate .`. The pane mod has its own checks:
-`claude plugin validate ./plugin-pane` and `claude plugin test ./plugin-pane`.
+with `claude plugin validate .`. `claude plugin test ./plugin` runs the pane
+mod's tests.
 
 ## Status
 
@@ -211,9 +206,10 @@ implemented. Differences from the plan:
 - The daemon also answers `ping` and `shutdown` messages, used by
   `serve` for its single-instance check and `--restart`.
 
-The pane mod (`plugin-pane/`, [docs/06-pane-mod.md](docs/06-pane-mod.md)) is a
-prototype. In `pane` mode it asks the questions itself; it has no review step
-and does not show `doc_refs` into other files.
+The pane (`ai-specview:spec-elaborate-mod`,
+[docs/06-pane-mod.md](docs/06-pane-mod.md)) is a prototype: its quote matching
+has no fuzzy stage, Go symbols are found by a regular expression, and its
+question form has no review step.
 
 Not done yet: the change-folder skill steps and the `openspec status`
 integration (M8), the handoff command (M9), and the dogfood sessions the

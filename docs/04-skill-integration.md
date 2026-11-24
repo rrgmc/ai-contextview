@@ -5,7 +5,9 @@ How a spec-elaboration skill uses ai-specview.
 ## 1. Register the MCP server
 
 The plugin in `plugin/` registers the MCP server, the skill and the hook in one
-step (README, "Install"). The rest of this section describes the manual setup.
+step (README, "Install"). Its second skill, `spec-elaborate-mod`, uses the pane
+mod's own tools instead of the MCP server (06). The rest of this section
+describes the manual setup.
 
 Install the binary with `go install github.com/rrgmc/ai-specview/cmd/ai-specview@latest`
 (it must be on the `PATH` Claude Code sees), then register it per project in

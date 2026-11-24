@@ -1,5 +1,3 @@
-export type Mode = 'both' | 'pane' | 'browser'
-
 /** One block of code the pane shows. */
 export type CodeView = {
   path: string
@@ -16,18 +14,34 @@ export type QuoteView = {
   quoteSection: string
 }
 
+/** A quote in another markdown file of the spec, from doc_refs. */
+export type DocRefView = QuoteView & {
+  /** The file, absolute. */
+  path: string
+  /** Offset of the heading of the quote's section in that file, or -1. */
+  shownAt: number
+}
+
 /** What the model last showed: the spec, the focused passage and the code. */
 export type SpecView = QuoteView & {
+  /** The primary file, absolute. */
   specPath: string
   title: string
+  /** The folder the spec's paths are relative to: the folder given, or the file's own. */
+  dir: string
+  isDir: boolean
+  /** Every markdown file of a folder spec, absolute, the primary first; for a file, that file. */
+  files: string[]
+  /** Files of a folder spec the last spec_show named as changed, absolute. */
+  changedFiles: string[]
+  /** Quotes of the last focus in files other than the primary. */
+  docs: DocRefView[]
   /** The whole primary spec file, as read at the last spec_show, focus or ask. */
   text: string
   changedSections: string[]
   /** How the quote was found: exact, normalized, or none. */
   match: string
   code: CodeView[]
-  /** Where the last update came from: the MCP bridge or the pane alone. */
-  via: 'bridge' | 'pane'
   error: string
   /** True after spec_done, until the next spec_show or ask. */
   isDone: boolean
@@ -46,6 +60,7 @@ export type QuestionView = QuoteView & {
   multi: boolean
   allowOther: boolean
   code: CodeView[]
+  docs: DocRefView[]
 }
 
 /** What the person has entered for one question so far. */
@@ -83,6 +98,8 @@ export type AskView = {
 
 /** What the person picked in the pane. */
 export type PaneUi = {
+  /** The file shown, absolute; empty for the primary file. */
+  file: string
   /** Offset of the heading of the section shown, or -1 for the whole spec. */
   shown: number
   /** Index of the code tab shown. */
@@ -91,9 +108,8 @@ export type PaneUi = {
 
 declare module 'claude-code' {
   interface PluginState {
-    'ai-specview-pane': {
+    'ai-specview': {
       view: Shaped<SpecView | null>
-      mode: Shaped<Mode | null>
       ui: Shaped<PaneUi>
       ask: Shaped<AskView | null>
     }

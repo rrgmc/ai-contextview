@@ -12,7 +12,7 @@ once M0 is done. M0–M7 are the POC; M8–M9 are the change-folder workflow (00
 | M6 | Done, except the dogfood session with 3+ rounds on a real project. |
 | M7 | Done. `internal/e2e/multi_test.go` is the scripted three-session test. |
 | M8, M9 | Not started. |
-| Pane mod | Prototype in `plugin-pane/` (06). In `pane` mode it serves every tool, questions included, with no daemon. |
+| Pane mod | Prototype in `plugin/` with the `spec-elaborate-mod` skill (06). It serves its own tools, questions and doc refs included, with no daemon. |
 
 What changed from the plan while building and using it:
 
@@ -43,9 +43,9 @@ What changed from the plan while building and using it:
   an unfinished spec open, so other sessions keep it (04, section 2).
 - **Install.** The module path is the repository path, and the MCP server,
   skill and hook ship as a Claude Code plugin (README).
-- **Pane mod.** A second plugin, `ai-specview-pane`, draws the spec and code
-  in a Claude Code pane. In `both` mode it mirrors the bridge; in `pane` mode
-  it serves every tool itself and asks the questions in the pane (06).
+- **Pane mod.** The plugin also holds a Claude Code mod that draws the spec,
+  the code and the questions in a pane beside the chat, with its own tools and
+  its own skill, `spec-elaborate-mod` (06).
 - **Versions come from git tags.** The binary has no version constant. It
   reads the version Go records at build time: the module version for
   `go install …@v1.2.3`, and the tag, a pseudo-version or `+dirty` for a build
