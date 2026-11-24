@@ -61,6 +61,12 @@ Result:
  ]}
 ```
 
+The result also has `url`, the viewer page of the session, and by default
+`"open": "pane"`: the caller opens `url` in the built-in browser pane of the
+Claude desktop app, when that pane is available. `AI_SPECVIEW_OPEN=browser` or
+`never` leaves `open` out. Without the pane, the bridge opens the default
+browser at the first `ask` (see `ask_shown` with `viewers: 0`).
+
 `sections` is always the primary file's headings, so single-file callers can
 ignore `artifacts`. Returning headings lets Claude use exact section names
 later.
@@ -268,7 +274,9 @@ Error codes: `bad_request`, `file_not_found`, `not_markdown`, `empty_folder`,
   happens if the file changed between the pre-check and the show.
 - **`ask_shown` with `viewers: 0`**: the bridge opens the workspace `url` in the
   default browser (unless `AI_SPECVIEW_OPEN=never`), so a question never waits on a
-  page nobody is looking at.
+  page nobody is looking at. A page open in the desktop app's browser pane
+  counts as a viewer, so by default the default browser opens only when there
+  is no pane.
 - **If the daemon restarts,** the bridge reconnects, re-sends `hello` with the
   same `ws`, re-sends the last `spec_show`, any pending `ask`, and the last
   `done` (unless an `ask` came after it).

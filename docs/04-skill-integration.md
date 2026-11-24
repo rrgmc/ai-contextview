@@ -85,7 +85,10 @@ beside the chat.
 
 - At the start, as soon as the spec file path is known (created or existing),
   call `spec_show(path)`. Use the returned section names when you refer to
-  sections later. Tell the user the viewer `url` from the result once.
+  sections later. Tell the user the viewer `url` from the result once. If the
+  result has `open: "pane"` (the default) and the built-in browser tools are
+  available, open `url` in the browser pane, unless the user asked for their
+  own browser.
 - After every change you make to the spec file, call
   `spec_show(path, changed_sections=[...])` with the headings you changed.
 - Ask **every** clarifying question with the `ask` tool, never in plain chat

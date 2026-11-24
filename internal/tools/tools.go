@@ -40,7 +40,10 @@ type Bridge struct {
 	AskWait time.Duration
 	// Open opens a URL in the browser; nil never opens.
 	Open func(url string)
-	Logf func(format string, args ...any)
+	// OpenIn is reported in the spec_show result: OpenPane asks Claude to open
+	// the viewer in the built-in browser pane (see OpenInFromEnv).
+	OpenIn string
+	Logf   func(format string, args ...any)
 
 	mu      sync.Mutex
 	root    *specsrc.Root
@@ -56,7 +59,24 @@ const (
 		"continue without the decision, and ask them again before finishing."
 )
 
+// OpenPane asks Claude to open the viewer in the built-in browser pane of the
+// Claude desktop app. It is the default; AI_SPECVIEW_OPEN=browser or never
+// turns it off.
+const OpenPane = "pane"
+
+// OpenInFromEnv returns OpenPane unless AI_SPECVIEW_OPEN is set to another
+// value than pane (browser or never).
+func OpenInFromEnv() string {
+	switch os.Getenv("AI_SPECVIEW_OPEN") {
+	case "", OpenPane:
+		return OpenPane
+	}
+	return ""
+}
+
 // OpenBrowser opens a URL with the platform opener unless AI_SPECVIEW_OPEN=never.
+// It also opens with the pane default: the bridge calls it only when no page
+// is open, so it is the fallback when there is no pane.
 func OpenBrowser(url string) {
 	if os.Getenv("AI_SPECVIEW_OPEN") == "never" {
 		return
@@ -87,7 +107,8 @@ func Register(s *mcp.Server, b *Bridge) {
 		Name: "spec_show",
 		Description: "Show a spec in the ai-specview viewer (a browser page beside the chat). " +
 			"Call it as soon as the spec path is known and again after every edit, with the headings you changed. " +
-			"The path is a markdown file or a folder of markdown artifacts. Returns the section names and the viewer url.",
+			"The path is a markdown file or a folder of markdown artifacts. Returns the section names and the viewer url. " +
+			"If the result has open: \"pane\", open the url in the built-in browser pane when that tool is available.",
 	}, b.SpecShow)
 	mcp.AddTool(s, &mcp.Tool{
 		Name: "focus",
@@ -155,7 +176,7 @@ func (b *Bridge) SpecShow(ctx context.Context, _ *mcp.CallToolRequest, in protoc
 	if err := reply.Decode(&res); err != nil {
 		return nil, out, err
 	}
-	out = protocol.SpecShowOutput{OK: true, URL: b.Daemon.URL(), Primary: res.Primary, Sections: res.Sections, Artifacts: res.Artifacts}
+	out = protocol.SpecShowOutput{OK: true, URL: b.Daemon.URL(), Open: b.OpenIn, Primary: res.Primary, Sections: res.Sections, Artifacts: res.Artifacts}
 	if out.Sections == nil {
 		out.Sections = []string{}
 	}

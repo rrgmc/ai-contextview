@@ -79,6 +79,25 @@ plugin; it needs neither the binary nor the daemon. Ask for the pane (for
 example "spec this in the pane") or name the skill. `/specview-pane` opens the
 pane again after you close it. See [docs/06-pane-mod.md](docs/06-pane-mod.md).
 
+### The browser page inside the desktop app
+
+In the Claude desktop app, Claude opens the browser viewer in the app's
+built-in browser after the first `spec_show`. The app may ask you to allow
+`127.0.0.1` the first time. Where there is no built-in browser (the CLI, an
+IDE), your default browser opens at the first question.
+
+To use your default browser in the desktop app too, set
+`AI_SPECVIEW_OPEN=browser` in the `env` block of your Claude Code settings,
+or ask for it in the prompt:
+
+```json
+{
+  "env": {
+    "AI_SPECVIEW_OPEN": "browser"
+  }
+}
+```
+
 ### Manual setup
 
 Without the plugin, the binary must be on the `PATH` that Claude Code sees.
@@ -172,7 +191,7 @@ directory within 2 hours takes the old workspace over.
 | Variable | Default | Meaning |
 |---|---|---|
 | `AI_SPECVIEW_ASK_WAIT` | `10m` | How long `ask` blocks before returning `pending`. |
-| `AI_SPECVIEW_OPEN` | | `never` stops the bridge from opening the browser when no page is open. |
+| `AI_SPECVIEW_OPEN` | `pane` | `pane` asks Claude to open the viewer in the built-in browser of the Claude desktop app; without it, the default browser opens when no page is open. `browser` always uses the default browser. `never` opens nothing. |
 | `AI_SPECVIEW_SOCKET` | see below | Socket path shared by bridge and daemon. |
 | `AI_SPECVIEW_ADDR` | `127.0.0.1:7878` | Daemon HTTP address. |
 | `AI_SPECVIEW_DAEMON` | | Command the bridge runs instead of `ai-specview serve --detach` (for example `ai-specview fakeapp`). |

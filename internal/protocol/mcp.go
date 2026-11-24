@@ -15,6 +15,7 @@ type SpecShowInput struct {
 type SpecShowOutput struct {
 	OK        bool       `json:"ok"`
 	URL       string     `json:"url,omitempty" jsonschema:"the viewer page for this session"`
+	Open      string     `json:"open,omitempty" jsonschema:"where the user wants the viewer: pane means open url in the built-in browser pane when one is available"`
 	Primary   string     `json:"primary"`
 	Sections  []string   `json:"sections" jsonschema:"headings of the primary file"`
 	Artifacts []Artifact `json:"artifacts"`

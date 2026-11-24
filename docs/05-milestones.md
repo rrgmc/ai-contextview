@@ -52,6 +52,11 @@ What changed from the plan while building and using it:
   whether to move it into `docs/specs/`. This needed no code change: the
   tools already accept absolute paths outside the repository, and code refs
   stay relative to the session's folder.
+- **Viewer in the desktop app's browser.** By default `spec_show` returns
+  `open: "pane"` and the `spec-elaborate` skill opens the viewer `url` in the
+  Claude desktop app's built-in browser. `AI_SPECVIEW_OPEN=browser` turns
+  this off. The bridge still opens the default browser when no page is open
+  at an `ask`, so the CLI and IDEs work as before.
 - **Versions come from git tags.** The binary has no version constant. It
   reads the version Go records at build time: the module version for
   `go install …@v1.2.3`, and the tag, a pseudo-version or `+dirty` for a build

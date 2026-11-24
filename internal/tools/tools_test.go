@@ -78,6 +78,25 @@ func (e *env) show(t *testing.T) {
 	assert.Contains(t, out.URL, "/w/ws_test")
 }
 
+func TestSpecShowOpenIn(t *testing.T) {
+	e := setup(t, nil)
+	_, out, err := e.bridge.SpecShow(context.Background(), nil, protocol.SpecShowInput{Path: "docs/spec.md"})
+	require.NoError(t, err)
+	assert.Empty(t, out.Open)
+
+	e.bridge.OpenIn = OpenPane
+	_, out, err = e.bridge.SpecShow(context.Background(), nil, protocol.SpecShowInput{Path: "docs/spec.md"})
+	require.NoError(t, err)
+	assert.Equal(t, OpenPane, out.Open)
+}
+
+func TestOpenInFromEnv(t *testing.T) {
+	for value, want := range map[string]string{"": OpenPane, "pane": OpenPane, "browser": "", "never": ""} {
+		t.Setenv("AI_SPECVIEW_OPEN", value)
+		assert.Equal(t, want, OpenInFromEnv(), "AI_SPECVIEW_OPEN=%q", value)
+	}
+}
+
 func question(quote string) protocol.AskInput {
 	return protocol.AskInput{Title: "T", Questions: []protocol.QuestionInput{{
 		ID: "q1", Text: "Reset?", Options: []protocol.Option{{Label: "Yes"}, {Label: "No"}},

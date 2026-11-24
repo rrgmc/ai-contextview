@@ -17,7 +17,8 @@ The user sees each question next to the spec passage and the code it is about.
    repository, unless the user asks for a draft (see **Draft specs**).
 2. **Show it.** As soon as the file exists, call `spec_show(path)`. Tell the
    user the viewer `url` from the result, once. Use the returned section names
-   when you refer to sections.
+   when you refer to sections. Open the viewer in the built-in browser when
+   the result has `open: "pane"` (see **Built-in browser**).
 3. **Read the relevant code.** Find the packages, types and functions the
    change touches. Note the exact symbols; you will cite them in questions.
 4. **Draft.** Fill in the sections you can from the request and the code. Put
@@ -49,6 +50,23 @@ The user sees each question next to the spec passage and the code it is about.
    changes later, just continue; the next `ask` reopens the session.
    For a draft spec, ask whether to move it into the repository before
    calling `spec_done` (see **Draft specs**).
+
+## Built-in browser
+
+The Claude desktop app has a built-in browser (its tools are named
+`mcp__Claude_Browser__*`). Open the viewer there, once per session, when
+the `spec_show` result has `open: "pane"` (the default), unless the user asked
+for their own browser. Also open it there when the user asks for the built-in
+browser and `open` is missing.
+
+- If the built-in browser tools are available, open the `url` from the
+  `spec_show` result with `preview_start` (pass `url`). If the user must allow
+  the site first, say so in one line.
+- If they are not available (the CLI, an IDE), do nothing. The bridge opens
+  the default browser at the first `ask` when no page is open.
+- Do not use that browser tab for other work during the session, so the
+  viewer stays on screen. Open another tab if you need one.
+- Open it again only if the user asks, for example after closing it.
 
 ## Draft specs
 

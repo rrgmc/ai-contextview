@@ -61,7 +61,9 @@ Dependencies:
 3. Remember it as `currentRoot` (used to resolve doc ref paths, for quote
    pre-checks, and for replay after reconnect).
 4. Forward `spec_show`, wait for `result`, and return it. The result also
-   includes `url`, so Claude can tell the user where the viewer is.
+   includes `url`, so Claude can tell the user where the viewer is. Unless
+   `AI_SPECVIEW_OPEN` is `browser` or `never`, it includes `open: "pane"`,
+   and the skill opens `url` in the desktop app's browser pane.
 
 ### `focus`
 Validate → fold `spec_quote` into `doc_refs` → pre-check and resolve doc refs →
