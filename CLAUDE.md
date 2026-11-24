@@ -89,6 +89,11 @@ Versions come from git tags (`cmd/ai-specview/version.go`). To release, tag
 `master` with `vX.Y.Z` and push the tag; `go install …@latest` then picks it
 up. The plugin versions in `plugin.json` are separate.
 
+A change that users notice adds a file to `changelog.d/` (one per branch);
+never edit `CHANGELOG.md` directly outside a release. Before tagging, merge
+the files into `CHANGELOG.md` as
+[changelog.d/README.md](changelog.d/README.md) describes.
+
 To try a change locally, install it and replace the running daemon:
 
 ```bash
