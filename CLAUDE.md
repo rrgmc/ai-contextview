@@ -78,9 +78,9 @@ go test ./...
 - A protocol change updates the structs, `protocol/fixtures/` and
   docs/01-protocol.md together.
 - After changing `plugin/` or `.claude-plugin/`, run
-  `claude plugin validate ./plugin` and `claude plugin validate .`. Bump
-  `version` in `plugin/.claude-plugin/plugin.json` when plugin files change,
-  or installed copies keep the cached version.
+  `claude plugin validate ./plugin` and `claude plugin validate .`. Never
+  edit `version` in `plugin/.claude-plugin/plugin.json` by hand: it is the
+  release version, and only the release command sets it.
 - After changing the pane mod (`plugin/hooks/*.ts*`, `plugin/types/`), also
   run `claude plugin test ./plugin`. Its tools mirror the bridge's, so a
   changed tool input, result or message updates `plugin/hooks/tools.ts` and
@@ -97,8 +97,10 @@ Versions come from git tags (`cmd/ai-specview/version.go`). To release, run
 `go run ./tools/changelog release X.Y.Z`, commit, then tag `master` with
 `vX.Y.Z` and push the tag. The `Release` workflow checks the changelog, tests,
 builds the binaries and creates the GitHub release
-([changelog.d/README.md](changelog.d/README.md)). The plugin versions in
-`plugin.json` are separate.
+([changelog.d/README.md](changelog.d/README.md)). The release command also
+sets `version` in `plugin/.claude-plugin/plugin.json` to `X.Y.Z`, and the
+workflow fails unless the two match. Installed plugins update only when that
+version changes, so plugin changes reach users at the next release.
 
 A change that users notice adds a file to `changelog.d/` (one per branch);
 never edit `CHANGELOG.md` directly outside a release. Before tagging, merge

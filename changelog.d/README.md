@@ -32,8 +32,9 @@ with no visible effect (refactoring, tests, internal docs) needs no entry.
    This adds a `## [X.Y.Z] - YYYY-MM-DD` section under `## [Unreleased]`, with
    the entries of every change file grouped under one heading per kind, in the
    order listed above. It updates the compare links at the end of the file and
-   deletes the change files, keeping this `README.md`. `-date` sets another
-   date.
+   deletes the change files, keeping this `README.md`. It also sets
+   `version` in `plugin/.claude-plugin/plugin.json` to `X.Y.Z`, so the plugin
+   and the release share one version. `-date` sets another date.
 2. Read the result, commit it and fast-forward `master` to it.
 3. Tag that commit on `master` and push the tag:
 
@@ -43,7 +44,8 @@ with no visible effect (refactoring, tests, internal docs) needs no entry.
 
 The `Release` workflow (`.github/workflows/release.yml`) then runs. It stops
 unless the tag is on `master` and `go run ./tools/changelog check vX.Y.Z`
-passes, which needs the `[X.Y.Z]` section and links and no change files left.
+passes, which needs the `[X.Y.Z]` section and links, no change files left and
+the plugin version `X.Y.Z`.
 It runs the tests, builds `ai-specview` for Linux and macOS (amd64 and arm64),
 and creates the GitHub release with the archives and the `[X.Y.Z]` section as
 its notes. A tag with a suffix such as `v1.2.3-rc.1` is marked as a

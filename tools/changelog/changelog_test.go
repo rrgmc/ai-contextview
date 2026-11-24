@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -58,10 +59,21 @@ See [changelog.d/](changelog.d/).
 [0.5.0]: https://github.com/o/r/releases/tag/v0.5.0
 `
 
+const manifest = `{
+  "name": "p",
+  "version": "0.2.0",
+  "author": {
+    "name": "A"
+  }
+}
+`
+
 func writeRepo(t *testing.T, entries map[string]string) string {
 	t.Helper()
 	root := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(root, "CHANGELOG.md"), []byte(before), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(root, filepath.Dir(pluginManifest)), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(root, pluginManifest), []byte(manifest), 0o644))
 	dir := filepath.Join(root, "changelog.d")
 	require.NoError(t, os.Mkdir(dir, 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("# Readme\n"), 0o644))
@@ -81,12 +93,17 @@ func TestReleaseCheckNotes(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no [0.6.0] section")
 	assert.Contains(t, err.Error(), "a.md is not merged")
+	assert.Contains(t, err.Error(), "has version 0.2.0, want 0.6.0")
 
 	require.NoError(t, run([]string{"release", "-root", root, "-date", "2026-12-01", "0.6.0"}))
 
 	got, err := os.ReadFile(filepath.Join(root, "CHANGELOG.md"))
 	require.NoError(t, err)
 	assert.Equal(t, after, string(got))
+
+	plugin, err := os.ReadFile(filepath.Join(root, pluginManifest))
+	require.NoError(t, err)
+	assert.Equal(t, strings.Replace(manifest, `"0.2.0"`, `"0.6.0"`, 1), string(plugin))
 
 	left, err := entryFiles(filepath.Join(root, "changelog.d"))
 	require.NoError(t, err)
@@ -130,4 +147,22 @@ func TestNormVersion(t *testing.T) {
 
 	_, err = normVersion("1.2")
 	assert.Error(t, err)
+}
+
+func TestSetPluginVersion(t *testing.T) {
+	out, err := setPluginVersion(manifest, "1.2.3-rc.1")
+	require.NoError(t, err)
+	v, err := pluginVersion(out)
+	require.NoError(t, err)
+	assert.Equal(t, "1.2.3-rc.1", v)
+
+	_, err = setPluginVersion(`{"name": "p"}`, "1.0.0")
+	assert.ErrorContains(t, err, "has no version")
+	_, err = setPluginVersion(`{"version": "1", "x": {"version": "2"}}`, "1.0.0")
+	assert.ErrorContains(t, err, "2 \"version\" fields")
+	_, err = setPluginVersion(`{`, "1.0.0")
+	assert.Error(t, err)
+
+	assert.NoError(t, checkPlugin(out, "1.2.3-rc.1"))
+	assert.ErrorContains(t, checkPlugin(manifest, "1.2.3"), "has version 0.2.0, want 1.2.3")
 }
