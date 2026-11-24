@@ -58,11 +58,45 @@ func CodeCSS() string {
 	var b strings.Builder
 	b.WriteString("/* light */\n")
 	b.WriteString(light.String())
-	d := dark.String()
+	d := dark.String() + inheritMissingColors(light.String(), dark.String())
 	b.WriteString("\n@media (prefers-color-scheme: dark) {\n")
 	b.WriteString(prefixRules(d, `:root:not([data-theme="light"]) `))
 	b.WriteString("}\n")
 	b.WriteString(prefixRules(d, `:root[data-theme="dark"] `))
+	return b.String()
+}
+
+// inheritMissingColors returns a "color: inherit" rule for every selector
+// that sets a text color in the light sheet but not in the dark one. Without
+// it, the light color (github's #1f2328 for names and punctuation) stays in
+// force on the dark background.
+func inheritMissingColors(light, dark string) string {
+	colored := func(css string) []string {
+		var sels []string
+		for _, line := range strings.Split(css, "\n") {
+			i := strings.Index(line, "{")
+			if i < 0 || !strings.Contains(strings.ReplaceAll(line[i:], "background-color:", ""), "color:") {
+				continue
+			}
+			sel := line[:i]
+			if j := strings.Index(sel, "*/"); j >= 0 {
+				sel = sel[j+2:]
+			}
+			sels = append(sels, strings.TrimSpace(sel))
+		}
+		return sels
+	}
+	inDark := map[string]bool{}
+	for _, sel := range colored(dark) {
+		inDark[sel] = true
+	}
+	var b strings.Builder
+	for _, sel := range colored(light) {
+		if !inDark[sel] {
+			inDark[sel] = true
+			b.WriteString(sel + " { color: inherit }\n")
+		}
+	}
 	return b.String()
 }
 

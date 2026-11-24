@@ -99,4 +99,8 @@ func TestCode(t *testing.T) {
 	css := CodeCSS()
 	assert.Contains(t, css, "prefers-color-scheme: dark")
 	assert.Contains(t, css, `:root[data-theme="dark"] .chroma`)
+	// github colors names and punctuation #1f2328; github-dark leaves them
+	// out, so the dark theme must not keep the light color.
+	assert.Contains(t, css, `:root[data-theme="dark"] .chroma .nx { color: inherit }`)
+	assert.Contains(t, css, `:root:not([data-theme="light"]) .chroma .p { color: inherit }`)
 }

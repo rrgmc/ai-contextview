@@ -9,6 +9,19 @@ docked panel that never blocks the rest of the page.
 The viewer is a local web page served by a Go daemon. The MCP server and the
 daemon are one binary, `ai-specview`. The plan and design are in [docs/](docs/README.md).
 
+![A question about the retry policy: the spec passage is highlighted on the left, the question panel and the code it is about are on the right](docs/images/question.png)
+
+After you answer, the Changes tab shows what Claude changed in the spec since
+your answers:
+
+![The Changes tab with the edited paragraphs of the spec](docs/images/changes.png)
+
+The page follows the system theme, and the ◐ button switches it:
+
+![The question page in the dark theme](docs/images/question-dark.png)
+
+The screenshots show the browser viewer with sample data.
+
 ## Install
 
 Install the binary from the latest release:
@@ -189,6 +202,14 @@ drive the question panel in headless Chrome; they are skipped when Chrome is
 not installed, or with `go test -short`. `internal/e2e/multi_test.go` runs three
 bridge processes against a real daemon, restarts and kills it, and resumes a
 session (also skipped with `-short`).
+
+The README screenshots in `docs/images/` are rendered in headless Chrome from
+the sample spec and code in `internal/daemon/testdata/screenshots/`. After a
+change to the page, render them again:
+
+```bash
+AI_SPECVIEW_SCREENSHOTS=docs/images go test -run TestScreenshots ./internal/daemon/
+```
 
 Check the plugin with `claude plugin validate ./plugin` and the marketplace
 with `claude plugin validate .`. `claude plugin test ./plugin` runs the pane
