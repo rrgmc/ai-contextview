@@ -54,7 +54,8 @@ What changed from the plan while building and using it:
   `master`. Pushing the tag runs the `Release` workflow: it checks that `changelog.d/` was merged into
   `CHANGELOG.md` (`tools/changelog`), runs the tests, builds Linux and macOS
   binaries and creates the GitHub release. The `CI` workflow tests every push
-  to `master` and every pull request.
+  to `master` and every pull request, except pushes that only change markdown
+  files or `docs/`, such as a release commit.
 - **Front end.** Plain JavaScript instead of htmx; the web server lives in
   `internal/daemon`. Browser tests in `internal/daemon/browser_test.go` drive
   the panel in headless Chrome.

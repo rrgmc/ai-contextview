@@ -3,6 +3,12 @@ name: CI
 on:
   push:
     branches: [master]
+    # A push that only changes docs or the changelog (a release commit, for
+    # one) skips CI; the Release workflow runs the tests itself. No test reads
+    # a markdown file of the repository.
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   pull_request:
   workflow_call:
 

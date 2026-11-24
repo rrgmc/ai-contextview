@@ -90,7 +90,8 @@ go test ./...
 
 The `CI` workflow (`.github/workflows/ci.yml`) runs gofmt, `go vet` and
 `go test -race ./...` on Linux and macOS for pushes to `master` and pull
-requests. It does not run the `claude plugin` checks.
+requests. A push to `master` that only changes markdown files or `docs/` skips
+it. It does not run the `claude plugin` checks.
 
 Versions come from git tags (`cmd/ai-specview/version.go`). To release, run
 `go run ./tools/changelog release X.Y.Z`, commit, then tag `master` with
