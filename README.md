@@ -243,6 +243,10 @@ integration (M8), the handoff command (M9), and the dogfood sessions the
 milestones ask for. The status per
 milestone is in [docs/05-milestones.md](docs/05-milestones.md).
 
+## Author
+
+Rangel Reale (<rreale-c@sibros.tech>)
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
