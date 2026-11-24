@@ -1,0 +1,1 @@
+{"v":1,"type":"hello_ack","re":"b1","body":{"daemon_version":"0.1.0","url":"http://127.0.0.1:7878/w/ws_B","adopted_from":"ws_A"}}

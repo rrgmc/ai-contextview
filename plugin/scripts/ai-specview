@@ -1,0 +1,20 @@
+#!/bin/sh
+# Finds the ai-specview binary and runs it with the given arguments. The plugin
+# does not ship the binary: install it with
+#   go install github.com/rrgmc/ai-specview/cmd/ai-specview@latest
+# The desktop app often starts Claude Code without the shell's PATH, so the Go
+# install directories are tried as well. AI_SPECVIEW_BIN overrides the search.
+for c in "$AI_SPECVIEW_BIN" "$(command -v ai-specview 2>/dev/null)" \
+         "${GOBIN:+$GOBIN/ai-specview}" "${GOPATH:+${GOPATH%%:*}/bin/ai-specview}" \
+         "$HOME/go/bin/ai-specview"; do
+	if [ -n "$c" ] && [ -x "$c" ]; then
+		exec "$c" "$@"
+	fi
+done
+if command -v go >/dev/null 2>&1; then
+	c="$(go env GOPATH 2>/dev/null | cut -d: -f1)/bin/ai-specview"
+	[ -x "$c" ] && exec "$c" "$@"
+fi
+echo "ai-specview: binary not found. Install it with: go install github.com/rrgmc/ai-specview/cmd/ai-specview@latest (or set AI_SPECVIEW_BIN)" >&2
+# Exit 1, not 2: for the hook, 2 would block the tool.
+exit 1

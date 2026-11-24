@@ -1,0 +1,11 @@
+{{define "history"}}{{if not .}}<p class="empty">No answered questions yet.</p>{{end}}{{range .}}
+<details class="hist">
+  <summary><span class="muted">{{hhmm .At}}</span> {{.Status}} · {{if .Title}}{{.Title}}{{else}}{{len .Questions}} question(s){{end}}</summary>
+  {{range .Questions}}<div class="hq">
+    <p class="qtext">{{.Text}}</p>
+    {{template "chips" .Chips}}
+    {{if .Later}}<p class="ans later-ans">→ decide later{{if .Answer.Notes}} <span class="muted">({{.Answer.Notes}})</span>{{end}}</p>
+    {{else if .Answer}}<p class="ans">→ {{join .Answer.Selected ", "}}{{if .Answer.Other}}{{if .Answer.Selected}}, {{end}}Other: {{.Answer.Other}}{{end}}{{if .Answer.Notes}} <span class="muted">({{.Answer.Notes}})</span>{{end}}</p>{{end}}
+    {{if .Keep}}<p class="muted small">kept as open question</p>{{end}}
+  </div>{{end}}
+</details>{{end}}{{end}}

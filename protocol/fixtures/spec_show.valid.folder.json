@@ -1,0 +1,1 @@
+{"v":1,"type":"spec_show","id":"b2","ws":"ws_A","body":{"root_abs":"/Users/r/src/shop/changes/004-jittered-retries","is_dir":true,"primary":"proposal.md","changed":[{"path":"adr/002-cap-resets-daily.md","sections":["Decision"]}]}}

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "ai-specview": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/ai-specview",
+      "args": ["mcp"]
+    }
+  }
+}

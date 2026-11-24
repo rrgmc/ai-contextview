@@ -1,0 +1,39 @@
+{{define "chips"}}<div class="chips">{{range .}}{{if eq .Kind "doc"}}<button type="button" class="chip chip-doc{{if .Bad}} bad{{end}}" data-doc="{{.Doc}}" data-ref="{{.Ref}}" title="{{.Title}}">{{.Label}}{{if .Badge}} <span class="badge">{{.Badge}}</span>{{end}}</button>{{else}}<button type="button" class="chip chip-code" data-path="{{.Path}}" data-start="{{.Start}}" data-end="{{.End}}" title="{{.Title}}">{{.Label}}</button>{{end}}{{end}}</div>{{end}}
+
+{{define "panel"}}<form class="qs" id="qs-form" data-qs="{{.ID}}" data-ws="{{.WS}}" data-count="{{.Count}}" data-title="{{.Title}}">
+ <div class="qs-inner">
+  <div class="qs-head">
+    <strong class="qs-title">{{if .Title}}{{.Title}}{{else}}Question{{end}}</strong>
+    {{if gt .Count 1}}<span class="qs-nav">
+    <button type="button" class="ghost qs-prev" title="Previous (Alt+←)">‹</button>
+    <span class="qs-pos">Q <span class="qs-cur">1</span>/{{.Count}}</span>
+    <button type="button" class="ghost qs-next" title="Next (Alt+→)">›</button>
+    <span class="qs-steps">{{range .Questions}}<button type="button" class="step" data-step="{{.Index}}">Q{{inc .Index}}</button>{{end}}</span>
+    </span>{{end}}
+  </div>
+  {{range .Questions}}
+  <section class="q" data-qid="{{.ID}}" data-index="{{.Index}}" {{if ne .Index 0}}hidden{{end}}>
+    <p class="qtext">{{.Text}}</p>
+    {{template "chips" .Chips}}
+    <div class="options">
+      {{$q := .}}{{range $i, $o := .Options}}
+      <label class="opt{{if $o.Recommended}} recommended{{end}}"><input type="{{if $q.Multi}}checkbox{{else}}radio{{end}}" name="sel.{{$q.ID}}" value="{{$o.Label}}"><span class="key">{{inc $i}}</span><span class="opt-body"><b>{{$o.Label}}</b>{{if $o.Recommended}} <span class="rec">Recommended</span>{{end}}{{if $o.Description}}<span class="desc">{{$o.Description}}</span>{{end}}</span></label>
+      {{end}}
+      {{if .Other}}<label class="opt other"><span class="key">✎</span><span class="opt-body">Other: <input type="text" name="other.{{.ID}}" class="other-input" autocomplete="off"></span></label>{{end}}
+      <label class="opt later" title="Leave this open for now. Claude adds it to the open questions and asks again before finishing."><input type="checkbox" name="later.{{.ID}}" value="1" class="later-input"><span class="key">⏸</span><span class="opt-body"><b>Decide later</b><span class="desc">Keep it as an open question; Claude asks again before finishing</span></span></label>
+    </div>
+    {{if .Multi}}<p class="muted small">Choose one or more.</p>{{end}}
+    <textarea name="notes.{{.ID}}" class="notes" rows="2" placeholder="Notes (optional)"></textarea>
+  </section>
+  {{end}}
+  <section class="review" hidden></section>
+  <div class="actions">
+    {{if gt .Count 1}}<button type="button" class="qs-next-btn" title="Next question (Alt+→)">Next ›</button>{{end}}
+    <button type="submit" class="primary" data-action="answer" title="Send your chosen answers to Claude (Ctrl/⌘+Enter)">{{if gt .Count 1}}Send answers{{else}}Send answer{{end}}</button>
+    <button type="button" data-action="in-chat" title="Answer these questions in the Claude chat instead. They are copied to your clipboard so you can paste them into your reply.">Back to chat</button>
+    <button type="button" class="ghost" data-action="dismiss" title="Skip these questions. Claude continues without these decisions.">Skip</button>
+    <span class="qs-hint small" role="status" hidden></span>
+  </div>
+  <p class="muted small keys">1–6 select · Ctrl/⌘+Enter send · Alt+←/→ move</p>
+ </div>
+</form>{{end}}

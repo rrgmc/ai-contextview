@@ -1,0 +1,61 @@
+{{define "page"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ai-specview · {{.Project}}</title>
+<link rel="icon" id="favicon" href="/static/favicon.svg">
+<link rel="stylesheet" href="/static/chroma.css">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body data-ws="{{.ID}}">
+<header class="top">
+  <a class="brand" href="/">ai-specview</a>
+  <span class="sep">·</span>
+  <span id="project">{{.Project}}</span>
+  <span class="sep">·</span>
+  <span id="docname" class="muted"></span>
+  <span id="pending-dot" class="dot" hidden title="A question is waiting">●</span>
+  <span id="oq" class="pill" hidden></span>
+  <span id="done-pill" class="pill ok" hidden>✓ Spec finished</span>
+  <span class="grow"></span>
+  <span id="ended" class="pill warn" hidden>Session ended</span>
+  <button id="dock-toggle" class="ghost" type="button" title="Show the questions beside the spec or below it">Questions below</button>
+  <button id="theme-toggle" class="ghost" type="button" title="Toggle light/dark">◐</button>
+</header>
+<main id="layout" class="layout">
+  <nav id="artifacts" class="artifacts" hidden></nav>
+  <section class="pane doc-pane">
+    <div class="pane-head"><span class="doc-tabs"><button type="button" class="dtab active" data-view="spec">Spec</button><button type="button" class="dtab" data-view="changes" title="What changed in this document">Changes<span id="chg-count"></span></button></span><span id="doc-title" class="muted">Spec</span><span class="grow"></span><a id="doc-jump" class="small" href="#" hidden title="Scroll back to the passage the current question is about">Show current passage</a><a id="doc-editor" class="ghost small" hidden>open in editor</a></div>
+    <div id="chg-bar" class="chg-bar" hidden>
+      <select id="chg-base" aria-label="Compare against">
+        <option value="answers">Since your last answers</option>
+        <option value="start">Since the session started</option>
+      </select>
+      <span class="seg"><button type="button" class="seg-btn active" data-mode="rendered">Rendered</button><button type="button" class="seg-btn" data-mode="source">Source</button></span>
+      <span id="chg-since" class="muted small"></span>
+    </div>
+    <article id="doc" class="doc"><p class="empty">Waiting for the spec…</p></article>
+    <article id="changes" class="doc changes" hidden></article>
+  </section>
+  <div class="splitter" id="split-v" title="Drag to resize"></div>
+  <section class="pane code-pane">
+    <div class="pane-head tabs" id="code-tabs"><span class="muted">No code yet</span></div>
+    <div id="code" class="code"></div>
+  </section>
+  <div class="splitter-h" id="split-h" title="Drag to resize"></div>
+  <section id="panel" class="panel">
+    <div class="panel-tabs">
+      <button type="button" class="ptab active" data-ptab="question">Question</button>
+      <button type="button" class="ptab" data-ptab="history">History <span id="history-count" class="muted"></span></button>
+      <span class="grow"></span>
+      <span id="panel-summary" class="muted"></span>
+    </div>
+    <div id="question" class="ptab-body"><p class="empty">No question right now.</p></div>
+    <div id="history" class="ptab-body" hidden></div>
+  </section>
+</main>
+<div id="toast" class="toast" hidden></div>
+<script src="/static/app.js"></script>
+</body>
+</html>{{end}}

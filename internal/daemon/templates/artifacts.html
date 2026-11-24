@@ -1,0 +1,1 @@
+{{define "artifacts"}}{{range .}}<div class="agroup"><div class="alabel">{{.Label}}</div>{{range .Items}}<button type="button" class="artifact{{if .Primary}} is-primary{{end}}" data-doc="{{.Path}}" title="{{.Path}}">{{.Name}}{{if .Changed}} <span class="chg">◆</span>{{end}}</button>{{end}}</div>{{end}}{{end}}

@@ -1,0 +1,65 @@
+[
+  {
+    "name": "exact plain sentence",
+    "source": "# Retry policy\n\nAll retries use exponential backoff capped at 30s. Jitter is added.\n",
+    "quote": "retries use exponential backoff capped at 30s",
+    "match": "exact",
+    "expect": "retries use exponential backoff capped at 30s"
+  },
+  {
+    "name": "bold, code and link inside the quote",
+    "source": "# Retry policy\n\nRetries use **exponential** backoff via `Retrier.Next`, see [the RFC](https://example.com/rfc).\n",
+    "quote": "Retries use exponential backoff via Retrier.Next, see the RFC",
+    "match": "normalized",
+    "expect": "Retries use **exponential** backoff via `Retrier.Next`, see [the RFC"
+  },
+  {
+    "name": "line break inside the quote",
+    "source": "# Design\n\nThe client keeps a per-host budget\nof retries that resets every minute.\n",
+    "quote": "keeps a per-host budget of retries that resets",
+    "match": "normalized",
+    "expect": "keeps a per-host budget\nof retries that resets"
+  },
+  {
+    "name": "smart quotes and dashes",
+    "source": "# Notes\n\nThe “fast path” — used for idempotent calls — skips the queue.\n",
+    "quote": "The \"fast path\" - used for idempotent calls - skips the queue",
+    "match": "normalized",
+    "expect": "The “fast path” — used for idempotent calls — skips the queue"
+  },
+  {
+    "name": "case and list bullets",
+    "source": "# Goals\n\n- Retry transient errors.\n- Never retry 4xx responses.\n",
+    "quote": "retry transient errors. never retry 4xx responses.",
+    "match": "normalized",
+    "expect": "Retry transient errors.\n- Never retry 4xx responses."
+  },
+  {
+    "name": "fuzzy: small typo in a long quote",
+    "source": "# Retry policy\n\nWhen the server answers 503 the client waits for the Retry-After header value before trying again.\n",
+    "quote": "When the server answers 503 the client waits for the Retry-After header valu before trying agian",
+    "match": "fuzzy",
+    "expect": "When the server answers 503 the client waits for the Retry-After header value before trying again"
+  },
+  {
+    "name": "fuzzy rejects a paraphrase",
+    "source": "# Retry policy\n\nWhen the server answers 503 the client waits for the Retry-After header value before trying again.\n",
+    "quote": "On overload responses we honour whatever delay the server suggests",
+    "match": "none"
+  },
+  {
+    "name": "heading fallback",
+    "source": "# Overview\n\nIntro.\n\n## Retry policy\n\nBackoff is exponential.\n\n## Errors\n\nNone.\n",
+    "quote": "something that is not in the document at all",
+    "section": "Retry policy",
+    "match": "heading",
+    "expect": "## Retry policy\n\nBackoff is exponential.\n\n"
+  },
+  {
+    "name": "quote across two paragraphs",
+    "source": "# Design\n\nFirst paragraph ends here.\n\nSecond paragraph starts here.\n",
+    "quote": "ends here. Second paragraph",
+    "match": "normalized",
+    "expect": "ends here.\n\nSecond paragraph"
+  }
+]

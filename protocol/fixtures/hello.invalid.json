@@ -1,0 +1,1 @@
+{"v":1,"type":"hello","id":"b1","ws":"ws_A","body":{"protocol":1,"ws":"ws_A","cwd":"relative/dir","claude_pid":4242,"bridge_pid":4300,"bridge_version":"0.1.0","project_name":"shop"}}

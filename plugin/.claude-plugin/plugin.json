@@ -1,0 +1,7 @@
+{
+  "name": "ai-specview",
+  "version": "0.1.0",
+  "description": "Shows the spec and the code side by side while Claude elaborates a spec, with a docked question panel. Needs the ai-specview binary: go install github.com/rrgmc/ai-specview/cmd/ai-specview@latest",
+  "author": { "name": "Rangel Reale" },
+  "repository": "https://github.com/rrgmc/ai-specview"
+}

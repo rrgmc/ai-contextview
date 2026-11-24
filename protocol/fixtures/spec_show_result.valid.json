@@ -1,0 +1,1 @@
+{"v":1,"type":"result","re":"b2","body":{"primary":"proposal.md","sections":["Overview","Retry policy"],"artifacts":[{"path":"proposal.md","kind":"spec","sections":["Overview","Retry policy"]},{"path":"adr/002-cap-resets-daily.md","kind":"adr","sections":["Context","Decision"]}]}}

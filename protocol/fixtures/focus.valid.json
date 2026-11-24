@@ -1,0 +1,1 @@
+{"v":1,"type":"focus","id":"b3","ws":"ws_A","body":{"docs":[{"path":"/Users/r/src/shop/changes/004/adr/002-cap-resets-daily.md","quote":"the cap resets at midnight UTC","kind":"adr"}],"code":[{"path":"/Users/r/src/shop/internal/sync/retry.go","start_line":41,"end_line":58,"symbol":"sync.(*Retrier).Next","kind":"method","source":"symbol"}]}}

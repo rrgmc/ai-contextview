@@ -1,0 +1,14 @@
+{
+  "name": "ai-specview",
+  "owner": {
+    "name": "Rangel Reale"
+  },
+  "description": "ai-specview: the spec and the code side by side while Claude elaborates a spec.",
+  "plugins": [
+    {
+      "name": "ai-specview",
+      "source": "./plugin",
+      "description": "Shows the spec and the code side by side while Claude elaborates a spec, with a docked question panel."
+    }
+  ]
+}

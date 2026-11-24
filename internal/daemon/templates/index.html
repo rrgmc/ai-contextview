@@ -1,0 +1,34 @@
+{{define "index"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ai-specview</title>
+<link rel="icon" href="/static/favicon.svg">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body class="index">
+<header class="top"><span class="brand">ai-specview</span><span class="sep">·</span><span class="muted">v{{.Version}}</span></header>
+<main class="index-main">
+  <h1>Sessions</h1>
+  {{if not .Items}}<p class="empty">No Claude sessions yet. Start Claude Code with the ai-specview MCP server and call <code>spec_show</code>.</p>{{end}}
+  <ul class="wslist">
+  {{range .Items}}<li class="ws{{if not .Live}} archived{{end}}">
+    <a href="/w/{{.ID}}"><b>{{.Project}}</b>{{if .Root}} · {{.Root}}{{end}}</a>
+    {{if .Pending}}<span class="pill accent">● question waiting</span>{{end}}
+    {{if .Done}}<span class="pill ok">✓ spec finished</span>{{end}}
+    {{if .Live}}<span class="muted small">started {{hhmm .Started}} · {{.Viewers}} page(s) open</span>{{else}}<span class="muted small">ended {{ago .Archived}}</span>
+    <button type="button" class="ghost small close-ws" data-ws="{{.ID}}">Close</button>{{end}}
+    <div class="muted small mono">{{.Cwd}}</div>
+  </li>{{end}}
+  </ul>
+  <h2>Settings</h2>
+  <p><button type="button" id="notify">Enable notifications</button> <span id="notify-state" class="muted small"></span></p>
+  <p><label>Open code in <select id="editor">
+    <option value="vscode">VS Code</option><option value="cursor">Cursor</option>
+    <option value="zed">Zed</option><option value="goland">GoLand</option></select></label>
+    <span class="muted small">(stored in this browser)</span></p>
+</main>
+<script src="/static/index.js"></script>
+</body>
+</html>{{end}}

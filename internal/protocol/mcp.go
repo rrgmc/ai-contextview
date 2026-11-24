@@ -1,0 +1,82 @@
+package protocol
+
+// MCP tool inputs and outputs. The go-sdk derives the JSON Schemas from these
+// structs, so there is no hand-written schema.
+
+// SpecShowInput is the input of the spec_show tool.
+type SpecShowInput struct {
+	Path            string        `json:"path" jsonschema:"a .md file or a folder of markdown artifacts, relative to the project directory or absolute"`
+	Primary         string        `json:"primary,omitempty" jsonschema:"folders only: the file shown first and used by refs without a path"`
+	ChangedSections []string      `json:"changed_sections,omitempty" jsonschema:"headings you just changed in the primary file"`
+	Changed         []ChangedFile `json:"changed,omitempty" jsonschema:"folders only: other files you just created or edited"`
+}
+
+// SpecShowOutput is the output of the spec_show tool.
+type SpecShowOutput struct {
+	OK        bool       `json:"ok"`
+	URL       string     `json:"url,omitempty" jsonschema:"the viewer page for this session"`
+	Primary   string     `json:"primary"`
+	Sections  []string   `json:"sections" jsonschema:"headings of the primary file"`
+	Artifacts []Artifact `json:"artifacts"`
+}
+
+// FocusInput is the input of the focus tool.
+type FocusInput struct {
+	SpecQuote   string    `json:"spec_quote,omitempty" jsonschema:"verbatim passage of the primary spec file"`
+	SpecSection string    `json:"spec_section,omitempty" jsonschema:"heading of the section containing spec_quote"`
+	DocRefs     []DocRef  `json:"doc_refs,omitempty" jsonschema:"passages of other markdown artifacts"`
+	CodeRefs    []CodeRef `json:"code_refs,omitempty" jsonschema:"code to open; each needs path and exactly one of symbol or lines"`
+}
+
+// FocusOutput is the output of the focus tool.
+type FocusOutput struct {
+	OK        bool          `json:"ok"`
+	SpecMatch Match         `json:"spec_match,omitempty"`
+	Docs      []DocMatch    `json:"docs"`
+	Code      []ResolvedRef `json:"code"`
+}
+
+// QuestionInput is one question of the ask tool.
+type QuestionInput struct {
+	ID          string    `json:"id" jsonschema:"short unique id, e.g. q1"`
+	Text        string    `json:"text" jsonschema:"the question"`
+	Options     []Option  `json:"options" jsonschema:"2-6 options"`
+	MultiSelect bool      `json:"multi_select,omitempty" jsonschema:"allow several options"`
+	AllowOther  bool      `json:"allow_other,omitempty" jsonschema:"allow a free-text Other answer"`
+	SpecQuote   string    `json:"spec_quote,omitempty" jsonschema:"verbatim passage (3-300 characters) of the primary spec file this question is about"`
+	SpecSection string    `json:"spec_section,omitempty" jsonschema:"heading of the section containing spec_quote"`
+	DocRefs     []DocRef  `json:"doc_refs,omitempty" jsonschema:"up to 4 passages of other markdown artifacts"`
+	CodeRefs    []CodeRef `json:"code_refs,omitempty" jsonschema:"up to 4 code refs; each needs path and exactly one of symbol or lines"`
+}
+
+// AskInput is the input of the ask tool.
+type AskInput struct {
+	Title     string          `json:"title,omitempty" jsonschema:"short title of the question set"`
+	Questions []QuestionInput `json:"questions" jsonschema:"1-6 questions answered together"`
+}
+
+// AskOutput is the output of ask and ask_wait.
+type AskOutput struct {
+	Status        string   `json:"status" jsonschema:"answered, in_chat, pending or dismissed"`
+	Answers       []Answer `json:"answers,omitempty"`
+	Deferred      []string `json:"deferred,omitempty" jsonschema:"questions the user chose to decide later; record them as open questions and ask again before finishing"`
+	KeepOpen      []string `json:"keep_open,omitempty" jsonschema:"questions the user wants kept as open questions"`
+	QuestionSetID string   `json:"question_set_id,omitempty"`
+	Message       string   `json:"message,omitempty"`
+}
+
+// SpecDoneInput is the input of spec_done.
+type SpecDoneInput struct {
+	Summary string `json:"summary,omitempty" jsonschema:"summary of the finished spec as markdown with a **Decided** heading and a **Still open** heading, each followed by a bullet list with one item per decision or open point (never a run-on paragraph)"`
+}
+
+// SpecDoneOutput is the output of spec_done.
+type SpecDoneOutput struct {
+	OK  bool   `json:"ok"`
+	URL string `json:"url,omitempty"`
+}
+
+// AskWaitInput is the input of ask_wait.
+type AskWaitInput struct {
+	QuestionSetID string `json:"question_set_id" jsonschema:"the id returned by a pending ask"`
+}
