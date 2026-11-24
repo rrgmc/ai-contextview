@@ -1,6 +1,6 @@
 {
   "name": "ai-specview",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Shows the spec and the code side by side while Claude elaborates a spec: in a browser page (the spec-elaborate skill) or in a pane beside the chat (the spec-elaborate-mod skill). Needs the ai-specview binary for the browser page: go install github.com/rrgmc/ai-specview/cmd/ai-specview@latest",
   "author": {
     "name": "Rangel Reale"

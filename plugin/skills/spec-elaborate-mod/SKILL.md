@@ -24,8 +24,9 @@ the pane's tools.
 ## Workflow
 
 1. **Understand the request.** Restate the goal in one or two sentences. Find
-   the spec file: an existing one the user names, or a new one at
-   `docs/specs/<slug>.md` created from `templates/spec.md`.
+   the spec file: an existing one the user names, or a new one created from
+   `templates/spec.md`. A new spec goes to `docs/specs/<slug>.md` in the
+   repository, unless the user asks for a draft (see **Draft specs**).
 2. **Show it.** As soon as the file exists, call `spec_show(path)`. The pane
    opens beside the chat; `/specview-pane` opens it again if the user closed
    it. Use the returned section names when you refer to sections.
@@ -58,6 +59,30 @@ the pane's tools.
    The pane shows it as a "Spec finished" banner and clears the highlights
    and the code pane, so do not call `focus` first. If the user asks for more
    changes later, just continue; the next `ask` reopens the session.
+   For a draft spec, ask whether to move it into the repository before
+   calling `spec_done` (see **Draft specs**).
+
+## Draft specs
+
+A draft spec lives outside the repository, like a plan in plan mode, so it is
+never committed by accident. Write one only when the user asks for it, for
+example "draft spec", "scratch spec", "don't put it in the repo" or "just for
+this session". Otherwise use `docs/specs/<slug>.md`.
+
+- Put it at `~/.claude/specs/<project>/<slug>.md`. `<project>` is the name of
+  the main checkout's folder, so every worktree of a repository shares one
+  folder:
+  `basename "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"`.
+  Outside a git repository, use the name of the current folder.
+- Pass the absolute path to `spec_show` and the other tools, with `~`
+  expanded: they do not expand it. Code refs stay relative to the current
+  folder, as usual.
+- Tell the user the path once, when you create the file.
+- Before `spec_done`, ask with `ask` whether to keep the draft or move it to
+  `docs/specs/<slug>.md` in the repository. Quote the spec's title line. If
+  the user moves it, move the file (to the path the user names, if any), call
+  `spec_show` with the new path, and do not commit it unless the user asks.
+  Then call `spec_done`.
 
 ## Using the pane
 

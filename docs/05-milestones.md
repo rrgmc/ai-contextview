@@ -46,6 +46,12 @@ What changed from the plan while building and using it:
 - **Pane mod.** The plugin also holds a Claude Code mod that draws the spec,
   the code and the questions in a pane beside the chat, with its own tools and
   its own skill, `spec-elaborate-mod` (06).
+- **Draft specs.** On request, both skills write the spec to
+  `~/.claude/specs/<project>/<slug>.md` instead of `docs/specs/`, so it stays
+  out of the repository like a plan-mode plan. Before `spec_done` they ask
+  whether to move it into `docs/specs/`. This needed no code change: the
+  tools already accept absolute paths outside the repository, and code refs
+  stay relative to the session's folder.
 - **Versions come from git tags.** The binary has no version constant. It
   reads the version Go records at build time: the module version for
   `go install …@v1.2.3`, and the tag, a pseudo-version or `+dirty` for a build

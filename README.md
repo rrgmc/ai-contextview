@@ -147,6 +147,12 @@ Copy [plugin/skills/spec-elaborate/](plugin/skills/spec-elaborate/) into
    freely, then answer in the panel, choose "Decide later", go "Back to chat",
    or "Skip".
 
+A new spec goes to `docs/specs/<slug>.md` in the repository. To keep it out of
+the repository, as plan mode does with plans, ask for a draft spec ("draft
+spec", "scratch spec", "don't put it in the repo"). The skill then writes it to
+`~/.claude/specs/<project>/<slug>.md`, and before it finishes asks whether to
+move it into `docs/specs/`. Both skills support this.
+
 `http://127.0.0.1:7878/` lists all sessions. Each Claude instance gets its own
 workspace page; ended sessions stay readable, and `claude --resume` in the same
 directory within 2 hours takes the old workspace over.
