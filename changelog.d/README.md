@@ -34,7 +34,10 @@ with no visible effect (refactoring, tests, internal docs) needs no entry.
    order listed above. It updates the compare links at the end of the file and
    deletes the change files, keeping this `README.md`. It also sets
    `version` in `plugin/.claude-plugin/plugin.json` to `X.Y.Z`, so the plugin
-   and the release share one version. `-date` sets another date.
+   and the release share one version. For a stable release it also sets the
+   two release tags in the install section of the repository `README.md` (the
+   example tag and the `go install …@vX.Y.Z` command) to `vX.Y.Z`; a
+   prerelease such as `X.Y.Z-rc.1` leaves the README alone. `-date` sets another date.
 2. Read the result, commit it and fast-forward `master` to it.
 3. Tag that commit on `master` and push the tag:
 
@@ -45,7 +48,8 @@ with no visible effect (refactoring, tests, internal docs) needs no entry.
 The `Release` workflow (`.github/workflows/release.yml`) then runs. It stops
 unless the tag is on `master` and `go run ./tools/changelog check vX.Y.Z`
 passes, which needs the `[X.Y.Z]` section and links, no change files left and
-the plugin version `X.Y.Z`.
+the plugin version `X.Y.Z` and, for a stable release, the README install tag
+`vX.Y.Z`.
 It runs the tests, builds `ai-specview` for Linux and macOS (amd64 and arm64),
 and creates the GitHub release with the archives and the `[X.Y.Z]` section as
 its notes. A tag with a suffix such as `v1.2.3-rc.1` is marked as a

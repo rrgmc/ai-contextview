@@ -1,8 +1,9 @@
 // Command changelog merges the files in changelog.d/ into CHANGELOG.md, sets
-// the plugin version, and checks a release against both. Run it from the
+// the plugin version and the README's install tag, and checks a release
+// against them. Run it from the
 // repository root:
 //
-//	go run ./tools/changelog release 1.2.3   # merge changelog.d/ into a [1.2.3] section, set the plugin to 1.2.3
+//	go run ./tools/changelog release 1.2.3   # merge changelog.d/ into a [1.2.3] section, set the plugin and README to 1.2.3
 //	go run ./tools/changelog check v1.2.3    # fail unless v1.2.3 is ready to tag
 //	go run ./tools/changelog notes v1.2.3    # print the [1.2.3] section
 //
@@ -62,6 +63,11 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
+	readmePath := filepath.Join(*root, readmeFile)
+	readme, err := os.ReadFile(readmePath)
+	if err != nil {
+		return err
+	}
 
 	switch args[0] {
 	case "release":
@@ -83,10 +89,19 @@ func run(args []string) error {
 		if err != nil {
 			return err
 		}
+		readmeOut := string(readme)
+		if !isPrerelease(version) {
+			if readmeOut, err = setReadmeVersion(readmeOut, version); err != nil {
+				return err
+			}
+		}
 		if err := os.WriteFile(path, []byte(out), 0o644); err != nil {
 			return err
 		}
 		if err := os.WriteFile(manifestPath, []byte(plugin), 0o644); err != nil {
+			return err
+		}
+		if err := os.WriteFile(readmePath, []byte(readmeOut), 0o644); err != nil {
 			return err
 		}
 		for _, f := range files {
@@ -96,9 +111,16 @@ func run(args []string) error {
 		}
 		fmt.Printf("CHANGELOG.md: added [%s] from %d change files\n", version, len(files))
 		fmt.Printf("%s: version %s\n", pluginManifest, version)
+		if !isPrerelease(version) {
+			fmt.Printf("%s: install tag v%s\n", readmeFile, version)
+		}
 		return nil
 	case "check":
-		return errors.Join(check(string(b), files, version), checkPlugin(string(manifest), version))
+		errs := []error{check(string(b), files, version), checkPlugin(string(manifest), version)}
+		if !isPrerelease(version) {
+			errs = append(errs, checkReadme(string(readme), version))
+		}
+		return errors.Join(errs...)
 	case "notes":
 		n, err := notes(string(b), version)
 		if err != nil {

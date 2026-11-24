@@ -98,9 +98,11 @@ Versions come from git tags (`cmd/ai-specview/version.go`). To release, run
 `vX.Y.Z` and push the tag. The `Release` workflow checks the changelog, tests,
 builds the binaries and creates the GitHub release
 ([changelog.d/README.md](changelog.d/README.md)). The release command also
-sets `version` in `plugin/.claude-plugin/plugin.json` to `X.Y.Z`, and the
-workflow fails unless the two match. Installed plugins update only when that
-version changes, so plugin changes reach users at the next release.
+sets `version` in `plugin/.claude-plugin/plugin.json` to `X.Y.Z` and, for a
+stable release, the install tag in `README.md` to `vX.Y.Z`; the workflow
+fails unless they match. Never edit the README install tag by hand.
+Installed plugins update only when the plugin version changes, so plugin
+changes reach users at the next release.
 
 A change that users notice adds a file to `changelog.d/` (one per branch);
 never edit `CHANGELOG.md` directly outside a release. Before tagging, merge

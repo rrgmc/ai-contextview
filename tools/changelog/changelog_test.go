@@ -68,12 +68,17 @@ const manifest = `{
 }
 `
 
+const readme = "# R\n\nReleases are git tags such as `v0.5.0`.\n\n" +
+	"    go install github.com/o/r/cmd/ai-specview@v0.5.0\n\n" +
+	"`ai-specview version` prints the git tag (`v1.2.3`).\n"
+
 func writeRepo(t *testing.T, entries map[string]string) string {
 	t.Helper()
 	root := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(root, "CHANGELOG.md"), []byte(before), 0o644))
 	require.NoError(t, os.MkdirAll(filepath.Join(root, filepath.Dir(pluginManifest)), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(root, pluginManifest), []byte(manifest), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(root, readmeFile), []byte(readme), 0o644))
 	dir := filepath.Join(root, "changelog.d")
 	require.NoError(t, os.Mkdir(dir, 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("# Readme\n"), 0o644))
@@ -94,6 +99,7 @@ func TestReleaseCheckNotes(t *testing.T) {
 	assert.Contains(t, err.Error(), "no [0.6.0] section")
 	assert.Contains(t, err.Error(), "a.md is not merged")
 	assert.Contains(t, err.Error(), "has version 0.2.0, want 0.6.0")
+	assert.Contains(t, err.Error(), "names v0.5.0, want v0.6.0")
 
 	require.NoError(t, run([]string{"release", "-root", root, "-date", "2026-12-01", "0.6.0"}))
 
@@ -104,6 +110,10 @@ func TestReleaseCheckNotes(t *testing.T) {
 	plugin, err := os.ReadFile(filepath.Join(root, pluginManifest))
 	require.NoError(t, err)
 	assert.Equal(t, strings.Replace(manifest, `"0.2.0"`, `"0.6.0"`, 1), string(plugin))
+
+	gotReadme, err := os.ReadFile(filepath.Join(root, readmeFile))
+	require.NoError(t, err)
+	assert.Equal(t, strings.ReplaceAll(readme, "v0.5.0", "v0.6.0"), string(gotReadme))
 
 	left, err := entryFiles(filepath.Join(root, "changelog.d"))
 	require.NoError(t, err)
@@ -165,4 +175,30 @@ func TestSetPluginVersion(t *testing.T) {
 
 	assert.NoError(t, checkPlugin(out, "1.2.3-rc.1"))
 	assert.ErrorContains(t, checkPlugin(manifest, "1.2.3"), "has version 0.2.0, want 1.2.3")
+}
+
+func TestReleasePrereleaseKeepsReadme(t *testing.T) {
+	root := writeRepo(t, map[string]string{"a.md": "### Added\n\n- A.\n"})
+	require.NoError(t, run([]string{"release", "-root", root, "-date", "2026-12-01", "0.6.0-rc.1"}))
+
+	got, err := os.ReadFile(filepath.Join(root, readmeFile))
+	require.NoError(t, err)
+	assert.Equal(t, readme, string(got))
+	assert.NoError(t, run([]string{"check", "-root", root, "v0.6.0-rc.1"}))
+}
+
+func TestSetReadmeVersion(t *testing.T) {
+	out, err := setReadmeVersion(readme, "1.2.3")
+	require.NoError(t, err)
+	assert.Contains(t, out, "tags such as `v1.2.3`")
+	assert.Contains(t, out, "cmd/ai-specview@v1.2.3\n")
+	assert.Contains(t, out, "git tag (`v1.2.3`)")
+	assert.NoError(t, checkReadme(out, "1.2.3"))
+
+	_, err = setReadmeVersion("# R\n", "1.2.3")
+	assert.ErrorContains(t, err, "no release tag")
+	assert.ErrorContains(t, checkReadme("# R\n", "1.2.3"), "no release tag")
+
+	mixed := strings.Replace(readme, "such as `v0.5.0`", "such as `v0.4.0`", 1)
+	assert.ErrorContains(t, checkReadme(mixed, "0.5.0"), "names v0.4.0, want v0.5.0")
 }

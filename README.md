@@ -30,12 +30,12 @@ Install the binary from the latest release:
 go install github.com/rrgmc/ai-specview/cmd/ai-specview@latest
 ```
 
-Releases are git tags such as `v0.5.0` (see the
+Releases are git tags such as `v0.9.0` (see the
 [tags](https://github.com/rrgmc/ai-specview/tags)). To install one release, put
 its tag after the `@`:
 
 ```bash
-go install github.com/rrgmc/ai-specview/cmd/ai-specview@v0.5.0
+go install github.com/rrgmc/ai-specview/cmd/ai-specview@v0.9.0
 ```
 
 Each release on the
