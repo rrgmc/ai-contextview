@@ -84,8 +84,10 @@ go test ./...
   or installed copies keep the cached version.
 - After changing `plugin-pane/`, run `claude plugin validate ./plugin-pane`
   and `claude plugin test ./plugin-pane`, and bump its version the same way.
-  It hooks the MCP tools by name, so a renamed tool or a changed tool result
-  updates `plugin-pane/hooks/register.tsx` too (docs/06-pane-mod.md).
+  It hooks the MCP tools by name and, in `pane` mode, serves them itself, so a
+  renamed tool, a changed tool result or message updates
+  `plugin-pane/hooks/register.tsx`, and a changed input rule in
+  `internal/validate` updates `plugin-pane/hooks/validate.ts` (docs/06-pane-mod.md).
 
 The `CI` workflow (`.github/workflows/ci.yml`) runs gofmt, `go vet` and
 `go test -race ./...` on Linux and macOS for pushes to `master` and pull

@@ -59,15 +59,15 @@ Also raise the MCP tool timeout (see below); a plugin can't set it.
 
 ### Optional: the pane
 
-`ai-specview-pane` is a Claude Code mod that shows the spec and the code in a
-pane beside the chat, as well as or instead of the browser page:
+`ai-specview-pane` is a Claude Code mod that shows the spec, the code and the
+questions in a pane beside the chat, as well as or instead of the browser page:
 
 ```bash
 claude plugin install ai-specview-pane@ai-specview
 ```
 
 Its `mode` option is `both` (default: the browser page and the pane), `pane`
-(the pane alone for `spec_show` and `focus`) or `browser`. `/specview-mode`
+(the pane alone, questions included, with no daemon) or `browser`. `/specview-mode`
 changes it for one session. See [plugin-pane/README.md](plugin-pane/README.md)
 and [docs/06-pane-mod.md](docs/06-pane-mod.md).
 
@@ -212,7 +212,8 @@ implemented. Differences from the plan:
   `serve` for its single-instance check and `--restart`.
 
 The pane mod (`plugin-pane/`, [docs/06-pane-mod.md](docs/06-pane-mod.md)) is a
-prototype: it does not draw questions yet.
+prototype. In `pane` mode it asks the questions itself; it has no review step
+and does not show `doc_refs` into other files.
 
 Not done yet: the change-folder skill steps and the `openspec status`
 integration (M8), the handoff command (M9), and the dogfood sessions the
