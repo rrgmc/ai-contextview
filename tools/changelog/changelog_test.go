@@ -1,0 +1,133 @@
+package main
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+const before = `# Changelog
+
+Intro.
+
+## [Unreleased]
+
+See [changelog.d/](changelog.d/).
+
+## [0.5.0] - 2026-11-24
+
+### Added
+
+- First release.
+
+[Unreleased]: https://github.com/o/r/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/o/r/releases/tag/v0.5.0
+`
+
+const after = `# Changelog
+
+Intro.
+
+## [Unreleased]
+
+See [changelog.d/](changelog.d/).
+
+## [0.6.0] - 2026-12-01
+
+### Added
+
+- A from a.
+- B from b.
+
+### Fixed
+
+- A fix.
+  Two lines.
+
+## [0.5.0] - 2026-11-24
+
+### Added
+
+- First release.
+
+[Unreleased]: https://github.com/o/r/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/o/r/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/o/r/releases/tag/v0.5.0
+`
+
+func writeRepo(t *testing.T, entries map[string]string) string {
+	t.Helper()
+	root := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(root, "CHANGELOG.md"), []byte(before), 0o644))
+	dir := filepath.Join(root, "changelog.d")
+	require.NoError(t, os.Mkdir(dir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("# Readme\n"), 0o644))
+	for name, text := range entries {
+		require.NoError(t, os.WriteFile(filepath.Join(dir, name), []byte(text), 0o644))
+	}
+	return root
+}
+
+func TestReleaseCheckNotes(t *testing.T) {
+	root := writeRepo(t, map[string]string{
+		"a.md": "### Fixed\n\n- A fix.\n  Two lines.\n\n### Added\n\n- A from a.\n",
+		"b.md": "\n### Added\n\n- B from b.\n\n",
+	})
+
+	err := run([]string{"check", "-root", root, "v0.6.0"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no [0.6.0] section")
+	assert.Contains(t, err.Error(), "a.md is not merged")
+
+	require.NoError(t, run([]string{"release", "-root", root, "-date", "2026-12-01", "0.6.0"}))
+
+	got, err := os.ReadFile(filepath.Join(root, "CHANGELOG.md"))
+	require.NoError(t, err)
+	assert.Equal(t, after, string(got))
+
+	left, err := entryFiles(filepath.Join(root, "changelog.d"))
+	require.NoError(t, err)
+	assert.Empty(t, left)
+	assert.FileExists(t, filepath.Join(root, "changelog.d", "README.md"))
+
+	assert.NoError(t, run([]string{"check", "-root", root, "v0.6.0"}))
+
+	n, err := notes(string(got), "0.6.0")
+	require.NoError(t, err)
+	assert.Equal(t, "### Added\n\n- A from a.\n- B from b.\n\n### Fixed\n\n- A fix.\n  Two lines.\n", n)
+
+	err = run([]string{"release", "-root", root, "0.6.0"})
+	assert.ErrorContains(t, err, "no change files")
+}
+
+func TestReleaseRejectsExistingVersion(t *testing.T) {
+	_, err := release(before, "### Added\n\n- X.", "0.5.0", "2026-12-01")
+	assert.ErrorContains(t, err, "already has a [0.5.0] section")
+}
+
+func TestParseEntryErrors(t *testing.T) {
+	_, err := parseEntry("x.md", "### Improved\n\n- Y.\n")
+	assert.ErrorContains(t, err, `unknown heading "Improved"`)
+
+	_, err = parseEntry("x.md", "- Y.\n")
+	assert.ErrorContains(t, err, "text before the first ### heading")
+
+	_, err = parseEntry("x.md", "\n")
+	assert.ErrorContains(t, err, "no ### sections")
+}
+
+func TestNormVersion(t *testing.T) {
+	v, err := normVersion("v1.2.3")
+	require.NoError(t, err)
+	assert.Equal(t, "1.2.3", v)
+
+	v, err = normVersion("1.2.3-rc.1")
+	require.NoError(t, err)
+	assert.Equal(t, "1.2.3-rc.1", v)
+
+	_, err = normVersion("1.2")
+	assert.Error(t, err)
+}

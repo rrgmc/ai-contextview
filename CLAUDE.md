@@ -61,6 +61,8 @@ Read-only work (reading code, answering questions) needs no worktree.
 | `plugin/` | The Claude Code plugin: `.mcp.json`, `hooks/`, `skills/spec-elaborate/`, launcher script |
 | `plugin-pane/` | The pane mod `ai-specview-pane`: TypeScript hooks module, state contract, tests |
 | `.claude-plugin/` | `marketplace.json`: the repository is a plugin marketplace |
+| `tools/changelog/` | Release tool: merges `changelog.d/` into `CHANGELOG.md`, checks a tag, prints release notes |
+| `.github/workflows/` | `ci.yml` (tests) and `release.yml` (on `v*` tags) |
 | `examples/` | Manual setup files (`.mcp.json`, settings, CLAUDE.md snippet) |
 
 ## Build and test
@@ -85,9 +87,16 @@ go test ./...
   It hooks the MCP tools by name, so a renamed tool or a changed tool result
   updates `plugin-pane/hooks/register.tsx` too (docs/06-pane-mod.md).
 
-Versions come from git tags (`cmd/ai-specview/version.go`). To release, tag
-`master` with `vX.Y.Z` and push the tag; `go install …@latest` then picks it
-up. The plugin versions in `plugin.json` are separate.
+The `CI` workflow (`.github/workflows/ci.yml`) runs gofmt, `go vet` and
+`go test -race ./...` on Linux and macOS for pushes to `master` and pull
+requests. It does not run the `claude plugin` checks.
+
+Versions come from git tags (`cmd/ai-specview/version.go`). To release, run
+`go run ./tools/changelog release X.Y.Z`, commit, then tag `master` with
+`vX.Y.Z` and push the tag. The `Release` workflow checks the changelog, tests,
+builds the binaries and creates the GitHub release
+([changelog.d/README.md](changelog.d/README.md)). The plugin versions in
+`plugin.json` are separate.
 
 A change that users notice adds a file to `changelog.d/` (one per branch);
 never edit `CHANGELOG.md` directly outside a release. Before tagging, merge

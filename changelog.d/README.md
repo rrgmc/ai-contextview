@@ -23,13 +23,33 @@ with no visible effect (refactoring, tests, internal docs) needs no entry.
 
 ## Releasing
 
-Before tagging `vX.Y.Z`:
+1. On a branch from `master`, merge the change files into `CHANGELOG.md`:
 
-1. Add a `## [X.Y.Z] - YYYY-MM-DD` section to `CHANGELOG.md`, under
-   `## [Unreleased]`.
-2. Merge the entries of every file in this folder into it, one heading per
-   kind of change, in the order listed above.
-3. Delete those files. Keep this `README.md`.
-4. Add the `[X.Y.Z]` compare link at the end of `CHANGELOG.md` and move the
-   `[Unreleased]` link to start from `vX.Y.Z`.
-5. Commit, then tag that commit.
+   ```bash
+   go run ./tools/changelog release X.Y.Z
+   ```
+
+   This adds a `## [X.Y.Z] - YYYY-MM-DD` section under `## [Unreleased]`, with
+   the entries of every change file grouped under one heading per kind, in the
+   order listed above. It updates the compare links at the end of the file and
+   deletes the change files, keeping this `README.md`. `-date` sets another
+   date.
+2. Read the result, commit it and fast-forward `master` to it.
+3. Tag that commit on `master` and push the tag:
+
+   ```bash
+   git tag vX.Y.Z && git push origin vX.Y.Z
+   ```
+
+The `Release` workflow (`.github/workflows/release.yml`) then runs. It stops
+unless the tag is on `master` and `go run ./tools/changelog check vX.Y.Z`
+passes, which needs the `[X.Y.Z]` section and links and no change files left.
+It runs the tests, builds `ai-specview` for Linux and macOS (amd64 and arm64),
+and creates the GitHub release with the archives and the `[X.Y.Z]` section as
+its notes. A tag with a suffix such as `v1.2.3-rc.1` is marked as a
+prerelease. Last, it asks the Go module proxy for the version, so
+`go install …@latest` finds it at once.
+
+Run `go run ./tools/changelog check vX.Y.Z` before tagging to catch a failed
+check early. A tag whose workflow failed has to be deleted
+(`git push --delete origin vX.Y.Z`) and pushed again after the fix.

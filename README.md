@@ -25,7 +25,10 @@ its tag after the `@`:
 go install github.com/rrgmc/ai-specview/cmd/ai-specview@v0.5.0
 ```
 
-`@master` installs the newest commit instead. `ai-specview version` prints the
+Each release on the
+[releases page](https://github.com/rrgmc/ai-specview/releases) also has
+prebuilt binaries for Linux and macOS. `@master` installs the newest commit
+instead. `ai-specview version` prints the
 installed version. After an upgrade, run `ai-specview serve --restart` so a
 running daemon switches to the new binary.
 

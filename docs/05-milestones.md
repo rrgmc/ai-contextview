@@ -50,7 +50,11 @@ What changed from the plan while building and using it:
   reads the version Go records at build time: the module version for
   `go install …@v1.2.3`, and the tag, a pseudo-version or `+dirty` for a build
   in a checkout. `-ldflags "-X main.version=…"` overrides it, and a build with
-  no version information is `devel`. A release is a `vX.Y.Z` tag on `master`.
+  no version information is `devel`. A release is a `vX.Y.Z` tag on
+  `master`. Pushing the tag runs the `Release` workflow: it checks that `changelog.d/` was merged into
+  `CHANGELOG.md` (`tools/changelog`), runs the tests, builds Linux and macOS
+  binaries and creates the GitHub release. The `CI` workflow tests every push
+  to `master` and every pull request.
 - **Front end.** Plain JavaScript instead of htmx; the web server lives in
   `internal/daemon`. Browser tests in `internal/daemon/browser_test.go` drive
   the panel in headless Chrome.
