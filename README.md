@@ -11,11 +11,23 @@ daemon are one binary, `ai-specview`. The plan and design are in [docs/](docs/RE
 
 ## Install
 
-Install the binary:
+Install the binary from the latest release:
 
 ```bash
 go install github.com/rrgmc/ai-specview/cmd/ai-specview@latest
 ```
+
+Releases are git tags such as `v0.5.0` (see the
+[tags](https://github.com/rrgmc/ai-specview/tags)). To install one release, put
+its tag after the `@`:
+
+```bash
+go install github.com/rrgmc/ai-specview/cmd/ai-specview@v0.5.0
+```
+
+`@master` installs the newest commit instead. `ai-specview version` prints the
+installed version. After an upgrade, run `ai-specview serve --restart` so a
+running daemon switches to the new binary.
 
 Then install the Claude Code plugin. It registers the MCP server, the
 `spec-elaborate` skill and the `ai-specview hook` (below) in one step:
