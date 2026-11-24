@@ -1,0 +1,18 @@
+{
+  "name": "ai-specview-pane",
+  "version": "0.1.0",
+  "description": "Shows the ai-specview spec and code in a pane beside the chat, in place of or beside the browser viewer. Needs the ai-specview plugin.",
+  "author": { "name": "Rangel Reale" },
+  "repository": "https://github.com/rrgmc/ai-specview",
+  "license": "MIT",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "mode": {
+      "type": "string",
+      "title": "Viewer mode",
+      "description": "browser: only the ai-specview web page. pane: only the pane, no daemon for spec_show and focus. both: the page and the pane.",
+      "options": ["both", "pane", "browser"],
+      "default": "both"
+    }
+  }
+}

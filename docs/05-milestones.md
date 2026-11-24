@@ -12,6 +12,7 @@ once M0 is done. M0–M7 are the POC; M8–M9 are the change-folder workflow (00
 | M6 | Done, except the dogfood session with 3+ rounds on a real project. |
 | M7 | Done. `internal/e2e/multi_test.go` is the scripted three-session test. |
 | M8, M9 | Not started. |
+| Pane mod | Prototype in `plugin-pane/` (06). Checked live in `both` and `pane` modes. |
 
 What changed from the plan while building and using it:
 
@@ -41,6 +42,9 @@ What changed from the plan while building and using it:
   an unfinished spec open, so other sessions keep it (04, section 2).
 - **Install.** The module path is the repository path, and the MCP server,
   skill and hook ship as a Claude Code plugin (README).
+- **Pane mod.** A second plugin, `ai-specview-pane`, draws the spec and code
+  in a Claude Code pane. In `both` mode it mirrors the bridge; in `pane` mode
+  it answers `spec_show` and `focus` itself (06).
 - **Front end.** Plain JavaScript instead of htmx; the web server lives in
   `internal/daemon`. Browser tests in `internal/daemon/browser_test.go` drive
   the panel in headless Chrome.

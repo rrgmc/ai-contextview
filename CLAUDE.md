@@ -59,6 +59,7 @@ Read-only work (reading code, answering questions) needs no worktree.
 | `internal/e2e/` | End-to-end tests, including the multi-process test |
 | `protocol/` | Golden message fixtures and quote-matching fixtures |
 | `plugin/` | The Claude Code plugin: `.mcp.json`, `hooks/`, `skills/spec-elaborate/`, launcher script |
+| `plugin-pane/` | The pane mod `ai-specview-pane`: TypeScript hooks module, state contract, tests |
 | `.claude-plugin/` | `marketplace.json`: the repository is a plugin marketplace |
 | `examples/` | Manual setup files (`.mcp.json`, settings, CLAUDE.md snippet) |
 
@@ -79,6 +80,10 @@ go test ./...
   `claude plugin validate ./plugin` and `claude plugin validate .`. Bump
   `version` in `plugin/.claude-plugin/plugin.json` when plugin files change,
   or installed copies keep the cached version.
+- After changing `plugin-pane/`, run `claude plugin validate ./plugin-pane`
+  and `claude plugin test ./plugin-pane`, and bump its version the same way.
+  It hooks the MCP tools by name, so a renamed tool or a changed tool result
+  updates `plugin-pane/hooks/register.tsx` too (docs/06-pane-mod.md).
 
 To try a change locally, install it and replace the running daemon:
 

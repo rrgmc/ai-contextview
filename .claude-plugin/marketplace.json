@@ -9,6 +9,11 @@
       "name": "ai-specview",
       "source": "./plugin",
       "description": "Shows the spec and the code side by side while Claude elaborates a spec, with a docked question panel."
+    },
+    {
+      "name": "ai-specview-pane",
+      "source": "./plugin-pane",
+      "description": "Shows the ai-specview spec and code in a pane beside the chat, in place of or beside the browser viewer. Needs the ai-specview plugin."
     }
   ]
 }

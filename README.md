@@ -42,6 +42,20 @@ twice: `claude mcp remove ai-specview`, the `ai-specview hook` entry in
 
 Also raise the MCP tool timeout (see below); a plugin can't set it.
 
+### Optional: the pane
+
+`ai-specview-pane` is a Claude Code mod that shows the spec and the code in a
+pane beside the chat, as well as or instead of the browser page:
+
+```bash
+claude plugin install ai-specview-pane@ai-specview
+```
+
+Its `mode` option is `both` (default: the browser page and the pane), `pane`
+(the pane alone for `spec_show` and `focus`) or `browser`. `/specview-mode`
+changes it for one session. See [plugin-pane/README.md](plugin-pane/README.md)
+and [docs/06-pane-mod.md](docs/06-pane-mod.md).
+
 ### Manual setup
 
 Without the plugin, the binary must be on the `PATH` that Claude Code sees.
@@ -167,7 +181,8 @@ bridge processes against a real daemon, restarts and kills it, and resumes a
 session (also skipped with `-short`).
 
 Check the plugin with `claude plugin validate ./plugin` and the marketplace
-with `claude plugin validate .`.
+with `claude plugin validate .`. The pane mod has its own checks:
+`claude plugin validate ./plugin-pane` and `claude plugin test ./plugin-pane`.
 
 ## Status
 
@@ -180,6 +195,9 @@ implemented. Differences from the plan:
   separate `internal/web` package.
 - The daemon also answers `ping` and `shutdown` messages, used by
   `serve` for its single-instance check and `--restart`.
+
+The pane mod (`plugin-pane/`, [docs/06-pane-mod.md](docs/06-pane-mod.md)) is a
+prototype: it does not draw questions yet.
 
 Not done yet: the change-folder skill steps and the `openspec status`
 integration (M8), the handoff command (M9), and the dogfood sessions the
