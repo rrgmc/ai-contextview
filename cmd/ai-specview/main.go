@@ -18,7 +18,6 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"runtime/debug"
 	"syscall"
 	"time"
 
@@ -33,40 +32,6 @@ import (
 	"github.com/rrgmc/ai-specview/internal/resolve"
 	"github.com/rrgmc/ai-specview/internal/tools"
 )
-
-// version is set with -ldflags "-X main.version=…". When it is not, the
-// commit from the build info is appended so two builds can be told apart.
-var version = "0.1.0"
-
-func init() { version = withBuildInfo(version) }
-
-// withBuildInfo appends the VCS revision and a "modified" marker, e.g.
-// "0.1.0 (3499e05, modified)".
-func withBuildInfo(v string) string {
-	info, ok := debug.ReadBuildInfo()
-	if !ok {
-		return v
-	}
-	rev, modified := "", false
-	for _, s := range info.Settings {
-		switch s.Key {
-		case "vcs.revision":
-			rev = s.Value
-		case "vcs.modified":
-			modified = s.Value == "true"
-		}
-	}
-	if rev == "" {
-		return v
-	}
-	if len(rev) > 7 {
-		rev = rev[:7]
-	}
-	if modified {
-		return v + " (" + rev + ", modified)"
-	}
-	return v + " (" + rev + ")"
-}
 
 func usage() {
 	fmt.Fprintf(os.Stderr, `usage: ai-specview <command> [flags]

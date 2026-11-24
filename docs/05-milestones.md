@@ -46,6 +46,11 @@ What changed from the plan while building and using it:
 - **Pane mod.** A second plugin, `ai-specview-pane`, draws the spec and code
   in a Claude Code pane. In `both` mode it mirrors the bridge; in `pane` mode
   it answers `spec_show` and `focus` itself (06).
+- **Versions come from git tags.** The binary has no version constant. It
+  reads the version Go records at build time: the module version for
+  `go install …@v1.2.3`, and the tag, a pseudo-version or `+dirty` for a build
+  in a checkout. `-ldflags "-X main.version=…"` overrides it, and a build with
+  no version information is `devel`. A release is a `vX.Y.Z` tag on `master`.
 - **Front end.** Plain JavaScript instead of htmx; the web server lives in
   `internal/daemon`. Browser tests in `internal/daemon/browser_test.go` drive
   the panel in headless Chrome.

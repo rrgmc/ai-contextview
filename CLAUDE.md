@@ -85,6 +85,10 @@ go test ./...
   It hooks the MCP tools by name, so a renamed tool or a changed tool result
   updates `plugin-pane/hooks/register.tsx` too (docs/06-pane-mod.md).
 
+Versions come from git tags (`cmd/ai-specview/version.go`). To release, tag
+`master` with `vX.Y.Z` and push the tag; `go install …@latest` then picks it
+up. The plugin versions in `plugin.json` are separate.
+
 To try a change locally, install it and replace the running daemon:
 
 ```bash

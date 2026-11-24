@@ -278,7 +278,7 @@ Error codes: `bad_request`, `file_not_found`, `not_markdown`, `empty_folder`,
 
 ```
 → {"v":1,"type":"hello","id":"b1","ws":"ws_A","body":{"protocol":1,"cwd":"/Users/r/src/shop",...}}
-← {"v":1,"type":"hello_ack","re":"b1","body":{"daemon_version":"0.1.0","url":"http://127.0.0.1:7878/w/ws_A"}}
+← {"v":1,"type":"hello_ack","re":"b1","body":{"daemon_version":"v0.1.0","url":"http://127.0.0.1:7878/w/ws_A"}}
 → {"v":1,"type":"spec_show","id":"b2","ws":"ws_A","body":{"root_abs":"/Users/r/src/shop/docs/specs/retry.md","is_dir":false}}
 ← {"v":1,"type":"result","re":"b2","body":{"primary":"retry.md","sections":["Overview","Retry policy"],"artifacts":[…]}}
 → {"v":1,"type":"ask","id":"b3","ws":"ws_A","body":{"qs_id":"qs_1","questions":[…]}}

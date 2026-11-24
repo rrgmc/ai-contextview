@@ -136,7 +136,7 @@ directory within 2 hours takes the old workspace over.
 | `ai-specview serve` | The viewer daemon. `--detach` starts it in the background, `--restart` replaces a running one (or starts one) in the background, `--stop` stops it, `--addr` sets the address (default `127.0.0.1:7878`, the next 9 ports are tried), `--idle-exit 30m` exits when unused. |
 | `ai-specview fakeapp` | A terminal stand-in for the daemon, for testing the MCP path. |
 | `ai-specview hook` | Claude Code PreToolUse hook: blocks the built-in question tool only while this session has a spec open. |
-| `ai-specview version` | Prints the version. |
+| `ai-specview version` | Prints the version: the git tag (`v1.2.3`), a Go pseudo-version for a build between tags, with `+dirty` for uncommitted changes, or `devel` when the build has no version information. |
 
 ## Environment
 
