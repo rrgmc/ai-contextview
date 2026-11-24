@@ -14,6 +14,28 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [0.7.0] - 2026-11-24
+
+### Added
+
+- Draft specs: ask either spec skill for a draft spec and it is written to
+  `~/.claude/specs/<project>/` instead of the repository. Before it finishes,
+  the skill asks whether to move it into `docs/specs/`.
+
+### Changed
+
+- The `ai-specview` plugin now has the same version as the release, starting
+  with this one. Plugin changes reach installed copies at each release.
+
+### Fixed
+
+- In the dark theme, names and punctuation in the code pane are readable again;
+  they kept the light theme's dark text color.
+- In the pane, an answer option's description shows under its button and
+  wraps, instead of running into the label and being cut off.
+- In the pane (`spec-elaborate-mod`), answering the last question shows a
+  review of every answer before sending, as the browser page does.
+
 ## [0.6.0] - 2026-11-24
 
 ### Added
@@ -60,6 +82,7 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/rrgmc/ai-specview/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/rrgmc/ai-specview/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/rrgmc/ai-specview/releases/tag/v0.5.0
