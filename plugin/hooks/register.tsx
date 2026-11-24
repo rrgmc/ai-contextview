@@ -807,12 +807,17 @@ export const register: Register = on => {
                     <Button key={`review-${k}`} plain onPress={() => gotoQuestion($, k)}>
                       {`Q${k + 1}`}
                     </Button>
-                    <Text wrap="wrap">{q.text.trim()}</Text>
+                    <Text dimColor wrap="wrap">{q.text.trim()}</Text>
                   </Box>
-                  <Box paddingLeft={2}>
-                    <Text dimColor={d.later} wrap="wrap">
-                      {`→ ${answerText(q, d)}${notes ? `  (${notes})` : ''}`}
+                  <Box paddingLeft={2} flexDirection="column">
+                    <Text color={d.later ? 'yellow' : 'cyan'} bold wrap="wrap">
+                      {`→ ${answerText(q, d)}`}
                     </Text>
+                    {notes !== '' && (
+                      <Box paddingLeft={2}>
+                        <Text dimColor italic wrap="wrap">{`Notes: ${notes}`}</Text>
+                      </Box>
+                    )}
                   </Box>
                 </Box>
               )

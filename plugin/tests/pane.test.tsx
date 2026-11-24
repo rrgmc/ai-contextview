@@ -432,7 +432,11 @@ test('after the last answer the pane shows every answer for review', async ($, o
   expect(await ui.find({ key: 'review' })).toBeDefined()
   expect(await ui.find({ key: 'q-text' })).toBeUndefined()
   expect((await ui.find({ type: 'Text', text: /^→ Disk/ }))?.text).toBe('→ Disk')
-  expect((await ui.find({ type: 'Text', text: /^→ Decide later/ }))?.text).toBe('→ Decide later  (keep it small)')
+  const later = await ui.find({ type: 'Text', text: /^→ Decide later/ })
+  expect(later?.text).toBe('→ Decide later')
+  expect(later?.props.color).toBe('yellow')
+  expect((await ui.find({ type: 'Text', text: /^→ Disk/ }))?.props.color).toBe('cyan')
+  expect((await ui.find({ type: 'Text', text: /^Notes: / }))?.text).toBe('Notes: keep it small')
 
   // A review line goes back to its question; Review returns once all are answered.
   await ui.press({ key: 'review-0' })
