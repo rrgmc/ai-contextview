@@ -190,6 +190,16 @@ test('spec and code side by side when wide, stacked when narrow', async ($, on) 
     expect((await narrow.find({ key: 'spec-col' }))?.props.width).toBe('100%')
     await narrow.unmount()
   }
+
+  // With nothing for the side column, the spec takes the whole width.
+  await call($, { tool: FOCUS, spec_quote: 'kept in memory' })
+  const alone = await $.ui.mount(pane('desktop', 140))
+  expect((await alone.find({ key: 'spec-col' }))?.props.width).toBe('100%')
+  expect(await alone.find({ key: 'side-col' })).toBeUndefined()
+  // The header names the file and the section on one line; no jump links show.
+  expect((await alone.find({ type: 'Text', text: /^› Storage$/ }))?.text).toBe('› Storage')
+  expect(await alone.find({ key: 'jumps' })).toBeUndefined()
+  await alone.unmount()
 })
 
 test('the section picker shows the whole spec or one section', async ($, on) => {
@@ -329,6 +339,24 @@ async function startAsk($: any, clk: { settle: () => Promise<void> }) {
   return { pending, ui }
 }
 
+test('one column repeats the quote in the form and stacks the code under the spec', async ($, on) => {
+  const clk = engine(on)
+  await start($)
+  const pending = call($, { tool: ASK, title: 'Storage', questions: QUESTIONS })
+  await clk.settle()
+  const ui = await $.ui.mount(pane('desktop', 60))
+  expect((await ui.find({ type: 'Text', text: /^“/ }))?.text).toBe('“kept in memory”')
+  await ui.press({ key: 'step-1' })
+  // No tabs in one column: the form and the code both show.
+  expect(await ui.find({ key: 'side-form' })).toBeUndefined()
+  expect(await ui.find({ key: 'ask' })).toBeDefined()
+  expect((await ui.find({ type: 'Code' }))?.props.startLine).toBe(7)
+  await ui.press({ key: 'skip' })
+  await clk.advance(POLL)
+  expect((await result(pending)).status).toBe('dismissed')
+  await ui.unmount()
+})
+
 // ask checks once a second: moving the clock past a check lets it see the answer.
 const POLL = 1100
 
@@ -336,7 +364,13 @@ test('questions are answered in the pane, each showing its own refs', async ($, 
   const clk = engine(on)
   const { pending, ui } = await startAsk($, clk)
   expect((await ui.find({ key: 'quote-text' }))?.props.text).toContain('**kept in memory**')
-  expect(JSON.stringify((await ui.find({ key: 'opt-1' }))?.props)).toContain('(recommended)')
+  // The recommended option carries a marker of its own.
+  expect((await ui.find({ key: 'opt-1' }))?.props.label).toBe('○ Disk  recommended')
+  expect((await ui.find({ key: 'opt-0' }))?.props.label).toBe('○ Memory')
+  // The quote's caption names the question.
+  expect((await ui.find({ type: 'Text', text: /^Question 1/ }))?.text).toBe('Question 1: Where are widgets kept?')
+  // Send is the main button only once every question has an answer.
+  expect((await ui.find({ key: 'send' }))?.props.variant).toBe('secondary')
   // The description wraps under the button rather than inside it.
   expect(JSON.stringify((await ui.find({ key: 'opt-1' }))?.props)).not.toContain('Survives a restart')
   expect(JSON.stringify(await ui.find({ key: 'opt-desc-1' }))).toContain('Survives a restart')
@@ -344,9 +378,17 @@ test('questions are answered in the pane, each showing its own refs', async ($, 
   // A single choice moves on to q2, whose doc ref and code show.
   await ui.press({ key: 'opt-1' })
   expect((await ui.find({ key: 'quote-text' }))?.props.text).toContain('**at most 100 widgets**')
+  // Two columns: the form and q2's code share the side column through tabs.
+  expect((await ui.find({ key: 'side-form' }))?.props.variant).toBe('primary')
+  expect(await ui.find({ type: 'Code' })).toBeUndefined()
+  await ui.press({ key: 'code-0' })
   expect((await ui.find({ type: 'Code' }))?.props.startLine).toBe(7)
+  expect(await ui.find({ key: 'ask' })).toBeUndefined()
+  await ui.press({ key: 'side-form' })
+  expect(await ui.find({ key: 'ask' })).toBeDefined()
   await ui.input({ key: 'notes-q2', text: 'keep it small', kind: 'change' })
   await ui.press({ key: 'opt-0' })
+  expect((await ui.find({ key: 'send' }))?.props.variant).toBe('primary')
   await ui.press({ key: 'send' })
   await clk.advance(POLL)
 

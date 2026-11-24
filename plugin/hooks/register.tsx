@@ -70,6 +70,8 @@ const MAX_MARKDOWN = 50_000
 const MAX_CODE = 40_000
 // The pane splits into two columns from this many cells across.
 const WIDE = 100
+// codeTab while questions wait: the side column shows the form, not a code ref.
+const FORM_TAB = -1
 
 type Ctx = {
   cwd: string
@@ -84,6 +86,8 @@ const abs = (p: string) => (p.startsWith('/') ? p : `${ctx.cwd.replace(/\/$/, ''
 const rel = (p: string) => (ctx.cwd && p.startsWith(ctx.cwd + '/') ? p.slice(ctx.cwd.length + 1) : p)
 const emptyDraft = (): Draft => ({ selected: [], other: '', notes: '', later: false })
 const noQuote: QuoteView = { quote: '', quoteStart: -1, quoteEnd: -1, quoteSection: '' }
+/** Text on one line, runs of whitespace collapsed, for a caption. */
+const oneLine = (s: string) => s.replace(/\s+/g, ' ').trim()
 
 function fail(errs: string[]): never {
   throw new Error('fix these and call again:\n- ' + errs.join('\n- '))
@@ -343,7 +347,7 @@ async function ask($: EngineInterface, args: Args, signal: AbortSignal): Promise
   // Asking again reopens a finished spec.
   const opened = { ...prev, text, isDone: false }
   await update($, viewAtom, v => (v ? { ...v, text, isDone: false } : v))
-  await update($, uiAtom, () => ({ ...(first ? targetOf(opened, first, first.docs) : { file: '', shown: -1 }), codeTab: 0 }))
+  await update($, uiAtom, () => ({ ...(first ? targetOf(opened, first, first.docs) : { file: '', shown: -1 }), codeTab: FORM_TAB }))
   void $.ui.open({ id: PANE, title: 'Spec' })
   $.ui.toast(`Claude asks ${questions.length === 1 ? 'a question' : `${questions.length} questions`} in the ai-specview pane`)
   if (first && (first.quoteStart >= 0 || first.docs.length > 0)) scrollToQuote($)
@@ -421,7 +425,7 @@ async function gotoQuestion($: EngineInterface, k: number) {
   if (!a || !q) return
   await update($, askAtom, cur => (cur ? { ...cur, index: k, review: false } : cur))
   const v = await read($, viewAtom)
-  await update($, uiAtom, () => ({ ...(v ? targetOf(v, q, q.docs) : { file: '', shown: -1 }), codeTab: 0 }))
+  await update($, uiAtom, () => ({ ...(v ? targetOf(v, q, q.docs) : { file: '', shown: -1 }), codeTab: FORM_TAB }))
   if (q.quoteStart >= 0 || q.docs.length > 0) scrollToQuote($)
 }
 
@@ -444,7 +448,7 @@ function nextOpen(a: AskView, k: number): number {
 async function showReview($: EngineInterface) {
   await update($, askAtom, cur => (cur ? { ...cur, review: true, error: '' } : cur))
   const v = await read($, viewAtom)
-  await update($, uiAtom, () => ({ ...(v ? targetOf(v, v, v.docs) : { file: '', shown: -1 }), codeTab: 0 }))
+  await update($, uiAtom, () => ({ ...(v ? targetOf(v, v, v.docs) : { file: '', shown: -1 }), codeTab: FORM_TAB }))
 }
 
 /** After a single choice or Decide later: the next open question, or the review. */
@@ -634,7 +638,12 @@ export const register: Register = on => {
         ? spec.splitAround(shownText, quoted.quoteStart - lo, quoted.quoteEnd - lo)
       : { before: shownText, focus: '', after: '' }
     const wide = e.props.placement === 'dock' && e.props.bodyColumns >= WIDE
-    const tab = Math.min(ui.codeTab, Math.max(0, codes.length - 1))
+    const formShown = !!asking && (question !== undefined || reviewing)
+    // Two columns while questions wait: the side column shows the form or one
+    // code ref, chosen by tabs, so neither pushes the other out of view.
+    const sideTabs = wide && formShown && codes.length > 0
+    const onForm = sideTabs && ui.codeTab < 0
+    const tab = Math.min(Math.max(0, ui.codeTab), Math.max(0, codes.length - 1))
     const active = codes[tab]
     const showSection = (where: number) => update($, uiAtom, u => ({ ...u, shown: where }))
     const showFile = (file: string) => {
@@ -662,13 +671,14 @@ export const register: Register = on => {
     }))
 
     const specColumn = (
-      <Box key="spec-col" flexDirection="column" width={wide ? '55%' : '100%'} flexShrink={1}>
+      <Box key="spec-col" flexDirection="column" width={wide && (formShown || codes.length > 0) ? '55%' : '100%'} flexShrink={1}>
         {parts.before !== '' && <Markdown key="before" text={parts.before.slice(-MAX_MARKDOWN)} />}
         {parts.focus !== '' && (
           <Box key="quote" flexDirection="column" borderStyle="round" borderColor="yellow" paddingX={1}>
-            <Text color="yellow" size="caption">
-              {question ? `Question ${asking!.index + 1}` : 'Focus'}
-              {quoted?.quoteSection && section?.title !== quoted.quoteSection ? ` in ${quoted.quoteSection}` : ''}
+            <Text key="quote-label" color="yellow" size="caption" wrap="truncate-end" maxLines={1}>
+              {`${question ? `Question ${asking!.index + 1}` : 'Focus'}${
+                quoted?.quoteSection && section?.title !== quoted.quoteSection ? ` in ${quoted.quoteSection}` : ''
+              }${question ? `: ${oneLine(question.text)}` : ''}`}
             </Text>
             <Markdown key="quote-text" text={parts.focus} />
           </Box>
@@ -681,17 +691,26 @@ export const register: Register = on => {
       codes.length === 0 ? null : (
         <Box key="code" flexDirection="column" rowGap={1}>
           <Box flexDirection="row" flexWrap="wrap" columnGap={1}>
+            {sideTabs && (
+              <Button
+                key="side-form"
+                variant={onForm ? 'primary' : 'secondary'}
+                onPress={() => update($, uiAtom, u => ({ ...u, codeTab: FORM_TAB }))}
+              >
+                {reviewing ? 'Answers' : 'Question'}
+              </Button>
+            )}
             {codes.map((c, i) => (
               <Button
                 key={`code-${i}`}
-                variant={i === tab ? 'primary' : 'secondary'}
+                variant={!onForm && i === tab ? 'primary' : 'secondary'}
                 onPress={() => update($, uiAtom, u => ({ ...u, codeTab: i }))}
               >
                 {c.label.replace(/^.*\//, '')}
               </Button>
             ))}
           </Box>
-          {active && (
+          {active && !onForm && (
             <Box flexDirection="column">
               <Text dimColor>{active.label}</Text>
               <Code source={active.source.slice(0, MAX_CODE)} path={active.path} startLine={active.startLine} />
@@ -710,6 +729,14 @@ export const register: Register = on => {
         body = (
           <Box key={`question-${question.id}`} flexDirection="column" rowGap={1}>
             <Markdown key="q-text" text={question.text} />
+            {!wide && question.quote !== '' && (
+              // One column puts the spec under the form: repeat the quote here.
+              <Box key="q-quote" paddingLeft={2}>
+                <Text dimColor italic wrap="wrap" maxLines={3}>
+                  {`“${oneLine(question.quote)}”`}
+                </Text>
+              </Box>
+            )}
             <Box flexDirection="column">
               {question.options.map((o, k) => {
                 const picked = !d.later && d.selected.includes(o.label)
@@ -722,7 +749,12 @@ export const register: Register = on => {
                       variant={picked ? 'primary' : 'secondary'}
                       onPress={() => pickOption($, question, o.label)}
                     >
-                      {`${question.multi ? (picked ? '☑' : '☐') : picked ? '●' : '○'} ${o.label}${o.recommended ? '  (recommended)' : ''}`}
+                      {`${question.multi ? (picked ? '☑' : '☐') : picked ? '●' : '○'} ${o.label}`}
+                      {o.recommended && (
+                        <Text key={`opt-rec-${k}`} color="green" bold>
+                          {'  recommended'}
+                        </Text>
+                      )}
                     </Button>
                     {o.description !== '' && (
                       <Box key={`opt-desc-${k}`} paddingLeft={2}>
@@ -805,7 +837,8 @@ export const register: Register = on => {
           </Box>
           {body}
           {asking.error !== '' && <Text color="red">{asking.error}</Text>}
-          <Box flexDirection="row" flexWrap="wrap" columnGap={1}>
+          {(reviewing || n > 1 || all) && (
+          <Box key="ask-nav" flexDirection="row" flexWrap="wrap" columnGap={1}>
             {reviewing ? (
               <Button key="prev" onPress={() => gotoQuestion($, n - 1)}>
                 Previous
@@ -827,13 +860,16 @@ export const register: Register = on => {
                 Review
               </Button>
             )}
-            <Button key="send" variant="primary" onPress={() => sendAnswers($)}>
+          </Box>
+          )}
+          <Box key="ask-end" flexDirection="row" flexWrap="wrap" columnGap={2} alignItems="center">
+            <Button key="send" variant={all ? 'primary' : 'secondary'} onPress={() => sendAnswers($)}>
               Send answers
             </Button>
-            <Button key="in-chat" onPress={press => backToChat($, press.surface)}>
+            <Button key="in-chat" plain dimColor onPress={press => backToChat($, press.surface)}>
               Back to chat
             </Button>
-            <Button key="skip" onPress={() => skip($)}>
+            <Button key="skip" plain dimColor onPress={() => skip($)}>
               Skip
             </Button>
           </Box>
@@ -841,20 +877,37 @@ export const register: Register = on => {
       )
     }
 
+    // With side tabs, the tab row comes first and the form takes the code's place.
     const side =
       askPanel || codeBlock ? (
         <Box key="side-col" flexDirection="column" width={wide ? '45%' : '100%'} flexShrink={1} rowGap={1}>
-          {askPanel}
-          {codeBlock}
+          {sideTabs ? codeBlock : askPanel}
+          {sideTabs ? onForm && askPanel : codeBlock}
         </Box>
       ) : null
+
+    // One line: the file, then the section shown, the spec it belongs to and the match.
+    const crumbs = [
+      section ? `› ${section.title}` : `› ${shownFile === primary ? 'Whole spec' : 'Whole file'}`,
+      shownFile !== primary ? `in the spec ${view.title}` : '',
+      view.match !== '' && !question && shownFile === primary ? `quote match ${view.match}` : '',
+    ].filter(s => s !== '')
+    const jumps =
+      (shownFile === primary && view.changedSections.length > 0) ||
+      docs.some(d => d.path !== shownFile) ||
+      (hasTarget && awayFromTarget)
 
     return (
       <Box flexDirection="column" rowGap={1}>
         <Box flexDirection="column">
-          <Text bold>{label(shownFile)}</Text>
-          {shownFile !== primary && <Text dimColor>in the spec {view.title}</Text>}
-          {view.match !== '' && !question && shownFile === primary && <Text dimColor>quote match {view.match}</Text>}
+          <Box key="crumbs" flexDirection="row" flexWrap="wrap" columnGap={1}>
+            <Text bold>{label(shownFile)}</Text>
+            {crumbs.map((c, i) => (
+              <Text key={`crumb-${i}`} dimColor>
+                {c}
+              </Text>
+            ))}
+          </Box>
           {view.error !== '' && <Text color="red">{view.error}</Text>}
           {fileError !== '' && <Text color="red">{fileError}</Text>}
         </Box>
@@ -877,6 +930,9 @@ export const register: Register = on => {
             value={String(ui.shown)}
             onSelect={v => void showSection(Number(v))}
           />
+        </Box>
+        {jumps && (
+        <Box key="jumps" flexDirection="row" flexWrap="wrap" columnGap={2} alignItems="center">
           {shownFile === primary && view.changedSections.length > 0 && <Text dimColor>Changed:</Text>}
           {shownFile === primary &&
             view.changedSections.map((title, i) => (
@@ -901,6 +957,7 @@ export const register: Register = on => {
             </Button>
           )}
         </Box>
+        )}
         {wide ? (
           <Box flexDirection="row" columnGap={2}>
             {specColumn}

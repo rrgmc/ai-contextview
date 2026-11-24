@@ -104,7 +104,7 @@ export type PaneUi = {
   file: string
   /** Offset of the heading of the section shown, or -1 for the whole spec. */
   shown: number
-  /** Index of the code tab shown. */
+  /** Index of the code tab shown; -1 for the question form, which shares the side column in two columns. */
   codeTab: number
 }
 

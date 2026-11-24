@@ -109,17 +109,23 @@ inside the folder for a folder spec, and hold the quote.
 
 | Part | What it does |
 |---|---|
-| Header | The file shown; the spec it belongs to when that is another file; the quote match |
+| Header | One line: the file shown, "› " and the section shown, the spec it belongs to when that is another file, the quote match |
 | File picker | `Select` over the spec's files and any other file a doc ref quotes, marked "(changed)" and "(quoted)"; shown when there is more than one |
 | Section picker | `Select` over "Whole spec" (or "Whole file") and every heading of the file shown, indented by level; changed sections are marked |
-| Buttons | One per changed section; "Quote in …" per doc ref in another file; "Back to the focus" or "Back to the question" after the person moved away |
-| Spec column | The section shown, as markdown. The block that holds the quote is framed in yellow, with the quote in bold |
-| Side column | The question form while questions wait; then one `Button` tab per code ref and the `Code` of the active one, with line numbers |
+| Jump links | A row under the pickers, shown when it has a link: one per changed section; "Quote in …" per doc ref in another file; "Back to the focus" or "Back to the question" after the person moved away |
+| Spec column | The section shown, as markdown. The block that holds the quote is framed in yellow, with the quote in bold. Its caption is "Focus", or "Question N:" and the question on one line |
+| Side column | The question form while questions wait, and one `Button` tab per code ref with the `Code` of the active one, with line numbers |
+| Question form | The question, its options (a recommended one marked in green, each description under its button), "Decide later", Other and Notes. Under them a row of Previous, Next or Review, then a row of "Send answers", primary once every question has an answer, and the plain links "Back to chat" and "Skip" |
 | Banner | After `spec_done`, "Spec finished" with the summary |
 
 - **Columns.** Side by side (55% and 45%) when the pane is docked and at least
-  100 cells wide. Otherwise the question form comes first, then the spec, then
-  the code.
+  100 cells wide, and there is a question or a code ref to show; with neither,
+  the spec takes the whole width. Otherwise the question form comes first,
+  with the quote repeated under the question, then the spec, then the code.
+- **Side tabs.** In two columns, while questions wait and the current question
+  has code refs, a "Question" tab ("Answers" in the review) leads the code
+  tabs, and the side column shows either the form or one code ref. Each
+  question opens on the form; `codeTab` is -1 while it shows.
 - **Where it opens.** A focus or a question opens on the primary quote's
   section, else on the first doc ref's file and section. Moving between
   questions moves the pane with them, and the pane scrolls the frame into view.
