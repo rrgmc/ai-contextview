@@ -681,15 +681,25 @@ export const register: Register = on => {
           <Box flexDirection="column">
             {question.options.map((o, k) => {
               const picked = !d.later && d.selected.includes(o.label)
+              // A desktop draws a Button on one row and cuts what does not fit,
+              // so the description goes under it as Text, which wraps.
               return (
-                <Button
-                  key={`opt-${k}`}
-                  variant={picked ? 'primary' : 'secondary'}
-                  onPress={() => pickOption($, question, o.label)}
-                >
-                  {`${question.multi ? (picked ? '☑' : '☐') : picked ? '●' : '○'} ${o.label}${o.recommended ? '  (recommended)' : ''}`}
-                  {o.description !== '' && <Text dimColor>{o.description}</Text>}
-                </Button>
+                <Box key={`opt-box-${k}`} flexDirection="column">
+                  <Button
+                    key={`opt-${k}`}
+                    variant={picked ? 'primary' : 'secondary'}
+                    onPress={() => pickOption($, question, o.label)}
+                  >
+                    {`${question.multi ? (picked ? '☑' : '☐') : picked ? '●' : '○'} ${o.label}${o.recommended ? '  (recommended)' : ''}`}
+                  </Button>
+                  {o.description !== '' && (
+                    <Box key={`opt-desc-${k}`} paddingLeft={2}>
+                      <Text dimColor wrap="wrap">
+                        {o.description}
+                      </Text>
+                    </Box>
+                  )}
+                </Box>
               )
             })}
             <Button

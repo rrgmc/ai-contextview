@@ -337,6 +337,9 @@ test('questions are answered in the pane, each showing its own refs', async ($, 
   const { pending, ui } = await startAsk($, clk)
   expect((await ui.find({ key: 'quote-text' }))?.props.text).toContain('**kept in memory**')
   expect(JSON.stringify((await ui.find({ key: 'opt-1' }))?.props)).toContain('(recommended)')
+  // The description wraps under the button rather than inside it.
+  expect(JSON.stringify((await ui.find({ key: 'opt-1' }))?.props)).not.toContain('Survives a restart')
+  expect(JSON.stringify(await ui.find({ key: 'opt-desc-1' }))).toContain('Survives a restart')
 
   // A single choice moves on to q2, whose doc ref and code show.
   await ui.press({ key: 'opt-1' })
