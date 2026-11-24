@@ -180,7 +180,9 @@ State is small, so no event log is needed.
   when the user last replied to a question set (default), or when the
   session started. Both views show the whole document: "Rendered" marks added
   blocks green and removed blocks red; "Source" shows a line diff of the
-  markdown. Opening the tab scrolls to the first change.
+  markdown. Opening the tab scrolls to the first change. The tab always
+  shows the document the Spec tab shows: when requests finish out of order,
+  only the newest one fills the pane.
   The daemon keeps these versions in memory, so no git is needed. The
   "Spec finished" banner links to all changes in the session.
 - **Show current passage**: a link in the doc pane header, shown while a

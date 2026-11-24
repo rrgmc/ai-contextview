@@ -33,7 +33,8 @@ What changed from the plan while building and using it:
 - **Changes tab.** The doc pane has Spec and Changes tabs. Changes shows the
   whole document as a block diff (rendered) or a line diff (source), against
   the last answers or the start of the session. This settles the former open
-  question about a spec diff.
+  question about a spec diff. The tab always shows the document the Spec
+  tab shows; a slow, older request no longer replaces a newer one.
 - **"Show current passage" link** next to "open in editor" scrolls back to the
   highlighted passage.
 - **Layout.** Spec on the left; questions on the right with the code below them.

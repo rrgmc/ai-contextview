@@ -91,12 +91,23 @@
 
   async function loadChanges() {
     if (!currentDoc) return;
-    const q = "?path=" + encodeURIComponent(currentDoc) + (chgBase ? "&base=" + chgBase : "") + "&mode=" + chgMode;
+    // Requests can finish out of order (a doc switch, a refresh, a new base
+    // or mode). Only the newest one may fill the pane, so the diff always
+    // belongs to the doc the Spec tab shows.
+    const seq = loadChanges.seq = (loadChanges.seq || 0) + 1;
+    const path = currentDoc;
+    const mode = chgMode;
+    if (path !== loadChanges.shown) {
+      changesEl.innerHTML = '<p class="empty">Loading the changes…</p>';
+      loadChanges.shown = path;
+    }
+    const q = "?path=" + encodeURIComponent(path) + (chgBase ? "&base=" + chgBase : "") + "&mode=" + mode;
     try {
       const c = await getJSON(base + "/changes" + q);
+      if (seq !== loadChanges.seq) return;
       // The whole document is shown: on first open (or a new base or
       // mode) scroll to the first change; on a refresh keep the position.
-      const key = currentDoc + "|" + c.base + "|" + chgMode;
+      const key = path + "|" + c.base + "|" + mode;
       const keep = changesEl.scrollTop;
       changesEl.innerHTML = c.html;
       const first = $(".chg-add, .chg-del, .sd-add, .sd-del", changesEl);
@@ -107,7 +118,9 @@
       sel.querySelector('option[value="answers"]').disabled = !c.has_answers;
       sel.value = c.base;
       $("#chg-since").textContent = (c.count ? c.count + " change" + (c.count === 1 ? "" : "s") : "No changes") + " since " + c.since;
-    } catch (e) { changesEl.innerHTML = '<p class="empty">Cannot load the changes.</p>'; }
+    } catch (e) {
+      if (seq === loadChanges.seq) changesEl.innerHTML = '<p class="empty">Cannot load the changes.</p>';
+    }
   }
 
   function setView(v) {
@@ -122,8 +135,11 @@
 
   async function loadDoc(path) {
     if (path === currentDoc) return;
+    // Two quick clicks: only the last doc asked for is shown.
+    const seq = loadDoc.seq = (loadDoc.seq || 0) + 1;
     try {
       const p = await getJSON(base + "/doc?path=" + encodeURIComponent(path));
+      if (seq !== loadDoc.seq) return;
       setDoc(p, false);
       docEl.scrollTop = 0;
     } catch (e) { toast("Cannot open " + path); }
