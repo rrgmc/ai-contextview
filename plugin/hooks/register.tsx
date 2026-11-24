@@ -47,7 +47,7 @@ const uiAtom = atom({ plugin: 'ai-specview', key: 'ui' } as const, { file: '', s
   shape: 'ui-2',
 })
 const askAtom = atom({ plugin: 'ai-specview', key: 'ask' } as const, null as AskView | null, {
-  shape: 'ask-2',
+  shape: 'ask-3',
 })
 
 // Messages returned to Claude, as internal/tools sends them.
@@ -335,6 +335,7 @@ async function ask($: EngineInterface, args: Args, signal: AbortSignal): Promise
     title: String(args.title ?? ''),
     questions,
     index: 0,
+    review: false,
     drafts: {},
     error: '',
     result: null,
@@ -418,7 +419,7 @@ async function gotoQuestion($: EngineInterface, k: number) {
   const a = await read($, askAtom)
   const q = a?.questions[k]
   if (!a || !q) return
-  await update($, askAtom, cur => (cur ? { ...cur, index: k } : cur))
+  await update($, askAtom, cur => (cur ? { ...cur, index: k, review: false } : cur))
   const v = await read($, viewAtom)
   await update($, uiAtom, () => ({ ...(v ? targetOf(v, q, q.docs) : { file: '', shown: -1 }), codeTab: 0 }))
   if (q.quoteStart >= 0 || q.docs.length > 0) scrollToQuote($)
@@ -428,17 +429,57 @@ async function editDraft($: EngineInterface, id: string, fn: (d: Draft) => Draft
   await update($, askAtom, cur => (cur ? { ...cur, error: '', drafts: { ...cur.drafts, [id]: fn(cur.drafts[id] ?? emptyDraft()) } } : cur))
 }
 
+/** The next unanswered question after index k, wrapping around; -1 when all have an answer. */
+function nextOpen(a: AskView, k: number): number {
+  const n = a.questions.length
+  for (let step = 1; step <= n; step++) {
+    const i = (k + step) % n
+    const q = a.questions[i]!
+    if (!isAnswered(q, a.drafts[q.id])) return i
+  }
+  return -1
+}
+
+/** Shows every answer for review, as the browser page does after the last one. */
+async function showReview($: EngineInterface) {
+  await update($, askAtom, cur => (cur ? { ...cur, review: true, error: '' } : cur))
+  const v = await read($, viewAtom)
+  await update($, uiAtom, () => ({ ...(v ? targetOf(v, v, v.docs) : { file: '', shown: -1 }), codeTab: 0 }))
+}
+
+/** After a single choice or Decide later: the next open question, or the review. */
+async function advance($: EngineInterface, q: QuestionView) {
+  const a = await read($, askAtom)
+  if (!a || a.questions[a.index]?.id !== q.id || !isAnswered(q, a.drafts[q.id])) return
+  const next = nextOpen(a, a.index)
+  if (next >= 0) await gotoQuestion($, next)
+  else await showReview($)
+}
+
 async function pickOption($: EngineInterface, q: QuestionView, label: string) {
   await editDraft($, q.id, d => {
     if (!q.multi) return { ...d, selected: [label], later: false }
     const has = d.selected.includes(label)
     return { ...d, selected: has ? d.selected.filter(s => s !== label) : [...d.selected, label], later: false }
   })
-  // A single choice moves on to the next unanswered question.
-  const a = await read($, askAtom)
-  if (!a || q.multi) return
-  const next = a.questions.findIndex((other, k) => k > a.index && !isAnswered(other, a.drafts[other.id]))
-  if (next >= 0) await gotoQuestion($, next)
+  if (!q.multi) await advance($, q)
+}
+
+async function toggleLater($: EngineInterface, q: QuestionView) {
+  let later = false
+  await editDraft($, q.id, cur => {
+    later = !cur.later
+    return later ? { ...cur, later: true, selected: [], other: '' } : { ...cur, later: false }
+  })
+  if (later) await advance($, q)
+}
+
+/** One answer as text for the review, as answerText in the browser page. */
+function answerText(q: QuestionView, d: Draft): string {
+  if (d.later) return 'Decide later'
+  const parts = q.options.map(o => o.label).filter(l => d.selected.includes(l))
+  if (q.allowOther && d.other.trim()) parts.push(`Other: ${d.other.trim()}`)
+  return parts.join(', ')
 }
 
 async function sendAnswers($: EngineInterface) {
@@ -556,7 +597,8 @@ export const register: Register = on => {
     if (!view) return <Text dimColor>No spec shown yet.</Text>
 
     const asking = a && !a.result ? a : null
-    const question = asking ? asking.questions[asking.index] : undefined
+    const reviewing = !!asking?.review
+    const question = asking && !reviewing ? asking.questions[asking.index] : undefined
     // What the spec and code columns show: the current question's refs while
     // questions wait, else the last focus.
     const at: QuoteView = question ?? view
@@ -659,9 +701,93 @@ export const register: Register = on => {
       )
 
     let askPanel = null
-    if (asking && question) {
+    if (asking && (question || reviewing)) {
       const n = asking.questions.length
-      const d = asking.drafts[question.id] ?? emptyDraft()
+      const all = asking.questions.every(q => isAnswered(q, asking.drafts[q.id]))
+      let body
+      if (question) {
+        const d = asking.drafts[question.id] ?? emptyDraft()
+        body = (
+          <Box key={`question-${question.id}`} flexDirection="column" rowGap={1}>
+            <Markdown key="q-text" text={question.text} />
+            <Box flexDirection="column">
+              {question.options.map((o, k) => {
+                const picked = !d.later && d.selected.includes(o.label)
+                // A desktop draws a Button on one row and cuts what does not fit,
+                // so the description goes under it as Text, which wraps.
+                return (
+                  <Box key={`opt-box-${k}`} flexDirection="column">
+                    <Button
+                      key={`opt-${k}`}
+                      variant={picked ? 'primary' : 'secondary'}
+                      onPress={() => pickOption($, question, o.label)}
+                    >
+                      {`${question.multi ? (picked ? '☑' : '☐') : picked ? '●' : '○'} ${o.label}${o.recommended ? '  (recommended)' : ''}`}
+                    </Button>
+                    {o.description !== '' && (
+                      <Box key={`opt-desc-${k}`} paddingLeft={2}>
+                        <Text dimColor wrap="wrap">
+                          {o.description}
+                        </Text>
+                      </Box>
+                    )}
+                  </Box>
+                )
+              })}
+              <Button
+                key="later"
+                variant={d.later ? 'primary' : 'secondary'}
+                onPress={() => toggleLater($, question)}
+              >
+                {`${d.later ? '●' : '○'} Decide later`}
+              </Button>
+            </Box>
+            {question.allowOther && (
+              <Input
+                key={`other-${question.id}`}
+                label="Other"
+                placeholder="Your own answer"
+                value={d.other}
+                onInput={value => void editDraft($, question.id, cur => ({ ...cur, other: value, later: value.trim() ? false : cur.later }))}
+                onSubmit={value => void editDraft($, question.id, cur => ({ ...cur, other: value }))}
+              />
+            )}
+            <Input
+              key={`notes-${question.id}`}
+              label="Notes"
+              placeholder="Optional, sent with the answer"
+              value={d.notes}
+              onInput={value => void editDraft($, question.id, cur => ({ ...cur, notes: value }))}
+              onSubmit={value => void editDraft($, question.id, cur => ({ ...cur, notes: value }))}
+            />
+          </Box>
+        )
+      } else {
+        body = (
+          <Box key="review" flexDirection="column" rowGap={1}>
+            <Text>All questions answered. Review and send, or press a question number to change it.</Text>
+            {asking.questions.map((q, k) => {
+              const d = asking.drafts[q.id] ?? emptyDraft()
+              const notes = d.notes.trim()
+              return (
+                <Box key={`review-box-${k}`} flexDirection="column">
+                  <Box flexDirection="row" columnGap={1}>
+                    <Button key={`review-${k}`} plain onPress={() => gotoQuestion($, k)}>
+                      {`Q${k + 1}`}
+                    </Button>
+                    <Text wrap="wrap">{q.text.trim()}</Text>
+                  </Box>
+                  <Box paddingLeft={2}>
+                    <Text dimColor={d.later} wrap="wrap">
+                      {`→ ${answerText(q, d)}${notes ? `  (${notes})` : ''}`}
+                    </Text>
+                  </Box>
+                </Box>
+              )
+            })}
+          </Box>
+        )
+      }
       askPanel = (
         <Box key="ask" flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1} rowGap={1}>
           <Box flexDirection="row" flexWrap="wrap" columnGap={1} alignItems="center">
@@ -670,78 +796,35 @@ export const register: Register = on => {
               <Button
                 key={`step-${k}`}
                 plain
-                variant={k === asking.index ? 'primary' : 'secondary'}
+                variant={k === asking.index && !reviewing ? 'primary' : 'secondary'}
                 onPress={() => gotoQuestion($, k)}
               >
                 {`${k + 1}${isAnswered(q, asking.drafts[q.id]) ? ' ✓' : ''}`}
               </Button>
             ))}
           </Box>
-          <Markdown key="q-text" text={question.text} />
-          <Box flexDirection="column">
-            {question.options.map((o, k) => {
-              const picked = !d.later && d.selected.includes(o.label)
-              // A desktop draws a Button on one row and cuts what does not fit,
-              // so the description goes under it as Text, which wraps.
-              return (
-                <Box key={`opt-box-${k}`} flexDirection="column">
-                  <Button
-                    key={`opt-${k}`}
-                    variant={picked ? 'primary' : 'secondary'}
-                    onPress={() => pickOption($, question, o.label)}
-                  >
-                    {`${question.multi ? (picked ? '☑' : '☐') : picked ? '●' : '○'} ${o.label}${o.recommended ? '  (recommended)' : ''}`}
-                  </Button>
-                  {o.description !== '' && (
-                    <Box key={`opt-desc-${k}`} paddingLeft={2}>
-                      <Text dimColor wrap="wrap">
-                        {o.description}
-                      </Text>
-                    </Box>
-                  )}
-                </Box>
-              )
-            })}
-            <Button
-              key="later"
-              variant={d.later ? 'primary' : 'secondary'}
-              onPress={() =>
-                editDraft($, question.id, cur =>
-                  cur.later ? { ...cur, later: false } : { ...cur, later: true, selected: [], other: '' },
-                )
-              }
-            >
-              {`${d.later ? '●' : '○'} Decide later`}
-            </Button>
-          </Box>
-          {question.allowOther && (
-            <Input
-              key={`other-${question.id}`}
-              label="Other"
-              placeholder="Your own answer"
-              value={d.other}
-              onInput={value => void editDraft($, question.id, cur => ({ ...cur, other: value, later: value.trim() ? false : cur.later }))}
-              onSubmit={value => void editDraft($, question.id, cur => ({ ...cur, other: value }))}
-            />
-          )}
-          <Input
-            key={`notes-${question.id}`}
-            label="Notes"
-            placeholder="Optional, sent with the answer"
-            value={d.notes}
-            onInput={value => void editDraft($, question.id, cur => ({ ...cur, notes: value }))}
-            onSubmit={value => void editDraft($, question.id, cur => ({ ...cur, notes: value }))}
-          />
+          {body}
           {asking.error !== '' && <Text color="red">{asking.error}</Text>}
           <Box flexDirection="row" flexWrap="wrap" columnGap={1}>
-            {asking.index > 0 && (
-              <Button key="prev" onPress={() => gotoQuestion($, asking.index - 1)}>
+            {reviewing ? (
+              <Button key="prev" onPress={() => gotoQuestion($, n - 1)}>
                 Previous
               </Button>
+            ) : (
+              asking.index > 0 && (
+                <Button key="prev" onPress={() => gotoQuestion($, asking.index - 1)}>
+                  Previous
+                </Button>
+              )
             )}
-            {asking.index < n - 1 && (
+            {!reviewing && asking.index < n - 1 && (
               <Button key="next" onPress={() => gotoQuestion($, asking.index + 1)}>
                 Next
+              </Button>
+            )}
+            {!reviewing && asking.index === n - 1 && all && (
+              <Button key="to-review" onPress={() => showReview($)}>
+                Review
               </Button>
             )}
             <Button key="send" variant="primary" onPress={() => sendAnswers($)}>

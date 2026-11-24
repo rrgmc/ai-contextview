@@ -90,6 +90,8 @@ export type AskView = {
   title: string
   questions: QuestionView[]
   index: number
+  /** True while the pane shows every answer for review instead of one question. */
+  review: boolean
   drafts: Record<string, Draft>
   error: string
   /** Null while the questions wait for the person. */

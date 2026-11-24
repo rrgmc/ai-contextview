@@ -84,6 +84,11 @@ inside the folder for a folder spec, and hold the quote.
   `in_chat` for "Back to chat", which also copies the questions to the
   clipboard, and `dismissed` for "Skip". "Send answers" names the questions
   still unanswered and goes to the first. There is no `keep_open`.
+- **Review.** A single choice or "Decide later" moves on to the next
+  unanswered question. Once every question has an answer, the form shows a
+  review in its place, as the browser page does: one line per question with
+  its answer and notes. A line, or a question number, goes back to that
+  question; "Review" on the last question returns to the review.
 - **`spec_done`.** Checks the summary's length (8,000 bytes), clears the focus
   and shows a "Spec finished" banner with the summary. The next `spec_show` or
   `ask` reopens the spec.

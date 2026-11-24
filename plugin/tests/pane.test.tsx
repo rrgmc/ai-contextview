@@ -380,6 +380,34 @@ test('Send asks for every answer; Decide later defers one', async ($, on) => {
   await ui.unmount()
 })
 
+test('after the last answer the pane shows every answer for review', async ($, on) => {
+  const clk = engine(on)
+  const { pending, ui } = await startAsk($, clk)
+  await ui.press({ key: 'opt-1' })
+  await ui.input({ key: 'notes-q2', text: 'keep it small', kind: 'change' })
+  await ui.press({ key: 'later' })
+
+  expect(await ui.find({ key: 'review' })).toBeDefined()
+  expect(await ui.find({ key: 'q-text' })).toBeUndefined()
+  expect((await ui.find({ type: 'Text', text: /^→ Disk/ }))?.text).toBe('→ Disk')
+  expect((await ui.find({ type: 'Text', text: /^→ Decide later/ }))?.text).toBe('→ Decide later  (keep it small)')
+
+  // A review line goes back to its question; Review returns once all are answered.
+  await ui.press({ key: 'review-0' })
+  expect(await ui.find({ key: 'review' })).toBeUndefined()
+  expect((await ui.find({ key: 'quote-text' }))?.props.text).toContain('**kept in memory**')
+  await ui.press({ key: 'step-1' })
+  await ui.press({ key: 'to-review' })
+  expect(await ui.find({ key: 'review' })).toBeDefined()
+
+  await ui.press({ key: 'send' })
+  await clk.advance(POLL)
+  const out = await result(pending)
+  expect(out.status).toBe('answered')
+  expect(out.deferred).toEqual(['q2'])
+  await ui.unmount()
+})
+
 test('Back to chat copies the questions; Skip dismisses', async ($, on) => {
   const clk = engine(on)
   const first = await startAsk($, clk)
