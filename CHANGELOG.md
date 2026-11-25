@@ -14,6 +14,23 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.0.0] - 2026-11-25
+
+### Added
+
+- Releases include Windows binaries for amd64 and arm64, as `.zip` archives
+  holding `ai-specview.exe`.
+
+### Fixed
+
+- On Windows, the bridge opens the viewer in the default browser when no page
+  is open, as it does on Linux and macOS.
+- `ai-specview` builds and runs on Windows 10 and later: `go install` no
+  longer fails there, and the daemon, the MCP bridge and the hook work with
+  Windows processes and paths.
+- The plugin finds the binary on Windows when it is installed under a
+  `GOPATH` such as `C:\Users\you\go`.
+
 ## [0.9.0] - 2026-11-24
 
 ### Changed
@@ -110,7 +127,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/rrgmc/ai-specview/compare/v0.9.0...v1.0.0
 [0.9.0]: https://github.com/rrgmc/ai-specview/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/rrgmc/ai-specview/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/rrgmc/ai-specview/compare/v0.6.0...v0.7.0
