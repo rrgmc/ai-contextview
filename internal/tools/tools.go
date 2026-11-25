@@ -81,11 +81,17 @@ func OpenBrowser(url string) {
 	if os.Getenv("AI_SPECVIEW_OPEN") == "never" {
 		return
 	}
-	name := "xdg-open"
-	if runtime.GOOS == "darwin" {
-		name = "open"
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = exec.Command("open", url)
+	case "windows":
+		// Not "cmd /c start": cmd would split the URL at "&".
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
+	default:
+		cmd = exec.Command("xdg-open", url)
 	}
-	_ = exec.Command(name, url).Start()
+	_ = cmd.Start()
 }
 
 func (b *Bridge) logf(format string, args ...any) {
