@@ -1,7 +1,7 @@
 # 05 — Milestones, testing, risks
 
 Each milestone ends with something runnable. M1 and M2 can proceed in parallel
-once M0 is done. M0–M7 are the POC; M8–M9 are the change-folder workflow (00
+once M0 is done. M0–M7 are the first version; M8–M9 are the change-folder workflow (00
 "Future").
 
 ## Status

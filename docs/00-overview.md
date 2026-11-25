@@ -25,7 +25,7 @@ A local viewer that, during a spec-elaboration session:
 4. Keeps **several Claude instances apart**. Each gets its own workspace, and
    their data never mixes.
 
-## Non-goals (POC)
+## Non-goals (first version)
 
 - No editing of spec or code inside ai-specview. It only views.
 - No support for clients other than Claude Code. Any MCP client should work,
@@ -105,7 +105,7 @@ in sync, which was the main cost of the Qt plan.
 
 ## Future: change folders and branch-per-task
 
-The POC works with one spec file. The longer-term workflow is:
+The first version works with one spec file. The longer-term workflow is:
 
 1. Each task starts on its **own Git branch**, containing an OpenSpec **change
    folder** built from a custom schema, e.g.:

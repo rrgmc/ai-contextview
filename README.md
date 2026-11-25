@@ -242,7 +242,7 @@ mod's tests.
 
 ## Status
 
-The POC (milestones M0–M7 in [docs/05-milestones.md](docs/05-milestones.md)) is
+The first version (milestones M0–M7 in [docs/05-milestones.md](docs/05-milestones.md)) is
 implemented. Differences from the plan:
 
 - The front end is plain JavaScript (about 400 lines) instead of htmx, so
