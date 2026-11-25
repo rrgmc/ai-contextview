@@ -67,6 +67,12 @@ What changed from the plan while building and using it:
   binaries and creates the GitHub release. The `CI` workflow tests every push
   to `master` and every pull request, except pushes that only change markdown
   files or `docs/`, such as a release commit.
+- **Windows.** The binary builds and its tests pass on Windows, which has
+  Unix sockets since Windows 10 1803. Platform code sits behind build tags:
+  the instance lock (`flock` / `LockFileEx`), detached daemons (`setsid` /
+  `DETACHED_PROCESS`) and the process tree (`ps` / a Toolhelp snapshot). CI
+  and releases do not cover Windows yet, and the plugin's launcher is a
+  `sh` script.
 - **Front end.** Plain JavaScript instead of htmx; the web server lives in
   `internal/daemon`. Browser tests in `internal/daemon/browser_test.go` drive
   the panel in headless Chrome.

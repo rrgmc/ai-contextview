@@ -219,7 +219,9 @@ Match          = "exact" | "normalized" | "fuzzy" | "heading" | "none"
 ### Transport
 
 - Unix socket at a fixed path: `$XDG_RUNTIME_DIR/ai-specview.sock`, or on macOS
-  `~/Library/Caches/ai-specview/ai-specview.sock`. Override with `$AI_SPECVIEW_SOCKET`.
+  `~/Library/Caches/ai-specview/ai-specview.sock`, or on Windows
+  `%LOCALAPPDATA%\ai-specview\ai-specview.sock`. Override with `$AI_SPECVIEW_SOCKET`;
+  keep the path under about 100 bytes, the Unix socket limit.
   The daemon creates it with mode `0600`.
 - Framing: **NDJSON**: one JSON object per line, UTF-8, `\n` terminated. Maximum
   line length 4 MiB.
