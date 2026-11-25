@@ -24,7 +24,8 @@ The screenshots show the browser viewer with sample data.
 
 ## Install
 
-Install the binary from the latest release:
+ai-specview runs on Linux, macOS and Windows 10 or later. Install the binary
+from the latest release:
 
 ```bash
 go install github.com/rrgmc/ai-specview/cmd/ai-specview@latest
@@ -40,7 +41,8 @@ go install github.com/rrgmc/ai-specview/cmd/ai-specview@v0.9.0
 
 Each release on the
 [releases page](https://github.com/rrgmc/ai-specview/releases) also has
-prebuilt binaries for Linux and macOS. `@master` installs the newest commit
+prebuilt binaries for Linux and macOS; on Windows, use `go install`.
+`@master` installs the newest commit
 instead. `ai-specview version` prints the
 installed version. After an upgrade, run `ai-specview serve --restart` so a
 running daemon switches to the new binary.
@@ -198,7 +200,8 @@ directory within 2 hours takes the old workspace over.
 | `AI_SPECVIEW_DAEMON` | | Command the bridge runs instead of `ai-specview serve --detach` (for example `ai-specview fakeapp`). |
 
 The socket is `$XDG_RUNTIME_DIR/ai-specview.sock` or, on macOS,
-`~/Library/Caches/ai-specview/ai-specview.sock`. The detached daemon logs to
+`~/Library/Caches/ai-specview/ai-specview.sock`, or, on Windows,
+`%LOCALAPPDATA%\ai-specview\ai-specview.sock`. The detached daemon logs to
 `ai-specview.log` in the same cache directory.
 
 After upgrading, run `ai-specview serve --restart` so the running daemon matches

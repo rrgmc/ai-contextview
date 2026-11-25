@@ -50,7 +50,7 @@ internal/
   is listening; the bridge uses this to start it.
 - **Single instance**: on start, try to connect to the socket. If that works,
   another daemon is running: print its URL and exit 0. Otherwise take an
-  exclusive lock (`flock`) on `<socket>.lock`; if another daemon holds it, exit
+  exclusive lock (`flock`, `LockFileEx` on Windows) on `<socket>.lock`; if another daemon holds it, exit
   0. Only the lock holder removes a stale socket file and listens, so several
   bridges starting a daemon at the same moment get one daemon. The kernel drops
   the lock when the process ends, even on `kill -9`.

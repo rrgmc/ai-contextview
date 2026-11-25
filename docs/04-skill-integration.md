@@ -60,8 +60,9 @@ Add it to the user settings (`~/.claude/settings.json`) once:
 }
 ```
 
-Use the absolute path of the binary (e.g. `/Users/me/go/bin/ai-specview hook`)
-if `ai-specview` is not on the PATH the desktop app sees.
+Use the absolute path of the binary (e.g. `/Users/me/go/bin/ai-specview hook`,
+or `C:/Users/me/go/bin/ai-specview.exe hook` on Windows, where Claude Code runs
+hooks with Git Bash) if `ai-specview` is not on the PATH the desktop app sees.
 
 How it matches: the bridge sends the daemon its parent process, which is the
 Claude Code process of that session. The hook sends its own ancestor

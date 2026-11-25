@@ -93,7 +93,8 @@ resolved code refs.
    message, so Claude can fix them in one retry.
 4. Create a `qs_id`, forward `ask`, and wait for `ask_shown`. If any match is
    `none`, send `ask_cancel` and return a tool error. If `viewers` is 0, open
-   the workspace `url` with `open` (macOS) / `xdg-open` (Linux), unless
+   the workspace `url` with `open` (macOS), `xdg-open` (Linux) or
+   `rundll32 url.dll,FileProtocolHandler` (Windows), unless
    `AI_SPECVIEW_OPEN=never`.
 5. Wait for `ask_result` up to `AI_SPECVIEW_ASK_WAIT` (default **10 min**):
    - Got `ask_result` → map it to the tool result (01).
