@@ -70,9 +70,10 @@ What changed from the plan while building and using it:
 - **Windows.** The binary builds and its tests pass on Windows, which has
   Unix sockets since Windows 10 1803. Platform code sits behind build tags:
   the instance lock (`flock` / `LockFileEx`), detached daemons (`setsid` /
-  `DETACHED_PROCESS`) and the process tree (`ps` / a Toolhelp snapshot). CI
-  and releases do not cover Windows yet, and the plugin's launcher is a
-  `sh` script.
+  `DETACHED_PROCESS`) and the process tree (`ps` / a Toolhelp snapshot). The
+  plugin's `sh` launcher runs there too: Claude Code starts it with Git Bash,
+  which finds `ai-specview.exe` as `ai-specview`, and it reads a `;`-separated
+  Windows `GOPATH`. CI and releases do not cover Windows yet.
 - **Front end.** Plain JavaScript instead of htmx; the web server lives in
   `internal/daemon`. Browser tests in `internal/daemon/browser_test.go` drive
   the panel in headless Chrome.

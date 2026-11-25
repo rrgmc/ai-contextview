@@ -62,7 +62,8 @@ prompt, then **Add plugins**.
 
 The plugin finds the binary on the `PATH`, in `$GOBIN`, in `$(go env GOPATH)/bin`
 or in `~/go/bin`. Set `AI_SPECVIEW_BIN` to use another path. The plugin's skill is
-named `ai-specview:spec-elaborate`.
+named `ai-specview:spec-elaborate`. On Windows, the plugin runs through Git Bash,
+which Claude Code already needs there.
 
 If you set ai-specview up by hand before, remove the old pieces so they don't run
 twice: `claude mcp remove ai-specview`, the `ai-specview hook` entry in
