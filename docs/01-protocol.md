@@ -36,7 +36,10 @@ or a **folder of markdown artifacts** (a change folder, see 00).
 ```
 
 - `path` (required): a `.md`/`.markdown` file or a directory, relative to the
-  Claude cwd or absolute.
+  Claude cwd or absolute. As in Claude Code's file tools, a leading `~` or
+  `~/` is the user's home folder; on Windows, `~\` is too, and a Git Bash
+  path such as `/c/Users/me` is `C:\Users\me`. The same holds for `primary`
+  and for a doc ref `path`.
 - `primary` (optional, folders only): the file shown first and used when a ref
   has no `path`. Default: the first of `proposal.md`, `spec.md`, `README.md`
   that exists, else the first file alphabetically.

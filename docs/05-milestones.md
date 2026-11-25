@@ -46,12 +46,16 @@ What changed from the plan while building and using it:
 - **Pane mod.** The plugin also holds a Claude Code mod that draws the spec,
   the code and the questions in a pane beside the chat, with its own tools and
   its own skill, `spec-elaborate-mod` (06).
-- **Draft specs.** On request, both skills write the spec to
+- **Draft specs.** By default, both skills write a new spec to
   `~/.claude/specs/<project>/<slug>.md` instead of `docs/specs/`, so it stays
-  out of the repository like a plan-mode plan. Before `spec_done` they ask
-  whether to move it into `docs/specs/`. This needed no code change: the
-  tools already accept absolute paths outside the repository, and code refs
-  stay relative to the session's folder.
+  out of the repository like a plan-mode plan and needs no branch. They use
+  `docs/specs/` only when the user asks for the repository. Before
+  `spec_done` they ask whether to move it into `docs/specs/`. Drafts were
+  opt-in at first and became the default after v1.0.0. The bridge's tools
+  and the pane's tools expand a leading `~/` as Claude Code's file tools do,
+  so the skills pass the draft path with its `~` on every platform and need
+  no shell to find the home folder. Code refs stay relative to the session's
+  folder.
 - **Viewer in the desktop app's browser.** By default `spec_show` returns
   `open: "pane"` and the `spec-elaborate` skill opens the viewer `url` in the
   Claude desktop app's built-in browser. `AI_SPECVIEW_OPEN=browser` turns

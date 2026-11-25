@@ -52,6 +52,8 @@ const FILES: Record<string, string> = {
   '/repo/docs/change/notes/cache.md': DESIGN,
   '/repo/docs/change/.hidden.md': 'hidden',
   '/repo/store/store.go': GO,
+  // A draft spec in the home folder, outside the project.
+  '/home/me/.claude/specs/repo/draft.md': SPEC,
 }
 const DIRS: Record<string, { name: string; kind: 'file' | 'dir' }[]> = {
   '/repo/docs/change': [
@@ -94,6 +96,7 @@ const clipboard = { text: '' }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function engine(on: any, other: (e: { tool: string }) => unknown = () => ({ result: '{}' })) {
   const clk = mock.clock(on)
+  mock.env(on, { HOME: '/home/me' })
   // ask pauses with `sleep 1` through $.process.run: here, a second on this clock.
   on('process.run', async () => {
     await clk.sleep(1000)
@@ -308,6 +311,19 @@ test('a folder spec lists its markdown files and picks the primary as the bridge
   expect(failed(await call($, { tool: FOCUS, doc_refs: [{ path: '../design.md', quote: 'at most 100 widgets' }] }))).toBe(
     true,
   )
+})
+
+test('a path that starts with ~/ is in the home folder', async ($, on) => {
+  engine(on)
+  const shown = await start($, '~/.claude/specs/repo/draft.md')
+  expect(shown.sections).toContain('Storage')
+  // Code refs stay relative to the project.
+  expect(
+    failed(await call($, { tool: FOCUS, spec_quote: 'kept in memory', code_refs: [{ path: 'store/store.go', lines: '7-9' }] })),
+  ).toBe(false)
+  const ui = await $.ui.mount(pane('desktop', 140))
+  expect((await ui.find({ key: 'quote-text' }))?.props.text).toContain('**kept in memory**')
+  await ui.unmount()
 })
 
 // ----------------------------------------------------------------- questions

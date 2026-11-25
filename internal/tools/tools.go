@@ -101,6 +101,7 @@ func (b *Bridge) logf(format string, args ...any) {
 }
 
 func (b *Bridge) absPath(p string) string {
+	p = expandPath(p)
 	if filepath.IsAbs(p) {
 		return filepath.Clean(p)
 	}
@@ -157,7 +158,7 @@ func (b *Bridge) SpecShow(ctx context.Context, _ *mcp.CallToolRequest, in protoc
 		return nil, out, errors.New("path is required")
 	}
 	abs := b.absPath(in.Path)
-	root, err := specsrc.LoadRoot(abs, in.Primary)
+	root, err := specsrc.LoadRoot(abs, expandPath(in.Primary))
 	if err != nil {
 		return nil, out, err
 	}
@@ -208,9 +209,9 @@ func (b *Bridge) resolveDocs(label, specQuote, specSection string, refs []protoc
 	for _, d := range all {
 		abs := root.PrimaryAbs()
 		if d.Path != "" {
-			switch {
-			case filepath.IsAbs(d.Path):
-				abs = filepath.Clean(d.Path)
+			switch p := expandPath(d.Path); {
+			case filepath.IsAbs(p):
+				abs = filepath.Clean(p)
 			case root.IsDir:
 				abs = filepath.Join(root.Dir, d.Path)
 			default:

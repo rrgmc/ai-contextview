@@ -13,8 +13,8 @@ The user sees each question next to the spec passage and the code it is about.
 
 1. **Understand the request.** Restate the goal in one or two sentences. Find
    the spec file: an existing one the user names, or a new one created from
-   `templates/spec.md`. A new spec goes to `docs/specs/<slug>.md` in the
-   repository, unless the user asks for a draft (see **Draft specs**).
+   `templates/spec.md`. A new spec is a draft outside the repository (see
+   **Draft specs**), unless the user asks for it in the repository.
 2. **Show it.** As soon as the file exists, call `spec_show(path)`. Tell the
    user the viewer `url` from the result, once. Use the returned section names
    when you refer to sections. Open the viewer in the built-in browser when
@@ -70,19 +70,24 @@ browser and `open` is missing.
 
 ## Draft specs
 
-A draft spec lives outside the repository, like a plan in plan mode, so it is
-never committed by accident. Write one only when the user asks for it, for
-example "draft spec", "scratch spec", "don't put it in the repo" or "just for
-this session". Otherwise use `docs/specs/<slug>.md`.
+A new spec is a draft by default. A draft lives outside the repository, like
+a plan in plan mode, so it needs no branch and is never committed by accident.
+Write the new spec in the repository only when the user asks for it, for
+example "in the repo", "in docs/specs" or a path in the repository. Then use
+`docs/specs/<slug>.md`, or the path the user names, and skip the rest of this
+section. An existing spec the user names stays where it is.
 
-- Put it at `~/.claude/specs/<project>/<slug>.md`. `<project>` is the name of
-  the main checkout's folder, so every worktree of a repository shares one
-  folder:
-  `basename "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"`.
+- Put the draft at `~/.claude/specs/<project>/<slug>.md`. Write the path with
+  the `~` as it is, in the file tools (Read, Write, Edit) and in `spec_show`
+  and the other tools: all of them expand a leading `~/` to the user's home
+  folder, on macOS, Linux and Windows. Do not expand it in the shell. Code
+  refs stay relative to the current folder, as usual.
+- `<project>` is the name of the main checkout's folder, so every worktree of
+  a repository shares one folder. Run
+  `git rev-parse --path-format=absolute --git-common-dir`, which works the
+  same in Bash, Git Bash and PowerShell, and take the name of the folder that
+  holds the `.git` it prints: for `/home/me/src/shop/.git` it is `shop`.
   Outside a git repository, use the name of the current folder.
-- Pass the absolute path to `spec_show` and the other tools, with `~`
-  expanded: they do not expand it. Code refs stay relative to the current
-  folder, as usual.
 - Tell the user the path once, when you create the file.
 - Before `spec_done`, ask with `ask` whether to keep the draft or move it to
   `docs/specs/<slug>.md` in the repository. Quote the spec's title line. If

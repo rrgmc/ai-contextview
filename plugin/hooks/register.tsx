@@ -75,14 +75,22 @@ const FORM_TAB = -1
 
 type Ctx = {
   cwd: string
+  // The user's home folder, for paths that start with ~.
+  home: string
   // Outcomes the person chose, by question set, for the hook that waits on it.
   results: Map<string, AskOutput>
 }
 
-// Module state: it starts over on a reload, and session.start sets cwd again.
-const ctx: Ctx = { cwd: '', results: new Map() }
+// Module state: it starts over on a reload, and session.start sets cwd and home again.
+const ctx: Ctx = { cwd: '', home: '', results: new Map() }
 
-const abs = (p: string) => (p.startsWith('/') ? p : `${ctx.cwd.replace(/\/$/, '')}/${p}`)
+/** A leading ~ or ~/ is the home folder, as in Claude Code's file tools and the bridge. */
+const expand = (p: string) =>
+  ctx.home && (p === '~' || p.startsWith('~/')) ? ctx.home.replace(/[\\/]$/, '') + p.slice(1) : p
+const abs = (p: string) => {
+  const q = expand(p)
+  return q.startsWith('/') ? q : `${ctx.cwd.replace(/\/$/, '')}/${q}`
+}
 const rel = (p: string) => (ctx.cwd && p.startsWith(ctx.cwd + '/') ? p.slice(ctx.cwd.length + 1) : p)
 const emptyDraft = (): Draft => ({ selected: [], other: '', notes: '', later: false })
 const noQuote: QuoteView = { quote: '', quoteStart: -1, quoteEnd: -1, quoteSection: '' }
@@ -156,6 +164,7 @@ async function loadRoot($: EngineInterface, path: string, primary?: string) {
   if (names.length === 0) throw new Error(`${p} contains no markdown files`)
   let pick: string | undefined
   if (primary) {
+    primary = expand(primary)
     const want = primary.startsWith('/') ? under(p, clean(primary)) : clean(join(p, primary)).slice(p.length + 1)
     if (!names.includes(want)) throw new Error(`primary "${primary}" is not a markdown file inside ${p}`)
     pick = want
@@ -244,7 +253,8 @@ async function resolveDocs($: EngineInterface, view: SpecView, label: string, re
   const out: DocRefView[] = []
   for (const d of refs) {
     const given = d.path ?? ''
-    const p = !given ? view.specPath : given.startsWith('/') ? clean(given) : clean(view.isDir ? join(view.dir, given) : abs(given))
+    const full = expand(given)
+    const p = !given ? view.specPath : full.startsWith('/') ? clean(full) : clean(view.isDir ? join(view.dir, given) : abs(given))
     if (!MARKDOWN.test(p)) {
       errs.push(`${label}: doc ref ${given} is not a markdown file`)
       continue
@@ -534,6 +544,7 @@ async function skip($: EngineInterface) {
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     ctx.cwd = e.cwd
+    ctx.home = (await $.env.get('HOME')) ?? (await $.env.get('USERPROFILE')) ?? ''
     await $.command.register({ name: 'specview-pane', description: 'Open the ai-specview pane' })
     for (const t of TOOLS) await $.tool.register(t)
     if (await read($, viewAtom)) void $.ui.open({ id: PANE, title: 'Spec' })
