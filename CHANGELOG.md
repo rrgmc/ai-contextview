@@ -14,6 +14,22 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.1.0] - 2026-11-25
+
+### Added
+
+- `spec_show`, `focus` and `ask` accept paths that start with `~/`, as
+  Claude Code's file tools do. On Windows they also accept `~\` and Git Bash
+  paths such as `/c/Users/me`. The pane's tools accept `~/` too.
+
+### Changed
+
+- Both skills now write a new spec as a draft in
+  `~/.claude/specs/<project>/`, outside the repository, so speccing needs no
+  git branch. Before finishing, they ask whether to move it into
+  `docs/specs/`. Ask for the repository ("in the repo", "in docs/specs") to
+  write it there from the start.
+
 ## [1.0.0] - 2026-11-25
 
 ### Added
@@ -127,7 +143,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/rrgmc/ai-specview/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/rrgmc/ai-specview/compare/v0.9.0...v1.0.0
 [0.9.0]: https://github.com/rrgmc/ai-specview/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/rrgmc/ai-specview/compare/v0.7.0...v0.8.0
