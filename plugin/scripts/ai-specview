@@ -4,15 +4,28 @@
 #   go install github.com/rrgmc/ai-specview/cmd/ai-specview@latest
 # The desktop app often starts Claude Code without the shell's PATH, so the Go
 # install directories are tried as well. AI_SPECVIEW_BIN overrides the search.
+# On Windows, Claude Code runs this script with Git Bash, which finds
+# ai-specview.exe under the name ai-specview.
+
+# first_gopath prints the first entry of a GOPATH list. Windows separates the
+# entries with ";" and its paths start with a drive letter ("C:\..."), so a
+# ":" split would cut such a path at the drive.
+first_gopath() {
+	case "$1" in
+	[A-Za-z]:[\\/]*) printf '%s' "${1%%;*}" ;;
+	*) printf '%s' "${1%%:*}" ;;
+	esac
+}
+
 for c in "$AI_SPECVIEW_BIN" "$(command -v ai-specview 2>/dev/null)" \
-         "${GOBIN:+$GOBIN/ai-specview}" "${GOPATH:+${GOPATH%%:*}/bin/ai-specview}" \
+         "${GOBIN:+$GOBIN/ai-specview}" "${GOPATH:+$(first_gopath "$GOPATH")/bin/ai-specview}" \
          "$HOME/go/bin/ai-specview"; do
 	if [ -n "$c" ] && [ -x "$c" ]; then
 		exec "$c" "$@"
 	fi
 done
 if command -v go >/dev/null 2>&1; then
-	c="$(go env GOPATH 2>/dev/null | cut -d: -f1)/bin/ai-specview"
+	c="$(first_gopath "$(go env GOPATH 2>/dev/null)")/bin/ai-specview"
 	[ -x "$c" ] && exec "$c" "$@"
 fi
 echo "ai-specview: binary not found. Install it with: go install github.com/rrgmc/ai-specview/cmd/ai-specview@latest (or set AI_SPECVIEW_BIN)" >&2
