@@ -25,6 +25,7 @@ import (
 
 	"github.com/rrgmc/ai-specview/internal/appconn"
 	"github.com/rrgmc/ai-specview/internal/daemon"
+	"github.com/rrgmc/ai-specview/internal/detach"
 	"github.com/rrgmc/ai-specview/internal/fakeapp"
 	"github.com/rrgmc/ai-specview/internal/hook"
 	"github.com/rrgmc/ai-specview/internal/identity"
@@ -266,7 +267,7 @@ func detachServe(sock, addr string, idle time.Duration) (*protocol.PingResult, e
 	}
 	cmd := exec.Command(exe, args...)
 	cmd.Stdout, cmd.Stderr = logFile, logFile
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	cmd.SysProcAttr = detach.SysProcAttr()
 	if err := cmd.Start(); err != nil {
 		return nil, err
 	}

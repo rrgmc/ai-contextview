@@ -10,6 +10,7 @@ require (
 	github.com/sergi/go-diff v1.4.0
 	github.com/stretchr/testify v1.11.1
 	github.com/yuin/goldmark v1.8.6
+	golang.org/x/sys v0.50.0
 	golang.org/x/text v0.44.0
 	golang.org/x/tools v0.53.0
 )
@@ -27,7 +28,6 @@ require (
 	golang.org/x/mod v0.43.0 // indirect
 	golang.org/x/oauth2 v0.35.0 // indirect
 	golang.org/x/sync v0.25.0 // indirect
-	golang.org/x/sys v0.50.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

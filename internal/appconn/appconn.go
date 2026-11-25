@@ -14,9 +14,9 @@ import (
 	"os/exec"
 	"strconv"
 	"sync"
-	"syscall"
 	"time"
 
+	"github.com/rrgmc/ai-specview/internal/detach"
 	"github.com/rrgmc/ai-specview/internal/protocol"
 )
 
@@ -145,7 +145,7 @@ func (c *Client) startDaemon() {
 	}
 	cmd := exec.Command(c.opts.DaemonCmd[0], c.opts.DaemonCmd[1:]...)
 	cmd.Env = append(os.Environ(), "AI_SPECVIEW_SOCKET="+c.opts.Socket)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	cmd.SysProcAttr = detach.SysProcAttr()
 	if err := cmd.Start(); err != nil {
 		c.opts.Logf("start daemon %v: %v", c.opts.DaemonCmd, err)
 		return

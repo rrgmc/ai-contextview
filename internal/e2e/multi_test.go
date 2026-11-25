@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"syscall"
 	"testing"
 	"time"
 
@@ -339,7 +338,9 @@ func TestMultiSession(t *testing.T) {
 
 	// Kill it hard: a bridge starts a new one.
 	pid := e.ping()
-	require.NoError(t, syscall.Kill(pid, syscall.SIGKILL))
+	proc, err := os.FindProcess(pid)
+	require.NoError(t, err)
+	require.NoError(t, proc.Kill())
 	require.Eventually(t, func() bool { n := e.ping(); return n != 0 && n != pid }, 20*time.Second, 100*time.Millisecond, "a bridge restarted the daemon")
 	assert.Equal(t, before, checkPages("after kill"), "the same question sets are pending")
 
