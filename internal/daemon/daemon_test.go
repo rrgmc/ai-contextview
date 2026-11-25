@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/rrgmc/ai-specview/internal/protocol"
+	"github.com/rrgmc/ai-specview/internal/testenv"
 )
 
 const spec = `# Retry spec
@@ -40,9 +41,7 @@ type harness struct {
 }
 
 func newHarness(t *testing.T) *harness {
-	dir, err := os.MkdirTemp("/tmp", "svd")
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	dir := testenv.ShortTempDir(t, "svd")
 	sock := filepath.Join(dir, "d.sock")
 
 	d := New("test")

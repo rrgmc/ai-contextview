@@ -10,6 +10,7 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -24,10 +25,16 @@ func chromePath() string {
 	if p := os.Getenv("CHROME_PATH"); p != "" {
 		return p
 	}
-	for _, p := range []string{
+	paths := []string{
 		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
 		"/Applications/Chromium.app/Contents/MacOS/Chromium",
-	} {
+	}
+	for _, env := range []string{"ProgramFiles", "ProgramFiles(x86)", "LOCALAPPDATA"} {
+		if d := os.Getenv(env); d != "" {
+			paths = append(paths, filepath.Join(d, "Google", "Chrome", "Application", "chrome.exe"))
+		}
+	}
+	for _, p := range paths {
 		if _, err := os.Stat(p); err == nil {
 			return p
 		}

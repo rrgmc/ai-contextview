@@ -1,9 +1,11 @@
 package protocol
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -44,8 +46,18 @@ func bodyFor(name string) Validator {
 	return nil
 }
 
-func loadFixture(path string) (Envelope, Validator, error) {
+// readFixture reads a fixture. The fixtures use macOS paths; on Windows
+// they become C:/Users/…, so the absolute-path checks still apply.
+func readFixture(path string) ([]byte, error) {
 	data, err := os.ReadFile(path)
+	if err == nil && runtime.GOOS == "windows" {
+		data = bytes.ReplaceAll(data, []byte(`"/Users/`), []byte(`"C:/Users/`))
+	}
+	return data, err
+}
+
+func loadFixture(path string) (Envelope, Validator, error) {
+	data, err := readFixture(path)
 	if err != nil {
 		return Envelope{}, nil, err
 	}
@@ -88,7 +100,7 @@ func TestFixtures(t *testing.T) {
 			require.NoError(t, err)
 			assert.JSONEq(t, string(env.Body), string(raw))
 
-			orig, err := os.ReadFile(f)
+			orig, err := readFixture(f)
 			require.NoError(t, err)
 			again, err := json.Marshal(env)
 			require.NoError(t, err)

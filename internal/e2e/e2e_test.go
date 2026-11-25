@@ -22,6 +22,7 @@ import (
 	"github.com/rrgmc/ai-specview/internal/daemon"
 	"github.com/rrgmc/ai-specview/internal/protocol"
 	"github.com/rrgmc/ai-specview/internal/resolve"
+	"github.com/rrgmc/ai-specview/internal/testenv"
 	"github.com/rrgmc/ai-specview/internal/tools"
 )
 
@@ -53,9 +54,7 @@ func TestEndToEnd(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(cwd, "spec.md"), []byte(spec), 0o644))
 
 	// Daemon.
-	dir, err := os.MkdirTemp("/tmp", "sve")
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	dir := testenv.ShortTempDir(t, "sve")
 	sock := filepath.Join(dir, "d.sock")
 	d := daemon.New("e2e")
 	t.Cleanup(d.RequestShutdown)

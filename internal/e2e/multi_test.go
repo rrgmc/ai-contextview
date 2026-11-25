@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -32,6 +33,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/rrgmc/ai-specview/internal/protocol"
+	"github.com/rrgmc/ai-specview/internal/testenv"
 )
 
 // multiEnv is the environment shared by the bridges and the daemon: its own
@@ -53,6 +55,7 @@ func (e *multiEnv) environ() []string {
 		"AI_SPECVIEW_ASK_WAIT=30s",
 		"HOME="+e.home,
 		"XDG_CACHE_HOME="+filepath.Join(e.home, ".cache"),
+		"LOCALAPPDATA="+filepath.Join(e.home, "AppData", "Local"),
 	)
 }
 
@@ -62,9 +65,7 @@ func newMultiEnv(t *testing.T) *multiEnv {
 	if testing.Short() {
 		t.Skip("multi-process test skipped with -short")
 	}
-	dir, err := os.MkdirTemp("/tmp", "svm") // short: socket paths are limited
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	dir := testenv.ShortTempDir(t, "svm")
 
 	wd, err := os.Getwd()
 	require.NoError(t, err)
@@ -78,6 +79,9 @@ func newMultiEnv(t *testing.T) *multiEnv {
 		root = parent
 	}
 	bin := filepath.Join(dir, "ai-specview")
+	if runtime.GOOS == "windows" {
+		bin += ".exe"
+	}
 	build := exec.Command("go", "build", "-o", bin, "./cmd/ai-specview")
 	build.Dir = root
 	out, err := build.CombinedOutput()
@@ -99,7 +103,8 @@ func newMultiEnv(t *testing.T) *multiEnv {
 		}
 		logs, _ := filepath.Glob(filepath.Join(dir, "*.log"))
 		logs = append(logs, filepath.Join(e.home, "Library", "Caches", "ai-specview", "ai-specview.log"),
-			filepath.Join(e.home, ".cache", "ai-specview", "ai-specview.log"))
+			filepath.Join(e.home, ".cache", "ai-specview", "ai-specview.log"),
+			filepath.Join(e.home, "AppData", "Local", "ai-specview", "ai-specview.log"))
 		for _, l := range logs {
 			if b, err := os.ReadFile(l); err == nil {
 				t.Logf("--- %s\n%s", filepath.Base(l), b)

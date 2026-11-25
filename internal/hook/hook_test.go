@@ -17,6 +17,7 @@ import (
 	"github.com/rrgmc/ai-specview/internal/daemon"
 	"github.com/rrgmc/ai-specview/internal/identity"
 	"github.com/rrgmc/ai-specview/internal/protocol"
+	"github.com/rrgmc/ai-specview/internal/testenv"
 )
 
 const askEvent = `{"session_id":"s","cwd":"/x","hook_event_name":"PreToolUse","tool_name":"AskUserQuestion","tool_input":{}}`
@@ -33,9 +34,7 @@ type env struct {
 }
 
 func startDaemon(t *testing.T) *env {
-	dir, err := os.MkdirTemp("/tmp", "svh")
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	dir := testenv.ShortTempDir(t, "svh")
 	sock := filepath.Join(dir, "d.sock")
 	d := daemon.New("test")
 	t.Cleanup(d.RequestShutdown)

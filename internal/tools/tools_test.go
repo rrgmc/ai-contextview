@@ -14,6 +14,7 @@ import (
 	"github.com/rrgmc/ai-specview/internal/fakeapp"
 	"github.com/rrgmc/ai-specview/internal/protocol"
 	"github.com/rrgmc/ai-specview/internal/resolve"
+	"github.com/rrgmc/ai-specview/internal/testenv"
 )
 
 const specMD = `# Retry spec
@@ -37,9 +38,7 @@ type env struct {
 
 // shortSocket returns a socket path short enough for macOS (104 bytes).
 func shortSocket(t *testing.T) string {
-	dir, err := os.MkdirTemp("/tmp", "sv")
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	dir := testenv.ShortTempDir(t, "sv")
 	return filepath.Join(dir, "s.sock")
 }
 
