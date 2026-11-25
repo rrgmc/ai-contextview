@@ -63,8 +63,8 @@ What changed from the plan while building and using it:
   in a checkout. `-ldflags "-X main.version=…"` overrides it, and a build with
   no version information is `devel`. A release is a `vX.Y.Z` tag on
   `master`. Pushing the tag runs the `Release` workflow: it checks that `changelog.d/` was merged into
-  `CHANGELOG.md` (`tools/changelog`), runs the tests, builds Linux and macOS
-  binaries and creates the GitHub release. The `CI` workflow tests every push
+  `CHANGELOG.md` (`tools/changelog`), runs the tests, builds Linux, macOS and
+  Windows binaries and creates the GitHub release. The `CI` workflow tests every push
   to `master` and every pull request, except pushes that only change markdown
   files or `docs/`, such as a release commit.
 - **Windows.** The binary builds and its tests pass on Windows, which has
@@ -73,7 +73,8 @@ What changed from the plan while building and using it:
   `DETACHED_PROCESS`) and the process tree (`ps` / a Toolhelp snapshot). The
   plugin's `sh` launcher runs there too: Claude Code starts it with Git Bash,
   which finds `ai-specview.exe` as `ai-specview`, and it reads a `;`-separated
-  Windows `GOPATH`. CI and releases do not cover Windows yet.
+  Windows `GOPATH`. Releases include Windows binaries (amd64 and arm64, as
+  `.zip`); CI does not test on Windows yet.
 - **Front end.** Plain JavaScript instead of htmx; the web server lives in
   `internal/daemon`. Browser tests in `internal/daemon/browser_test.go` drive
   the panel in headless Chrome.

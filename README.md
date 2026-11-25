@@ -41,7 +41,7 @@ go install github.com/rrgmc/ai-specview/cmd/ai-specview@v0.9.0
 
 Each release on the
 [releases page](https://github.com/rrgmc/ai-specview/releases) also has
-prebuilt binaries for Linux and macOS; on Windows, use `go install`.
+prebuilt binaries for Linux, macOS and Windows.
 `@master` installs the newest commit
 instead. `ai-specview version` prints the
 installed version. After an upgrade, run `ai-specview serve --restart` so a
