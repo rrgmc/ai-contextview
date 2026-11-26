@@ -54,6 +54,10 @@ func bodyFor(name string) Validator {
 		return &DocShown{}
 	case "session_cwd":
 		return &SessionCwd{}
+	case "cwd":
+		return &Cwd{}
+	case "cwd_result":
+		return &CwdResult{}
 	case "viewers":
 		return &Viewers{}
 	case "viewers_result":
@@ -128,7 +132,7 @@ func TestFixtures(t *testing.T) {
 			seenInvalid[prefix] = true
 		}
 	}
-	for _, p := range []string{"hello", "hello_ack", "spec_show", "spec_show_result", "focus", "focus_result", "ask", "ask_shown", "ask_result", "ask_cancel", "bye", "done", "error", "viewers_result", "ask_mode", "doc_written", "skill_started", "doc_shown", "session_cwd"} {
+	for _, p := range []string{"hello", "hello_ack", "spec_show", "spec_show_result", "focus", "focus_result", "ask", "ask_shown", "ask_result", "ask_cancel", "bye", "done", "error", "viewers_result", "ask_mode", "doc_written", "skill_started", "doc_shown", "session_cwd", "cwd_result"} {
 		assert.True(t, seenValid[p], "no valid fixture for %s", p)
 		assert.True(t, seenInvalid[p], "no invalid fixture for %s", p)
 	}

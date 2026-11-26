@@ -206,6 +206,8 @@ func (d *Daemon) dispatch(c *Conn, env protocol.Envelope) bool {
 		return true
 	}
 	switch env.Type {
+	case protocol.TypeCwd:
+		c.send(protocol.TypeResult, env.ID, d.cwd(c.ws))
 	case protocol.TypeSpecShow:
 		var b protocol.SpecShow
 		if err := decode(env, &b); err != nil {

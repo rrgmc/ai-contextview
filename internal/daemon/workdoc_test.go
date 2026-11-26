@@ -1,7 +1,9 @@
 package daemon
 
 import (
+	"bufio"
 	"encoding/json"
+	"net"
 	"os"
 	"path/filepath"
 	"testing"
@@ -185,4 +187,40 @@ func TestSessionCwdFromHook(t *testing.T) {
 		}
 	}
 	assert.Contains(t, string(focus), `"path":"SW-1.md"`)
+}
+
+func TestSessionCwdBeforeHello(t *testing.T) {
+	h := newHarness(t)
+	cwd := t.TempDir()
+	wt := filepath.Join(cwd, ".claude", "worktrees", "x")
+	// The hook reports the folder before the session's bridge connected.
+	h.d.sessionCwd(&protocol.SessionCwd{PIDs: []int{999, testPID, 1}, Cwd: wt})
+
+	c, err := net.Dial("unix", h.sock)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = c.Close() })
+	sc := bufio.NewScanner(c)
+	sc.Buffer(make([]byte, 64*1024), protocol.MaxLine)
+	b := &bridge{t: t, c: c, sc: sc, ws: "ws_A"}
+	reply := b.req(protocol.TypeHello, &protocol.Hello{Protocol: 1, WS: "ws_A", Cwd: cwd, ClaudePID: testPID, ProjectName: "p"})
+	require.Equal(t, protocol.TypeHelloAck, reply.Type)
+
+	// The bridge's cwd request gets the folder.
+	var res protocol.CwdResult
+	env := b.req(protocol.TypeCwd, &protocol.Cwd{})
+	require.NoError(t, env.Decode(&res))
+	assert.Equal(t, wt, res.Cwd)
+
+	// The folder was used once.
+	h.d.mu.Lock()
+	assert.Empty(t, h.d.pendingCwd)
+	h.d.mu.Unlock()
+}
+
+func TestCwdWithoutSessionFolder(t *testing.T) {
+	_, b, _ := workSetup(t)
+	var res protocol.CwdResult
+	env := b.req(protocol.TypeCwd, &protocol.Cwd{})
+	require.NoError(t, env.Decode(&res))
+	assert.Empty(t, res.Cwd)
 }

@@ -518,3 +518,33 @@ func TestSessionCwdResolvesRelativePaths(t *testing.T) {
 	_, _, err = e.bridge.Ask(context.Background(), nil, ask)
 	require.NoError(t, err)
 }
+
+func TestRelativePathsAskTheDaemonForTheSessionFolder(t *testing.T) {
+	e := setup(t, func(_ string, a *protocol.Ask) *protocol.AskResult {
+		return &protocol.AskResult{QSID: a.QSID, Status: protocol.StatusDismissed}
+	})
+	e.fake.SetViewers(1)
+	wt := filepath.Join(e.cwd, "wt")
+	require.NoError(t, os.MkdirAll(filepath.Join(wt, "docs"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(wt, "docs", "only-here.md"), []byte("# Only here\n\nIn the worktree.\n"), 0o644))
+	ask := protocol.AskInput{Questions: []protocol.QuestionInput{{
+		ID: "q1", Text: "Ok?", Options: []protocol.Option{{Label: "Yes"}, {Label: "No"}},
+		DocRefs: []protocol.DocRef{{Path: "docs/only-here.md", Quote: "In the worktree."}},
+	}}}
+	// The hook reported the folder, but the bridge was not told yet: it
+	// asks the daemon before resolving the relative path.
+	e.fake.SetSessionCwd(wt)
+	_, _, err := e.bridge.Ask(context.Background(), nil, ask)
+	require.NoError(t, err)
+
+	// Spec-mode paths resolve against it too.
+	_, _, err = e.bridge.AskModeTool(context.Background(), nil, protocol.AskModeInput{Spec: true, Paths: []string{"docs/**"}})
+	require.NoError(t, err)
+	var mode protocol.AskMode
+	for _, env := range e.fake.Received() {
+		if env.Type == protocol.TypeAskMode {
+			require.NoError(t, env.Decode(&mode))
+		}
+	}
+	assert.Equal(t, []string{filepath.Join(wt, "docs/**")}, mode.Paths)
+}

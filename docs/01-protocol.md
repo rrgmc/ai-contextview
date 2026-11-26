@@ -313,6 +313,7 @@ Match          = "exact" | "normalized" | "fuzzy" | "heading" | "none"
 | `done` | `{summary?}` | `result {}` |
 | `viewers` | `{}` | `result {viewers: int}` (open browser pages of the workspace) |
 | `ask_mode` | `{on: bool, spec?: bool, paths?: [abs glob]}` | `result {}` |
+| `cwd` | `{}`, sent before the bridge resolves a relative path | `result {cwd?: abs}` (the session's folder from the hook; empty when none was reported) |
 | `bye` | `{}` | (none; the bridge closes) |
 
 In `ask`, `spec_quote`/`spec_section` have already been folded into `docs` by
@@ -334,9 +335,17 @@ its session by its ancestor processes, as `active` does.
 worktree session it is the worktree, while the bridge was started in the main
 checkout. The daemon keeps it and, when it changed, tells the bridge
 (`session_cwd` below), which then resolves relative paths (doc and code refs,
-`spec_show`, spec-mode `paths`) against it. The hook's file rules also judge a
-written file by the folders below `cwd`, so the worktree's own
+`spec_show`, spec-mode `paths`) against it. The hook's file rules also judge
+a written file by the folders below `cwd`, so the worktree's own
 `.claude/worktrees/…` folder does not count as a dot-folder.
+
+The hook reports the folder just before the tool runs, which can be before
+the session's bridge connected (its first ai-specview call). The daemon then
+keeps the folder by the hook's ancestor processes for up to ten minutes and
+gives it to the workspace whose `claude_pid` or `bridge_ppid` matches at
+`hello`. The unasked `session_cwd` can also reach the bridge after the tool
+call it was meant for. So, before it resolves a relative path, the bridge
+asks with `cwd` and uses the answer.
 
 ### Messages: daemon → bridge
 

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/rrgmc/ai-specview/internal/glob"
 	"github.com/rrgmc/ai-specview/internal/protocol"
@@ -187,13 +188,81 @@ func (d *Daemon) skillStarted(req *protocol.SkillStarted) {
 	}
 }
 
-// sessionCwd records the session's working folder from the hook.
+// sessionCwd records the session's working folder from the hook. Before the
+// session's bridge connected there is no workspace yet: the folder waits in
+// pendingCwd for its hello.
 func (d *Daemon) sessionCwd(req *protocol.SessionCwd) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	for _, w := range d.sessionWorkspaces(req.PIDs) {
+	ws := d.sessionWorkspaces(req.PIDs)
+	for _, w := range ws {
 		d.setSessionCwd(w, req.Cwd)
 	}
+	if len(ws) == 0 {
+		d.keepPendingCwd(req.PIDs, req.Cwd)
+	}
+}
+
+// pendingCwd is a session folder waiting for its bridge's hello.
+type pendingCwd struct {
+	cwd string
+	at  time.Time
+}
+
+// pendingCwdTTL bounds how long a reported folder waits for a bridge.
+const pendingCwdTTL = 10 * time.Minute
+
+// keepPendingCwd keeps cwd under each of the hook's ancestor processes;
+// d.mu is held.
+func (d *Daemon) keepPendingCwd(pids []int, cwd string) {
+	if !filepath.IsAbs(cwd) {
+		return
+	}
+	now := time.Now()
+	for p, e := range d.pendingCwd {
+		if now.Sub(e.at) > pendingCwdTTL {
+			delete(d.pendingCwd, p)
+		}
+	}
+	for _, p := range pids {
+		if p > 1 {
+			d.pendingCwd[p] = pendingCwd{cwd: filepath.Clean(cwd), at: now}
+		}
+	}
+}
+
+// takePendingCwd returns the folder kept for the bridge's Claude process
+// (or the bridge's parent), and forgets that report; d.mu is held.
+func (d *Daemon) takePendingCwd(pids ...int) string {
+	for _, p := range pids {
+		if p <= 1 {
+			continue
+		}
+		e, ok := d.pendingCwd[p]
+		if !ok {
+			continue
+		}
+		// The other ancestors kept the same report: forget them too.
+		for q, f := range d.pendingCwd {
+			if f == e {
+				delete(d.pendingCwd, q)
+			}
+		}
+		if time.Since(e.at) <= pendingCwdTTL {
+			return e.cwd
+		}
+	}
+	return ""
+}
+
+// cwd answers the bridge's cwd request.
+func (d *Daemon) cwd(id string) *protocol.CwdResult {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if w := d.workspaces[id]; w != nil {
+		return &protocol.CwdResult{Cwd: w.SessionCwd}
+	}
+	return &protocol.CwdResult{}
 }
 
 // setSessionCwd keeps the session's working folder and tells the bridge

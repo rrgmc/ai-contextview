@@ -26,6 +26,8 @@ type Server struct {
 	Socket  string
 	BaseURL string
 	Viewers int
+	// SessionCwd is the session folder the server answers cwd with.
+	SessionCwd string
 	// OnAsk returns the answer to a question set, or nil to leave it pending.
 	// It runs in its own goroutine.
 	OnAsk func(ws string, ask *protocol.Ask) *protocol.AskResult
@@ -191,6 +193,11 @@ func (s *Server) handle(c *conn) {
 					}
 				}()
 			}
+		case protocol.TypeCwd:
+			s.mu.Lock()
+			res := &protocol.CwdResult{Cwd: s.SessionCwd}
+			s.mu.Unlock()
+			s.reply(c, env.ID, protocol.TypeResult, res)
 		case protocol.TypeViewers:
 			s.reply(c, env.ID, protocol.TypeResult, &protocol.ViewersResult{Viewers: s.viewers()})
 		case protocol.TypeAskCancel, protocol.TypePing, protocol.TypeDone, protocol.TypeAskMode:
@@ -208,6 +215,13 @@ func (s *Server) SetViewers(n int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.Viewers = n
+}
+
+// SetSessionCwd changes the session folder the server answers cwd with.
+func (s *Server) SetSessionCwd(cwd string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.SessionCwd = cwd
 }
 
 func (s *Server) viewers() int {

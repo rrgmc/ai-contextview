@@ -54,6 +54,11 @@ const (
 	// the bridge, unasked, when it changed. In a desktop-app worktree it is
 	// the worktree, while the bridge was started in the main checkout.
 	TypeSessionCwd = "session_cwd"
+	// TypeCwd is sent by the bridge before it resolves a relative path; the
+	// reply is a result with CwdResult, the session's folder as the daemon
+	// knows it. Asking, rather than waiting for session_cwd, makes sure a
+	// folder the hook just reported is used.
+	TypeCwd = "cwd"
 	// TypePing and TypeShutdown are daemon-management messages used by
 	// `ai-specview serve` itself (single-instance check and --restart).
 	TypePing     = "ping"
@@ -484,6 +489,24 @@ type SessionCwd struct {
 func (s *SessionCwd) Validate() error {
 	if !filepath.IsAbs(s.Cwd) {
 		return fmt.Errorf("session_cwd: cwd %q is not absolute", s.Cwd)
+	}
+	return nil
+}
+
+// Cwd asks the daemon for the session's folder; it has no fields.
+type Cwd struct{}
+
+func (*Cwd) Validate() error { return nil }
+
+// CwdResult answers cwd: the session's folder from the hook, empty when the
+// hook has not reported one.
+type CwdResult struct {
+	Cwd string `json:"cwd,omitempty"`
+}
+
+func (r *CwdResult) Validate() error {
+	if r.Cwd != "" && !filepath.IsAbs(r.Cwd) {
+		return fmt.Errorf("cwd result: cwd %q is not absolute", r.Cwd)
 	}
 	return nil
 }

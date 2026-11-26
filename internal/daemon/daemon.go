@@ -26,6 +26,10 @@ type Daemon struct {
 
 	mu         sync.Mutex
 	workspaces map[string]*Workspace
+	// pendingCwd keeps a session folder the hook reported before the
+	// session's bridge connected, by the hook's ancestor process ids, so the
+	// workspace gets it at hello.
+	pendingCwd map[int]pendingCwd
 	aliases    map[string]string
 	hub        *Hub
 	watcher    *fsnotify.Watcher
@@ -42,6 +46,7 @@ func New(version string) *Daemon {
 		Version:    version,
 		Logf:       func(string, ...any) {},
 		workspaces: map[string]*Workspace{},
+		pendingCwd: map[int]pendingCwd{},
 		aliases:    map[string]string{},
 		hub:        newHub(),
 		watched:    map[string]bool{},
@@ -107,6 +112,9 @@ func (d *Daemon) hello(c *Conn, h *protocol.Hello) (*protocol.HelloAck, error) {
 			d.hub.Publish(old.ID, newEvent("redirect", map[string]string{"url": d.wsURL(w.ID)}))
 		}
 		d.workspaces[w.ID] = w
+	}
+	if cwd := d.takePendingCwd(h.ClaudePID, h.BridgePPID); cwd != "" {
+		w.SessionCwd = cwd
 	}
 	d.publishAll(w)
 	d.publishIndex()

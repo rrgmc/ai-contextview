@@ -144,6 +144,43 @@ func (b *Bridge) logf(format string, args ...any) {
 	}
 }
 
+// syncCwd asks the daemon for the session's folder before a relative path in
+// paths is resolved. The hook reports the folder just before this tool runs,
+// possibly before this bridge connected; asking makes sure it is used.
+func (b *Bridge) syncCwd(ctx context.Context, paths ...string) {
+	relative := false
+	for _, p := range paths {
+		if p = strings.TrimSpace(expandPath(p)); p != "" && !filepath.IsAbs(p) {
+			relative = true
+			break
+		}
+	}
+	if !relative {
+		return
+	}
+	env, err := b.Daemon.Request(ctx, protocol.TypeCwd, &protocol.Cwd{})
+	if err != nil {
+		b.logf("cwd: %v", err)
+		return
+	}
+	var res protocol.CwdResult
+	if err := env.Decode(&res); err == nil && filepath.IsAbs(res.Cwd) {
+		b.SessionCwd(protocol.SessionCwd{Cwd: res.Cwd})
+	}
+}
+
+// refPaths lists the paths of doc and code refs, for syncCwd.
+func refPaths(docs []protocol.DocRef, code []protocol.CodeRef) []string {
+	var out []string
+	for _, d := range docs {
+		out = append(out, d.Path)
+	}
+	for _, c := range code {
+		out = append(out, c.Path)
+	}
+	return out
+}
+
 func (b *Bridge) absPath(p string) string {
 	p = expandPath(p)
 	if filepath.IsAbs(p) {
@@ -211,6 +248,7 @@ func (b *Bridge) SpecShow(ctx context.Context, _ *mcp.CallToolRequest, in protoc
 	if strings.TrimSpace(in.Path) == "" {
 		return nil, out, errors.New("path is required")
 	}
+	b.syncCwd(ctx, in.Path)
 	abs := b.absPath(in.Path)
 	root, err := specsrc.LoadRoot(abs, expandPath(in.Primary))
 	if err != nil {
@@ -382,6 +420,7 @@ func (b *Bridge) Focus(ctx context.Context, _ *mcp.CallToolRequest, in protocol.
 	if err := validate.Focus(&in); err != nil {
 		return nil, out, err
 	}
+	b.syncCwd(ctx, refPaths(in.DocRefs, in.CodeRefs)...)
 	var errs []string
 	docs := b.resolveDocs("focus", in.SpecQuote, in.SpecSection, in.DocRefs, &errs)
 	code := b.resolveCode(ctx, "focus", in.CodeRefs, &errs)
@@ -417,6 +456,11 @@ func (b *Bridge) Ask(ctx context.Context, _ *mcp.CallToolRequest, in protocol.As
 	}
 	normalizeRecommended(&in)
 	ask := &protocol.Ask{QSID: identity.ShortID("qs_"), Title: in.Title}
+	var paths []string
+	for _, q := range in.Questions {
+		paths = append(paths, refPaths(q.DocRefs, q.CodeRefs)...)
+	}
+	b.syncCwd(ctx, paths...)
 	var errs []string
 	for _, q := range in.Questions {
 		label := "question " + q.ID
@@ -537,6 +581,7 @@ func (b *Bridge) AskModeTool(ctx context.Context, _ *mcp.CallToolRequest, in pro
 	on := !in.Off
 	req := &protocol.AskMode{On: on, Spec: on && in.Spec}
 	if req.Spec {
+		b.syncCwd(ctx, in.Paths...)
 		for _, p := range in.Paths {
 			if p = strings.TrimSpace(p); p != "" {
 				req.Paths = append(req.Paths, b.absPath(p))
