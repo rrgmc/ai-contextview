@@ -14,6 +14,17 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.2.0] - 2026-11-26
+
+### Changed
+
+- A question that already has its own "Decide later" option (or "Defer",
+  "Later") no longer shows a second "Decide later" choice, in the browser
+  viewer and in the pane.
+- When new questions arrive and no viewer page is open, for example because
+  you closed the built-in browser pane, Claude reopens the viewer in the
+  pane. Without the pane, the default browser opens after 10 seconds.
+
 ## [1.1.0] - 2026-11-25
 
 ### Added
@@ -143,7 +154,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/rrgmc/ai-specview/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/rrgmc/ai-specview/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/rrgmc/ai-specview/compare/v0.9.0...v1.0.0
 [0.9.0]: https://github.com/rrgmc/ai-specview/compare/v0.8.0...v0.9.0
