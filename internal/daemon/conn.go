@@ -151,7 +151,7 @@ func (d *Daemon) dispatch(c *Conn, env protocol.Envelope) bool {
 			c.sendError(env.ID, &protocol.ErrorBody{Code: protocol.CodeBadRequest, Message: err.Error()})
 			return true
 		}
-		c.send(protocol.TypeResult, env.ID, d.active(b.PIDs))
+		c.send(protocol.TypeResult, env.ID, d.active(b.PIDs, b.Cwd))
 		return true
 	case protocol.TypeDocWritten:
 		var b protocol.DocWritten
@@ -160,6 +160,15 @@ func (d *Daemon) dispatch(c *Conn, env protocol.Envelope) bool {
 			return true
 		}
 		c.send(protocol.TypeResult, env.ID, d.docWritten(&b))
+		return true
+	case protocol.TypeSessionCwd:
+		var b protocol.SessionCwd
+		if err := decode(env, &b); err != nil {
+			c.sendError(env.ID, err)
+			return true
+		}
+		d.sessionCwd(&b)
+		c.send(protocol.TypeResult, env.ID, map[string]any{})
 		return true
 	case protocol.TypeSkillStarted:
 		var b protocol.SkillStarted

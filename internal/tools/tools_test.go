@@ -497,3 +497,24 @@ func TestAskModeOffForgetsPickedDoc(t *testing.T) {
 	_, _, err = e.bridge.Ask(context.Background(), nil, question("retries use exponential backoff capped at 30s"))
 	require.NoError(t, err)
 }
+
+func TestSessionCwdResolvesRelativePaths(t *testing.T) {
+	e := setup(t, func(_ string, a *protocol.Ask) *protocol.AskResult {
+		return &protocol.AskResult{QSID: a.QSID, Status: protocol.StatusDismissed}
+	})
+	e.fake.SetViewers(1)
+	wt := filepath.Join(e.cwd, "wt")
+	require.NoError(t, os.MkdirAll(filepath.Join(wt, "docs"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(wt, "docs", "only-here.md"), []byte("# Only here\n\nIn the worktree.\n"), 0o644))
+	ask := protocol.AskInput{Questions: []protocol.QuestionInput{{
+		ID: "q1", Text: "Ok?", Options: []protocol.Option{{Label: "Yes"}, {Label: "No"}},
+		DocRefs: []protocol.DocRef{{Path: "docs/only-here.md", Quote: "In the worktree."}},
+	}}}
+	// Against the bridge's own folder, the file is missing.
+	_, _, err := e.bridge.Ask(context.Background(), nil, ask)
+	require.Error(t, err)
+
+	e.bridge.SessionCwd(protocol.SessionCwd{Cwd: wt})
+	_, _, err = e.bridge.Ask(context.Background(), nil, ask)
+	require.NoError(t, err)
+}

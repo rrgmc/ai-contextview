@@ -172,17 +172,17 @@ func TestCounts(t *testing.T) {
 		"/home/u/.claude/projects/p/memory/MEMORY.md",
 	}
 	for _, p := range yes {
-		assert.True(t, Counts(p, home, nil), p)
+		assert.True(t, Counts(p, home, "", nil), p)
 	}
 	for _, p := range no {
-		assert.False(t, Counts(p, home, nil), p)
+		assert.False(t, Counts(p, home, "", nil), p)
 	}
 	// Patterns replace the rules.
 	pat := docPaths("/r", "docs/rfc/**, /abs/*.md")
 	assert.Equal(t, []string{"/r/docs/rfc/**", "/abs/*.md"}, pat)
-	assert.True(t, Counts("/r/docs/rfc/a/b.md", home, pat))
-	assert.False(t, Counts("/r/docs/specs/SW-1.md", home, pat))
-	assert.False(t, Counts("/r/docs/rfc/a.go", home, pat))
+	assert.True(t, Counts("/r/docs/rfc/a/b.md", home, "/r", pat))
+	assert.False(t, Counts("/r/docs/specs/SW-1.md", home, "/r", pat))
+	assert.False(t, Counts("/r/docs/rfc/a.go", home, "/r", pat))
 }
 
 func TestWrittenDocBecomesWorkingDoc(t *testing.T) {
@@ -232,4 +232,38 @@ func TestWrittenDocBecomesWorkingDoc(t *testing.T) {
 	// A skill start is accepted and never blocks.
 	code, _ := run(e.sock, `{"hook_event_name":"PreToolUse","tool_name":"Skill","tool_input":{"skill":"harness-core:harness-elaborate-spec"}}`, ancestors)
 	assert.Equal(t, ExitAllow, code)
+}
+
+func TestCountsInWorktree(t *testing.T) {
+	wt := "/r/.claude/worktrees/fix-x"
+	// A session in a desktop-app worktree: only the folders below it count.
+	assert.True(t, Counts(wt+"/docs/specs/SW-1.md", "/home/u", wt, nil))
+	assert.False(t, Counts(wt+"/.agent/review.md", "/home/u", wt, nil))
+	// Seen from the main checkout, a worktree file is in a dot-folder.
+	assert.False(t, Counts(wt+"/docs/specs/SW-1.md", "/home/u", "/r", nil))
+	// Outside the session's folder, the whole path is checked.
+	assert.False(t, Counts("/other/.hidden/a.md", "/home/u", wt, nil))
+}
+
+func TestOwnToolReportsSessionCwd(t *testing.T) {
+	e := startDaemon(t)
+	cwd := t.TempDir()
+	e.bridge(cwd)
+	wt := filepath.Join(cwd, ".claude", "worktrees", "x")
+	ev, _ := json.Marshal(map[string]any{"hook_event_name": "PreToolUse", "tool_name": "mcp__plugin_ai-specview_ai-specview__ask", "cwd": wt})
+	code := Run(bytes.NewReader(ev), io.Discard, io.Discard, e.sock, []int{1111, claudePID, 1})
+	assert.Equal(t, ExitAllow, code)
+
+	// The bridge is told the session's folder, unasked.
+	_ = e.conn.SetReadDeadline(time.Now().Add(3 * time.Second))
+	var got protocol.SessionCwd
+	for e.sc.Scan() {
+		var env protocol.Envelope
+		require.NoError(t, json.Unmarshal(e.sc.Bytes(), &env))
+		if env.Type == protocol.TypeSessionCwd {
+			require.NoError(t, env.Decode(&got))
+			break
+		}
+	}
+	assert.Equal(t, wt, got.Cwd)
 }

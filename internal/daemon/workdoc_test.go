@@ -1,9 +1,11 @@
 package daemon
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -126,18 +128,18 @@ func TestPickedDocIsNotAnOpenSpec(t *testing.T) {
 	pids := []int{999, testPID, 1}
 	b.req(protocol.TypeAskMode, &protocol.AskMode{On: true})
 	require.True(t, written(h, filepath.Join(cwd, "docs/specs/SW-1.md")).Shown)
-	assert.True(t, h.d.active(pids).Active, "ask mode is on")
-	assert.True(t, h.d.active(pids).AskMode)
+	assert.True(t, h.d.active(pids, "").Active, "ask mode is on")
+	assert.True(t, h.d.active(pids, "").AskMode)
 
 	// Ask mode off: the picked document is cleared and blocks nothing.
 	b.req(protocol.TypeAskMode, &protocol.AskMode{On: false})
 	assert.Empty(t, workingDoc(h))
-	assert.False(t, h.d.active(pids).Active)
+	assert.False(t, h.d.active(pids, "").Active)
 
 	// Claude's own spec_show is an open spec again.
 	b.req(protocol.TypeSpecShow, &protocol.SpecShow{RootAbs: filepath.Join(cwd, "docs/other.md")})
-	assert.True(t, h.d.active(pids).Active)
-	assert.False(t, h.d.active(pids).AskMode)
+	assert.True(t, h.d.active(pids, "").Active)
+	assert.False(t, h.d.active(pids, "").AskMode)
 }
 
 func TestAskModeOffKeepsExplicitSpec(t *testing.T) {
@@ -147,4 +149,40 @@ func TestAskModeOffKeepsExplicitSpec(t *testing.T) {
 	b.req(protocol.TypeSpecShow, &protocol.SpecShow{RootAbs: other})
 	b.req(protocol.TypeAskMode, &protocol.AskMode{On: false})
 	assert.Equal(t, other, workingDoc(h))
+}
+
+func TestSessionCwdFromHook(t *testing.T) {
+	h, b, cwd := workSetup(t)
+	wt := filepath.Join(cwd, ".claude", "worktrees", "x")
+	b.req(protocol.TypeAskMode, &protocol.AskMode{On: true})
+	spec := filepath.Join(cwd, "docs/specs/SW-1.md")
+	sub := h.d.hub.Subscribe("ws_A")
+	t.Cleanup(func() { h.d.hub.Unsubscribe("ws_A", sub) })
+	res := h.d.docWritten(&protocol.DocWritten{PIDs: []int{testPID}, Path: spec, Cwd: wt})
+	assert.True(t, res.Shown)
+	h.d.mu.Lock()
+	w := h.d.workspaces["ws_A"]
+	assert.Equal(t, wt, w.SessionCwd)
+	assert.Equal(t, wt, w.projectDir())
+	h.d.mu.Unlock()
+
+	// The bridge gets session_cwd once, and a focus event reaches the page.
+	var types []string
+	_ = b.c.SetReadDeadline(time.Now().Add(2 * time.Second))
+	for len(types) < 2 && b.sc.Scan() {
+		var env protocol.Envelope
+		require.NoError(t, json.Unmarshal(b.sc.Bytes(), &env))
+		types = append(types, env.Type)
+	}
+	assert.Contains(t, types, protocol.TypeSessionCwd)
+	assert.Contains(t, types, protocol.TypeDocShown)
+
+	// The open page is told to load the picked document.
+	var focus []byte
+	for len(sub.ch) > 0 {
+		if ev := <-sub.ch; ev.Name == "focus" {
+			focus = ev.Data
+		}
+	}
+	assert.Contains(t, string(focus), `"path":"SW-1.md"`)
 }

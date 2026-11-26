@@ -116,10 +116,11 @@ func (d *Daemon) hello(c *Conn, h *protocol.Hello) (*protocol.HelloAck, error) {
 // active reports whether a live workspace with an open, unfinished spec
 // belongs to one of the given processes (the hook's ancestors). It matches
 // the Claude Code process that started the bridge.
-func (d *Daemon) active(pids []int) *protocol.ActiveResult {
+func (d *Daemon) active(pids []int, cwd string) *protocol.ActiveResult {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	for _, w := range d.sessionWorkspaces(pids) {
+		d.setSessionCwd(w, cwd)
 		// A document picked from a write is not a spec Claude opened: once
 		// ask mode is off, it no longer blocks the built-in question tool.
 		specOpen := w.Root != nil && w.Done == nil && !w.RootAuto

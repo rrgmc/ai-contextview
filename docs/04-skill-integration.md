@@ -53,7 +53,10 @@ and files in dot-folders other than `.claude/specs`. `AI_SPECVIEW_DOC_PATHS`
 (comma-separated globs) replaces these rules. When the file becomes the
 working document, the hook tells Claude in one line (`additionalContext`).
 When Claude starts a skill (`PreToolUse` on `Skill`), it reports the name, a
-signal for spec mode. Neither ever blocks.
+signal for spec mode. Before each of ai-specview's own MCP tools, it reports
+the session's folder, so a session in a desktop-app worktree resolves
+relative paths against the worktree, not the main checkout (01). None of these
+ever blocks.
 
 **Spec mode** (`/ai-specview:spec-mode [path or glob]`, the `spec-mode` skill)
 is ask mode that expects a spec, for a spec written by any skill: the user's
@@ -76,7 +79,7 @@ Add it to the user settings (`~/.claude/settings.json`) once:
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "AskUserQuestion|Skill",
+        "matcher": "^(AskUserQuestion|Skill|mcp__.*ai-specview.*__.+)$",
         "hooks": [{ "type": "command", "command": "ai-specview hook" }]
       }
     ],

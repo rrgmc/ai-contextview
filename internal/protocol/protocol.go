@@ -49,6 +49,11 @@ const (
 	// TypeDocShown is sent by the daemon to the bridge, unasked, when it
 	// made a written file the working document.
 	TypeDocShown = "doc_shown"
+	// TypeSessionCwd carries the Claude session's working folder: from
+	// `ai-specview hook` to the daemon (with pids), and from the daemon to
+	// the bridge, unasked, when it changed. In a desktop-app worktree it is
+	// the worktree, while the bridge was started in the main checkout.
+	TypeSessionCwd = "session_cwd"
 	// TypePing and TypeShutdown are daemon-management messages used by
 	// `ai-specview serve` itself (single-instance check and --restart).
 	TypePing     = "ping"
@@ -433,6 +438,8 @@ func (a *AskMode) Validate() error { return nil }
 type DocWritten struct {
 	PIDs []int  `json:"pids"`
 	Path string `json:"path"`
+	// Cwd is the session's working folder, from the hook's input.
+	Cwd string `json:"cwd,omitempty"`
 }
 
 func (d *DocWritten) Validate() error {
@@ -456,11 +463,27 @@ func (r *DocWrittenResult) Validate() error { return nil }
 type SkillStarted struct {
 	PIDs []int  `json:"pids"`
 	Name string `json:"name"`
+	// Cwd is the session's working folder, from the hook's input.
+	Cwd string `json:"cwd,omitempty"`
 }
 
 func (s *SkillStarted) Validate() error {
 	if s.Name == "" {
 		return errors.New("skill_started: missing name")
+	}
+	return nil
+}
+
+// SessionCwd is the Claude session's working folder. PIDs are set only on
+// the hook's message.
+type SessionCwd struct {
+	PIDs []int  `json:"pids,omitempty"`
+	Cwd  string `json:"cwd"`
+}
+
+func (s *SessionCwd) Validate() error {
+	if !filepath.IsAbs(s.Cwd) {
+		return fmt.Errorf("session_cwd: cwd %q is not absolute", s.Cwd)
 	}
 	return nil
 }
@@ -601,6 +624,8 @@ func (e *ErrorBody) Error() string { return e.Code + ": " + e.Message }
 // hook's ancestor process ids).
 type Active struct {
 	PIDs []int `json:"pids"`
+	// Cwd is the session's working folder, from the hook's input.
+	Cwd string `json:"cwd,omitempty"`
 }
 
 // ActiveResult answers active.

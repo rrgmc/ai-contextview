@@ -106,6 +106,9 @@ type Workspace struct {
 	// RootAuto is set while Root is a document picked from a write, not one
 	// Claude showed with spec_show.
 	RootAuto bool
+	// SessionCwd is the Claude session's working folder, from the hook; it
+	// differs from Cwd in a desktop-app worktree.
+	SessionCwd string
 	// AnswersAt is when the user last replied to a question set (send, back
 	// to chat or skip); the Changes tab compares against the files then.
 	AnswersAt time.Time
@@ -133,6 +136,7 @@ func (w *Workspace) adopt(old *Workspace) {
 	w.AskMode = old.AskMode
 	w.work = old.work
 	w.RootAuto = old.RootAuto
+	w.SessionCwd = old.SessionCwd
 	w.AnswersAt = old.AnswersAt
 }
 
@@ -213,13 +217,22 @@ func (w *Workspace) docKey(abs string) string {
 	return rel
 }
 
+// projectDir is the session's working folder: the one the hook reported,
+// else the bridge's.
+func (w *Workspace) projectDir() string {
+	if w.SessionCwd != "" {
+		return w.SessionCwd
+	}
+	return w.Cwd
+}
+
 // docName is a doc key for display: the key itself, or for an outside
 // document its path relative to the project directory.
 func (w *Workspace) docName(rel string) string {
 	if !filepath.IsAbs(rel) {
 		return rel
 	}
-	if r, err := filepath.Rel(w.Cwd, rel); err == nil && !strings.HasPrefix(r, "..") {
+	if r, err := filepath.Rel(w.projectDir(), rel); err == nil && !strings.HasPrefix(r, "..") {
 		return filepath.ToSlash(r)
 	}
 	return rel

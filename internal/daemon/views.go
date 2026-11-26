@@ -326,7 +326,7 @@ func (d *Daemon) docEvent(w *Workspace, rel string) Event {
 
 func (d *Daemon) codePayload(w *Workspace, t *CodeTab, start, end int) map[string]any {
 	rel := t.Path
-	if r, err := filepath.Rel(w.Cwd, t.Path); err == nil && !strings.HasPrefix(r, "..") {
+	if r, err := filepath.Rel(w.projectDir(), t.Path); err == nil && !strings.HasPrefix(r, "..") {
 		rel = r
 	}
 	out := map[string]any{"path": t.Path, "rel": rel, "name": filepath.Base(t.Path), "start": start, "end": end, "stale": t.Stale}

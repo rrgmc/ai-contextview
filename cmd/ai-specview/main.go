@@ -110,6 +110,11 @@ func runMCP() error {
 				bridge.DocShown(d)
 			}
 		},
+		OnSessionCwd: func(s protocol.SessionCwd) {
+			if bridge != nil {
+				bridge.SessionCwd(s)
+			}
+		},
 	})
 	defer client.Close()
 

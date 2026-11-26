@@ -223,7 +223,7 @@ export const matchAny = (patterns: string[], path: string) => patterns.some(p =>
  * Whether a written file can become the working document, as internal/hook
  * Counts: markdown that is not bookkeeping. Non-empty patterns replace the rules.
  */
-export function countsAsDoc(path: string, home: string, patterns: string[]): boolean {
+export function countsAsDoc(path: string, home: string, patterns: string[], cwd = ''): boolean {
   if (!/\.(md|markdown)$/i.test(path)) return false
   if (patterns.length > 0) return matchAny(patterns, path)
   const base = (path.split('/').pop() ?? '').toLowerCase()
@@ -233,7 +233,11 @@ export function countsAsDoc(path: string, home: string, patterns: string[]): boo
     const rest = path.slice(claude.length)
     return rest.startsWith('specs/') || rest.startsWith('plans/')
   }
-  const parts = path.split('/').slice(0, -1)
+  // Inside the session's folder, only the folders below it count, so a
+  // desktop-app worktree (<repo>/.claude/worktrees/x) is not a dot-folder.
+  const base_ = cwd ? cwd.replace(/\/$/, '') + '/' : ''
+  const inside = base_ !== '' && path.startsWith(base_)
+  const parts = (inside ? path.slice(base_.length) : path).split('/').slice(0, -1)
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i] ?? ''
     if (part === 'changelog.d') return false

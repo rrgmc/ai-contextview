@@ -181,7 +181,7 @@ or is in ask mode, so other sessions are not affected. Don't deny
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "AskUserQuestion|Skill",
+        "matcher": "^(AskUserQuestion|Skill|mcp__.*ai-specview.*__.+)$",
         "hooks": [{ "type": "command", "command": "ai-specview hook" }]
       }
     ],

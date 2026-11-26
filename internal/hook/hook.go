@@ -85,13 +85,22 @@ func Run(in io.Reader, out, errOut io.Writer, socket string, pids []int) int {
 	case ev.ToolName == "Skill":
 		if ev.ToolInput.Skill != "" {
 			var res map[string]any
-			_ = request(socket, protocol.TypeSkillStarted, &protocol.SkillStarted{PIDs: pids, Name: ev.ToolInput.Skill}, &res)
+			_ = request(socket, protocol.TypeSkillStarted, &protocol.SkillStarted{PIDs: pids, Name: ev.ToolInput.Skill, Cwd: ev.Cwd}, &res)
+		}
+		return ExitAllow
+	case strings.HasPrefix(ev.ToolName, "mcp__"):
+		// One of ai-specview's own tools is about to run: tell the daemon
+		// the session's folder first, so the bridge resolves relative paths
+		// against it (a desktop-app worktree, not the main checkout).
+		if filepath.IsAbs(ev.Cwd) {
+			var res map[string]any
+			_ = request(socket, protocol.TypeSessionCwd, &protocol.SessionCwd{PIDs: pids, Cwd: ev.Cwd}, &res)
 		}
 		return ExitAllow
 	case ev.ToolName != BuiltinAskTool:
 		return ExitAllow
 	}
-	res, err := query(socket, pids)
+	res, err := query(socket, pids, ev.Cwd)
 	if err != nil || !res.Active {
 		return ExitAllow
 	}
@@ -114,11 +123,11 @@ func written(out io.Writer, socket string, pids []int, ev *input) {
 		path = filepath.Join(ev.Cwd, path)
 	}
 	home, _ := os.UserHomeDir()
-	if !Counts(path, home, docPaths(ev.Cwd, os.Getenv("AI_SPECVIEW_DOC_PATHS"))) {
+	if !Counts(path, home, ev.Cwd, docPaths(ev.Cwd, os.Getenv("AI_SPECVIEW_DOC_PATHS"))) {
 		return
 	}
 	var res protocol.DocWrittenResult
-	if err := request(socket, protocol.TypeDocWritten, &protocol.DocWritten{PIDs: pids, Path: filepath.Clean(path)}, &res); err != nil || !res.Shown {
+	if err := request(socket, protocol.TypeDocWritten, &protocol.DocWritten{PIDs: pids, Path: filepath.Clean(path), Cwd: ev.Cwd}, &res); err != nil || !res.Shown {
 		return
 	}
 	var o postOutput
@@ -148,9 +157,12 @@ func docPaths(cwd, env string) []string {
 // Counts reports whether a written file can become the working document. A
 // markdown file counts unless it is bookkeeping: CLAUDE.md and AGENTS.md,
 // changelogs, Claude's memory, and files in dot-folders other than
-// .claude/specs. Under ~/.claude only specs/ and plans/ count. Non-empty
-// patterns replace these rules: then only a matching file counts.
-func Counts(path, home string, patterns []string) bool {
+// .claude/specs. Under ~/.claude only specs/ and plans/ count. For a file
+// inside cwd, the session's folder, only the folders below cwd are checked,
+// so a session in a desktop-app worktree (<repo>/.claude/worktrees/x) is not
+// mistaken for a dot-folder. Non-empty patterns replace these rules: then
+// only a matching file counts.
+func Counts(path, home, cwd string, patterns []string) bool {
 	path = filepath.Clean(path)
 	if !specsrc.IsMarkdown(path) {
 		return false
@@ -169,7 +181,13 @@ func Counts(path, home string, patterns []string) bool {
 			return strings.HasPrefix(rest, "specs/") || strings.HasPrefix(rest, "plans/")
 		}
 	}
-	parts := strings.Split(filepath.ToSlash(filepath.Dir(path)), "/")
+	dir := filepath.Dir(path)
+	if cwd != "" {
+		if rel, err := filepath.Rel(filepath.Clean(cwd), dir); err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			dir = rel
+		}
+	}
+	parts := strings.Split(filepath.ToSlash(dir), "/")
 	for i, part := range parts {
 		if part == "changelog.d" {
 			return false
@@ -185,9 +203,9 @@ func Counts(path, home string, patterns []string) bool {
 }
 
 // query asks the daemon whether a spec is open for one of pids.
-func query(socket string, pids []int) (*protocol.ActiveResult, error) {
+func query(socket string, pids []int, cwd string) (*protocol.ActiveResult, error) {
 	var res protocol.ActiveResult
-	if err := request(socket, protocol.TypeActive, &protocol.Active{PIDs: pids}, &res); err != nil {
+	if err := request(socket, protocol.TypeActive, &protocol.Active{PIDs: pids, Cwd: cwd}, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil

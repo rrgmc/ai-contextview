@@ -36,6 +36,9 @@ type Options struct {
 	// OnDocShown is called when the daemon made a written file the working
 	// document (doc_shown). The client already replays it after a reconnect.
 	OnDocShown func(protocol.DocShown)
+	// OnSessionCwd is called when the daemon reports the session's working
+	// folder (session_cwd).
+	OnSessionCwd func(protocol.SessionCwd)
 }
 
 // Client is the bridge side of one workspace connection.
@@ -276,6 +279,13 @@ func (c *Client) readLoop(conn net.Conn) {
 }
 
 func (c *Client) dispatch(env protocol.Envelope) {
+	if env.Type == protocol.TypeSessionCwd {
+		var s protocol.SessionCwd
+		if err := env.Decode(&s); err == nil && s.Validate() == nil && c.opts.OnSessionCwd != nil {
+			c.opts.OnSessionCwd(s)
+		}
+		return
+	}
 	if env.Type == protocol.TypeDocShown {
 		var d protocol.DocShown
 		if err := env.Decode(&d); err != nil || d.Validate() != nil {

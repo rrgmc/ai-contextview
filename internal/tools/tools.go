@@ -56,6 +56,30 @@ type Bridge struct {
 	// rootAuto is set while root is a document the daemon picked from a
 	// write (doc_shown), not one shown with spec_show.
 	rootAuto bool
+	// sessionCwd is the Claude session's folder when the daemon reported one
+	// (session_cwd); it replaces Cwd for relative paths.
+	sessionCwd string
+}
+
+// cwd is the folder relative paths resolve against: the session's folder
+// when the daemon reported it (a desktop-app worktree), else Cwd.
+func (b *Bridge) cwd() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.sessionCwd != "" {
+		return b.sessionCwd
+	}
+	return b.Cwd
+}
+
+// SessionCwd follows the daemon when the hook reported the session's folder.
+func (b *Bridge) SessionCwd(s protocol.SessionCwd) {
+	if !filepath.IsAbs(s.Cwd) {
+		return
+	}
+	b.mu.Lock()
+	b.sessionCwd = filepath.Clean(s.Cwd)
+	b.mu.Unlock()
 }
 
 // Messages returned to Claude.
@@ -125,7 +149,7 @@ func (b *Bridge) absPath(p string) string {
 	if filepath.IsAbs(p) {
 		return filepath.Clean(p)
 	}
-	return filepath.Join(b.Cwd, p)
+	return filepath.Join(b.cwd(), p)
 }
 
 // Register adds the tools to an MCP server.
@@ -310,7 +334,7 @@ func (b *Bridge) docPath(root *specsrc.Root, p string) (string, bool) {
 			return abs, true
 		}
 	}
-	return filepath.Join(b.Cwd, p), true
+	return filepath.Join(b.cwd(), p), true
 }
 
 // docName is a doc path for messages: relative to the spec folder, else to
@@ -321,7 +345,7 @@ func (b *Bridge) docName(root *specsrc.Root, abs string) string {
 			return rel
 		}
 	}
-	if rel, err := filepath.Rel(b.Cwd, abs); err == nil && !strings.HasPrefix(rel, "..") {
+	if rel, err := filepath.Rel(b.cwd(), abs); err == nil && !strings.HasPrefix(rel, "..") {
 		return filepath.ToSlash(rel)
 	}
 	return abs
@@ -335,7 +359,7 @@ func fileExists(p string) bool {
 func (b *Bridge) resolveCode(ctx context.Context, label string, refs []protocol.CodeRef, errs *[]string) []protocol.ResolvedRef {
 	out := make([]protocol.ResolvedRef, 0, len(refs))
 	for _, r := range refs {
-		res, err := b.Resolver.Resolve(ctx, b.Cwd, r)
+		res, err := b.Resolver.Resolve(ctx, b.cwd(), r)
 		if err != nil {
 			*errs = append(*errs, fmt.Sprintf("%s: code ref %s: %v", label, r.Path, err))
 			continue
@@ -475,6 +499,7 @@ func (b *Bridge) openLater(qs, url string) {
 	if err != nil {
 		b.logf("viewers %s: %v", qs, err)
 	}
+	b.logf("opening the default browser for %s: no viewer page after %s", qs, d)
 	b.Open(url)
 }
 

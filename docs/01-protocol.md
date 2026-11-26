@@ -325,9 +325,18 @@ its session by its ancestor processes, as `active` does.
 
 | type | body | reply |
 |---|---|---|
-| `active` | `{pids: [int]}` | `result {active, ws?, url?, ask_mode?}` |
-| `doc_written` | `{pids: [int], path: abs}` (a markdown file the hook's file rules let through) | `result {shown: bool, path?}` (`shown` when it just became the working document) |
-| `skill_started` | `{pids: [int], name}` | `result {}` |
+| `active` | `{pids: [int], cwd?}` | `result {active, ws?, url?, ask_mode?}` |
+| `doc_written` | `{pids: [int], path: abs, cwd?}` (a markdown file the hook's file rules let through) | `result {shown: bool, path?}` (`shown` when it just became the working document) |
+| `skill_started` | `{pids: [int], name, cwd?}` | `result {}` |
+| `session_cwd` | `{pids: [int], cwd}`, sent before each of ai-specview's own MCP tools runs | `result {}` |
+
+`cwd` is the session's working folder from the hook's input. In a desktop-app
+worktree session it is the worktree, while the bridge was started in the main
+checkout. The daemon keeps it and, when it changed, tells the bridge
+(`session_cwd` below), which then resolves relative paths (doc and code refs,
+`spec_show`, spec-mode `paths`) against it. The hook's file rules also judge a
+written file by the folders below `cwd`, so the worktree's own
+`.claude/worktrees/…` folder does not count as a dot-folder.
 
 ### Messages: daemon → bridge
 
@@ -338,6 +347,7 @@ its session by its ancestor processes, as `active` does.
 | `error` | `{code, message}` (reply to `re`) |
 | `ask_shown` | `{qs_id, viewers: int, matches: [{id, doc: int, match}]}` (`doc` indexes the question's `docs`; `viewers` is the number of open browser pages) |
 | `ask_result` | `{qs_id, status: "answered"\|"in_chat"\|"dismissed", answers?, deferred?: [id], keep_open?: [id]}` |
+| `session_cwd` | `{cwd}`: the session's working folder changed (from the hook). |
 | `doc_shown` | `{root_abs}`: the daemon made a written file the working document. The bridge loads it as its spec root, so `spec_quote` quotes it, and replays it after a reconnect as `spec_show` with `auto: true`. |
 
 Error codes: `bad_request`, `file_not_found`, `not_markdown`, `empty_folder`,

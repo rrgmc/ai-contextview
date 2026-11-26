@@ -413,7 +413,7 @@ async function docWritten($: EngineInterface, path: string) {
     .map(p => p.trim())
     .filter(p => p !== '')
     .map(abs)
-  if (!spec.countsAsDoc(path, ctx.home, patterns)) return
+  if (!spec.countsAsDoc(path, ctx.home, patterns, ctx.cwd)) return
   let w = await read($, workAtom)
   if (w.explicit) return
   const edits = (w.edits[path] ?? 0) + 1

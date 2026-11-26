@@ -3,7 +3,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "AskUserQuestion|Skill",
+        "matcher": "^(AskUserQuestion|Skill|mcp__.*ai-specview.*__.+)$",
         "hooks": [{ "type": "command", "command": "ai-specview hook" }]
       }
     ],

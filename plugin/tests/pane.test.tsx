@@ -752,3 +752,10 @@ test('a question with no document says so while a spec is open', async ($, on) =
   expect((await result(pending)).status).toBe('dismissed')
   await ui.unmount()
 })
+
+test('countsAsDoc in a desktop-app worktree', () => {
+  const wt = '/repo/.claude/worktrees/x'
+  expect(spec.countsAsDoc(`${wt}/docs/specs/a.md`, '/home/me', [], wt)).toBe(true)
+  expect(spec.countsAsDoc(`${wt}/.agent/r.md`, '/home/me', [], wt)).toBe(false)
+  expect(spec.countsAsDoc(`${wt}/docs/specs/a.md`, '/home/me', [], '/repo')).toBe(false)
+})

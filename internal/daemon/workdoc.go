@@ -67,6 +67,7 @@ func (d *Daemon) docWritten(req *protocol.DocWritten) *protocol.DocWrittenResult
 	defer d.mu.Unlock()
 	path := filepath.Clean(req.Path)
 	for _, w := range d.sessionWorkspaces(req.PIDs) {
+		d.setSessionCwd(w, req.Cwd)
 		if !w.AskMode || w.work.explicit {
 			continue
 		}
@@ -167,18 +168,44 @@ func (d *Daemon) showWorking(w *Workspace, path string) bool {
 	w.work.doc = path
 	w.RootAuto = true
 	w.send(protocol.TypeDocShown, "", &protocol.DocShown{RootAbs: path})
+	// An open page shows only the document it already has; tell it to load
+	// the new one.
+	d.hub.Publish(w.ID, newEvent("focus", map[string]any{"doc": map[string]string{"path": w.CurrentDoc}}))
 	return true
 }
 
 // skillStarted records a skill the session started; in spec mode, a spec
 // skill raises the score of the files it writes.
 func (d *Daemon) skillStarted(req *protocol.SkillStarted) {
-	if !specSkillName.MatchString(req.Name) {
-		return
-	}
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	for _, w := range d.sessionWorkspaces(req.PIDs) {
-		w.work.specSkill = true
+		d.setSessionCwd(w, req.Cwd)
+		if specSkillName.MatchString(req.Name) {
+			w.work.specSkill = true
+		}
 	}
+}
+
+// sessionCwd records the session's working folder from the hook.
+func (d *Daemon) sessionCwd(req *protocol.SessionCwd) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	for _, w := range d.sessionWorkspaces(req.PIDs) {
+		d.setSessionCwd(w, req.Cwd)
+	}
+}
+
+// setSessionCwd keeps the session's working folder and tells the bridge
+// when it changed, so relative paths resolve against it; d.mu is held.
+func (d *Daemon) setSessionCwd(w *Workspace, cwd string) {
+	if cwd == "" || !filepath.IsAbs(cwd) {
+		return
+	}
+	cwd = filepath.Clean(cwd)
+	if cwd == w.SessionCwd {
+		return
+	}
+	w.SessionCwd = cwd
+	w.send(protocol.TypeSessionCwd, "", &protocol.SessionCwd{Cwd: cwd})
 }
