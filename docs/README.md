@@ -20,6 +20,7 @@ daemon are one Go binary, `ai-specview`.
 | 4 | [04-skill-integration.md](04-skill-integration.md) | Wiring it into Claude Code: MCP config, skill rules, hooks |
 | 5 | [05-milestones.md](05-milestones.md) | Build order, acceptance criteria, testing, risks |
 | 6 | [06-pane-mod.md](06-pane-mod.md) | The pane: the Claude Code mod and the `spec-elaborate-mod` skill that show the spec, code and questions beside the chat |
+| 7 | [07-layers.md](07-layers.md) | Proposed: questions with context first, then a working document, then the spec workflow; the document panel and how the user selects a layer |
 
 Read 00 → 01 first. 02 and 03 can then be built in parallel against 01.
 
