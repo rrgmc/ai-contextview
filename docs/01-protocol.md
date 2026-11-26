@@ -174,6 +174,12 @@ Result, one of:
 an empty `selected` and the user's `notes`, if any. Claude records them as open
 questions and asks them again before finishing.
 
+A question whose own options already offer to decide later (an option labelled
+"Decide later", "Decide this later", "Defer" or "Later", ignoring case and
+punctuation) gets no second **Decide later** choice in the viewer or the pane.
+Choosing that option is an ordinary answer: it appears in `selected`, not in
+`deferred`.
+
 `keep_open` (optional, `in_chat` and `dismissed` only, older viewers) lists the questions the
 user ticked "keep as open question" for. In a change folder the skill records
 each of them as an `open-questions/` file (04, M8). Omitted when empty.

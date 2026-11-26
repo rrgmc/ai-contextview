@@ -115,7 +115,7 @@ inside the folder for a folder spec, and hold the quote.
 | Jump links | A row under the pickers, shown when it has a link: one per changed section; "Quote in …" per doc ref in another file; "Back to the focus" or "Back to the question" after the person moved away |
 | Spec column | The section shown, as markdown. The block that holds the quote is framed in yellow, with the quote in bold. Its caption is "Focus", or "Question N:" and the question on one line |
 | Side column | The question form while questions wait, and one `Button` tab per code ref with the `Code` of the active one, with line numbers |
-| Question form | The question, its options (a recommended one marked in green, each description under its button), "Decide later", Other and Notes. Under them a row of Previous, Next or Review, then a row of "Send answers", primary once every question has an answer, and the plain links "Back to chat" and "Skip" |
+| Question form | The question, its options (a recommended one marked in green, each description under its button), "Decide later" (left out when an option already offers it, 01-protocol.md), Other and Notes. Under them a row of Previous, Next or Review, then a row of "Send answers", primary once every question has an answer, and the plain links "Back to chat" and "Skip" |
 | Banner | After `spec_done`, "Spec finished" with the summary |
 
 - **Columns.** Side by side (55% and 45%) when the pane is docked and at least

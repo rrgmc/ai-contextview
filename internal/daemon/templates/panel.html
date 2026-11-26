@@ -20,7 +20,7 @@
       <label class="opt{{if $o.Recommended}} recommended{{end}}"><input type="{{if $q.Multi}}checkbox{{else}}radio{{end}}" name="sel.{{$q.ID}}" value="{{$o.Label}}"><span class="key">{{inc $i}}</span><span class="opt-body"><b>{{$o.Label}}</b>{{if $o.Recommended}} <span class="rec">Recommended</span>{{end}}{{if $o.Description}}<span class="desc">{{$o.Description}}</span>{{end}}</span></label>
       {{end}}
       {{if .Other}}<label class="opt other"><span class="key">✎</span><span class="opt-body">Other: <input type="text" name="other.{{.ID}}" class="other-input" autocomplete="off"></span></label>{{end}}
-      <label class="opt later" title="Leave this open for now. Claude adds it to the open questions and asks again before finishing."><input type="checkbox" name="later.{{.ID}}" value="1" class="later-input"><span class="key">⏸</span><span class="opt-body"><b>Decide later</b><span class="desc">Keep it as an open question; Claude asks again before finishing</span></span></label>
+      {{if not .OwnLater}}<label class="opt later" title="Leave this open for now. Claude adds it to the open questions and asks again before finishing."><input type="checkbox" name="later.{{.ID}}" value="1" class="later-input"><span class="key">⏸</span><span class="opt-body"><b>Decide later</b><span class="desc">Keep it as an open question; Claude asks again before finishing</span></span></label>{{end}}
     </div>
     {{if .Multi}}<p class="muted small">Choose one or more.</p>{{end}}
     <textarea name="notes.{{.ID}}" class="notes" rows="2" placeholder="Notes (optional)"></textarea>

@@ -158,3 +158,20 @@ export function splitAround(md: string, start: number, end: number): { before: s
     after: md.slice(hi),
   }
 }
+
+/**
+ * Whether an option label already means "decide later", such as "Decide later",
+ * "Decide this later" or "Defer". The question form then leaves out its own
+ * "Decide later". Keep it in step with isLaterLabel in internal/daemon/views.go.
+ */
+export function isLaterLabel(label: string): boolean {
+  const l = label
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(w => w !== '')
+    .join(' ')
+  for (const p of ['decide later', 'decide it later', 'decide this later', 'decide that later']) {
+    if (l === p || l.startsWith(p + ' ')) return true
+  }
+  return ['later', 'defer', 'defer it', 'defer this', 'defer for now', 'defer decision', 'defer the decision'].includes(l)
+}

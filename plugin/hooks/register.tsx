@@ -777,13 +777,16 @@ export const register: Register = on => {
                   </Box>
                 )
               })}
-              <Button
-                key="later"
-                variant={d.later ? 'primary' : 'secondary'}
-                onPress={() => toggleLater($, question)}
-              >
-                {`${d.later ? '●' : '○'} Decide later`}
-              </Button>
+              {!question.options.some(o => spec.isLaterLabel(o.label)) && (
+                // The question already offers its own "decide later" option.
+                <Button
+                  key="later"
+                  variant={d.later ? 'primary' : 'secondary'}
+                  onPress={() => toggleLater($, question)}
+                >
+                  {`${d.later ? '●' : '○'} Decide later`}
+                </Button>
+              )}
             </Box>
             {question.allowOther && (
               <Input

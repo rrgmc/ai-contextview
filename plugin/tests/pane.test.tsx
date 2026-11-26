@@ -538,3 +538,27 @@ test('AskUserQuestion is blocked while a spec is open, and allowed after spec_do
   await ui.unmount()
   expect(failed(await call($, { tool: 'AskUserQuestion', questions: [] }))).toBe(false)
 })
+
+test('isLaterLabel spots an option that already means decide later', () => {
+  for (const l of ['Decide later', 'decide later.', 'Decide this later (park it)', 'Defer', 'Later']) {
+    expect(spec.isLaterLabel(l)).toBe(true)
+  }
+  for (const l of ['Defer writes to a queue', 'Read later events', 'Decide now']) {
+    expect(spec.isLaterLabel(l)).toBe(false)
+  }
+})
+
+test('a question with its own Decide later option shows no second one', async ($, on) => {
+  const clk = engine(on)
+  await start($)
+  const questions = [{ ...QUESTIONS[0], options: [{ label: 'Memory' }, { label: 'Decide later', description: 'Park it' }] }]
+  const pending = call($, { tool: ASK, title: 'Storage', questions })
+  await clk.settle()
+  const ui = await $.ui.mount(pane('desktop', 140))
+  expect(await ui.find({ key: 'opt-1' })).toBeDefined()
+  expect(await ui.find({ key: 'later' })).toBeUndefined()
+  await ui.press({ key: 'skip' })
+  await clk.advance(POLL)
+  expect((await result(pending)).status).toBe('dismissed')
+  await ui.unmount()
+})

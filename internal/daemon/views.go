@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/rrgmc/ai-specview/internal/protocol"
 	"github.com/rrgmc/ai-specview/internal/render"
@@ -69,6 +70,9 @@ type questionView struct {
 	Answer  *protocol.Answer
 	Keep    bool
 	Later   bool
+	// OwnLater is set when one of the question's own options already
+	// means "decide later"; the panel then leaves out its own choice.
+	OwnLater bool
 }
 
 type qsView struct {
@@ -123,6 +127,35 @@ func (d *Daemon) chips(w *Workspace, q protocol.AskQuestion) []chipView {
 	return out
 }
 
+// hasLaterOption reports whether one of the options already offers to
+// decide later, such as "Decide later", "Decide this later" or "Defer".
+// Keep it in step with hasLaterOption in plugin/hooks/register.tsx.
+func hasLaterOption(opts []protocol.Option) bool {
+	for _, o := range opts {
+		if isLaterLabel(o.Label) {
+			return true
+		}
+	}
+	return false
+}
+
+func isLaterLabel(label string) bool {
+	words := strings.FieldsFunc(strings.ToLower(label), func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsDigit(r)
+	})
+	l := strings.Join(words, " ")
+	for _, p := range []string{"decide later", "decide it later", "decide this later", "decide that later"} {
+		if l == p || strings.HasPrefix(l, p+" ") {
+			return true
+		}
+	}
+	switch l {
+	case "later", "defer", "defer it", "defer this", "defer for now", "defer decision", "defer the decision":
+		return true
+	}
+	return false
+}
+
 func truncate(s string, n int) string {
 	r := []rune(strings.TrimSpace(s))
 	if len(r) <= n {
@@ -145,7 +178,7 @@ func (d *Daemon) questions(w *Workspace, qs *questionSet, answers map[string]pro
 	var out []questionView
 	for i, q := range qs.Ask.Questions {
 		v := questionView{Index: i, ID: q.ID, Text: q.Text, Options: q.Options, Multi: q.MultiSelect, Other: q.AllowOther,
-			Chips: d.chips(w, q), Keep: keepSet[q.ID], Later: laterSet[q.ID]}
+			Chips: d.chips(w, q), Keep: keepSet[q.ID], Later: laterSet[q.ID], OwnLater: hasLaterOption(q.Options)}
 		if a, ok := answers[q.ID]; ok {
 			a := a
 			v.Answer = &a

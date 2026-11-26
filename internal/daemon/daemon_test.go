@@ -616,3 +616,27 @@ func TestPanelHasDecideLater(t *testing.T) {
 	assert.Contains(t, string(ev.Data), `name=\"later.q1\"`)
 	assert.NotContains(t, string(ev.Data), `keep.q1`, "the keep-open checkbox is gone")
 }
+
+func TestPanelHidesDecideLaterWhenOptionHasOne(t *testing.T) {
+	h := newHarness(t)
+	cwd, specPath := writeSpec(t)
+	b := h.bridge("ws_A", cwd)
+	b.req(protocol.TypeSpecShow, &protocol.SpecShow{RootAbs: specPath})
+	ask := askBody(cwd, specPath, "qs_1")
+	ask.Questions[0].Options = append(ask.Questions[0].Options, protocol.Option{Label: "Decide later", Description: "Park it"})
+	b.req(protocol.TypeAsk, ask)
+	h.d.mu.Lock()
+	ev := h.d.askEvent(h.d.workspaces["ws_A"])
+	h.d.mu.Unlock()
+	assert.NotContains(t, string(ev.Data), `name=\"later.q1\"`)
+	assert.Contains(t, string(ev.Data), `value=\"Decide later\"`)
+}
+
+func TestIsLaterLabel(t *testing.T) {
+	for _, l := range []string{"Decide later", "decide later.", "Decide this later (park it)", "Defer", "Later"} {
+		assert.True(t, isLaterLabel(l), l)
+	}
+	for _, l := range []string{"Defer writes to a queue", "Read later events", "Decide now"} {
+		assert.False(t, isLaterLabel(l), l)
+	}
+}
