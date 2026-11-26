@@ -14,6 +14,15 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.3.4] - 2026-11-26
+
+### Fixed
+
+- In a desktop-app worktree session, relative paths in the first ai-specview
+  call (for example `/spec-mode docs/specs/**`) resolve against the worktree,
+  not the main checkout. Before, the spec-mode glob matched nothing until
+  ask mode was turned on a second time.
+
 ## [1.3.3] - 2026-11-26
 
 ### Fixed
@@ -222,7 +231,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.3.3...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.3.4...HEAD
+[1.3.4]: https://github.com/rrgmc/ai-specview/compare/v1.3.3...v1.3.4
 [1.3.3]: https://github.com/rrgmc/ai-specview/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/rrgmc/ai-specview/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/rrgmc/ai-specview/compare/v1.3.0...v1.3.1
