@@ -14,6 +14,42 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.3.0] - 2026-11-26
+
+### Added
+
+- Ask mode: run `/ai-specview:ask-mode` at the start of a session to send
+  every question Claude asks to the ai-specview viewer, with or without a
+  spec. Questions point at code only when they are about it, and the
+  built-in question tool is blocked while ask mode is on.
+  `/ai-specview:ask-mode off` turns it off, and `/ai-specview:ask-mode-mod`
+  does the same in the pane.
+- A question can point at any document of the project, not only the spec:
+  a markdown passage by quote or by lines, or another text file (YAML, JSON,
+  SQL) by lines, shown as source with the lines highlighted. When a question
+  has several documents, tabs switch between them.
+- `AI_SPECVIEW_ASK_MODE=always` turns ask mode on for every session.
+- In ask mode, the first markdown document Claude writes (a spec, a plan, a
+  design note) shows beside the questions as the working document, with
+  change marks and the Changes tab, whichever skill writes it. Bookkeeping
+  files never count, and `AI_SPECVIEW_DOC_PATHS` limits which files do.
+- Spec mode: `/ai-specview:spec-mode [path or glob]` is ask mode that expects
+  a spec, for use with your own or your company's spec skill. With a path or
+  glob, the first matching file shows; without one, the written file that
+  looks most like a spec. `/ai-specview:spec-mode-mod` does the same in the
+  pane.
+
+### Changed
+
+- When no question of a set has a document and no spec is shown, the
+  questions and the code take the whole page. The layout changes only when a
+  new question set arrives.
+- The README and the plugin description present ai-specview as a front end
+  for Claude's questions, with spec elaboration built on it.
+- `ai-specview hook` also runs after `Write`, `Edit` and `MultiEdit` and
+  before `Skill`. The plugin sets this up; a manual setup adds the two hook
+  entries shown in the README.
+
 ## [1.2.0] - 2026-11-26
 
 ### Changed
@@ -154,7 +190,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/rrgmc/ai-specview/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/rrgmc/ai-specview/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/rrgmc/ai-specview/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/rrgmc/ai-specview/compare/v0.9.0...v1.0.0
