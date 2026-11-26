@@ -400,9 +400,27 @@ func (d *Daemon) askMode(id string, req *protocol.AskMode) error {
 	}
 	if !req.On {
 		w.work = workDoc{explicit: w.work.explicit}
+		if w.RootAuto {
+			// A document picked from a write only served ask mode: clear it,
+			// so the page goes back to its state without a document.
+			d.clearRoot(w)
+		}
 	}
 	d.hub.Publish(w.ID, d.docEvent(w, w.CurrentDoc))
 	return nil
+}
+
+// clearRoot removes the shown root and its documents; d.mu is held.
+func (d *Daemon) clearRoot(w *Workspace) {
+	w.Root = nil
+	w.RootAuto = false
+	w.files = map[string]*fileState{}
+	w.extraDocs = map[string]bool{}
+	w.CurrentDoc = ""
+	w.focus = nil
+	d.hub.Publish(w.ID, d.stateEvent(w), d.artifactsEvent(w))
+	d.publishIndex()
+	d.updateWatches()
 }
 
 func (d *Daemon) done(id string, req *protocol.Done) error {

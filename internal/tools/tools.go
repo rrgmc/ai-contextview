@@ -53,6 +53,9 @@ type Bridge struct {
 	root    *specsrc.Root
 	pending map[string]bool
 	askMode bool
+	// rootAuto is set while root is a document the daemon picked from a
+	// write (doc_shown), not one shown with spec_show.
+	rootAuto bool
 }
 
 // Messages returned to Claude.
@@ -194,6 +197,7 @@ func (b *Bridge) SpecShow(ctx context.Context, _ *mcp.CallToolRequest, in protoc
 	}
 	b.mu.Lock()
 	b.root = root
+	b.rootAuto = false
 	b.mu.Unlock()
 
 	req := &protocol.SpecShow{
@@ -519,6 +523,13 @@ func (b *Bridge) AskModeTool(ctx context.Context, _ *mcp.CallToolRequest, in pro
 	}
 	b.mu.Lock()
 	b.askMode = on
+	if !on && b.rootAuto {
+		// The daemon clears a picked document when ask mode ends.
+		b.root, b.rootAuto = nil, false
+		if c, ok := b.Daemon.(autoClearer); ok {
+			c.ClearAutoSpec()
+		}
+	}
 	b.mu.Unlock()
 	out := protocol.AskModeOutput{On: on, Spec: req.Spec}
 	if on {
@@ -538,7 +549,14 @@ func (b *Bridge) DocShown(d protocol.DocShown) {
 	}
 	b.mu.Lock()
 	b.root = root
+	b.rootAuto = true
 	b.mu.Unlock()
+}
+
+// autoClearer is implemented by appconn.Client: it forgets a picked
+// document, so a reconnect does not show it again.
+type autoClearer interface {
+	ClearAutoSpec()
 }
 
 // AskWaitTool implements the ask_wait tool.

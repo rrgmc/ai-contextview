@@ -129,13 +129,22 @@ func TestPickedDocIsNotAnOpenSpec(t *testing.T) {
 	assert.True(t, h.d.active(pids).Active, "ask mode is on")
 	assert.True(t, h.d.active(pids).AskMode)
 
-	// Ask mode off: the picked document stays on screen but blocks nothing.
+	// Ask mode off: the picked document is cleared and blocks nothing.
 	b.req(protocol.TypeAskMode, &protocol.AskMode{On: false})
-	assert.Equal(t, filepath.Join(cwd, "docs/specs/SW-1.md"), workingDoc(h))
+	assert.Empty(t, workingDoc(h))
 	assert.False(t, h.d.active(pids).Active)
 
 	// Claude's own spec_show is an open spec again.
 	b.req(protocol.TypeSpecShow, &protocol.SpecShow{RootAbs: filepath.Join(cwd, "docs/other.md")})
 	assert.True(t, h.d.active(pids).Active)
 	assert.False(t, h.d.active(pids).AskMode)
+}
+
+func TestAskModeOffKeepsExplicitSpec(t *testing.T) {
+	h, b, cwd := workSetup(t)
+	other := filepath.Join(cwd, "docs/other.md")
+	b.req(protocol.TypeAskMode, &protocol.AskMode{On: true})
+	b.req(protocol.TypeSpecShow, &protocol.SpecShow{RootAbs: other})
+	b.req(protocol.TypeAskMode, &protocol.AskMode{On: false})
+	assert.Equal(t, other, workingDoc(h))
 }

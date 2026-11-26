@@ -470,3 +470,30 @@ func TestDocShownAndSpecModePaths(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, protocol.StatusDismissed, out.Status)
 }
+
+func TestAskModeOffForgetsPickedDoc(t *testing.T) {
+	e := setup(t, func(_ string, a *protocol.Ask) *protocol.AskResult {
+		return &protocol.AskResult{QSID: a.QSID, Status: protocol.StatusDismissed}
+	})
+	e.fake.SetViewers(1)
+	_, _, err := e.bridge.AskModeTool(context.Background(), nil, protocol.AskModeInput{})
+	require.NoError(t, err)
+	e.bridge.DocShown(protocol.DocShown{RootAbs: filepath.Join(e.cwd, "docs/spec.md")})
+	_, _, err = e.bridge.Ask(context.Background(), nil, question("retries use exponential backoff capped at 30s"))
+	require.NoError(t, err)
+
+	// Ask mode off: spec_quote has nothing to quote any more.
+	_, _, err = e.bridge.AskModeTool(context.Background(), nil, protocol.AskModeInput{Off: true})
+	require.NoError(t, err)
+	_, _, err = e.bridge.Ask(context.Background(), nil, question("retries use exponential backoff capped at 30s"))
+	require.Error(t, err)
+
+	// A spec shown with spec_show survives ask mode off.
+	e.show(t)
+	_, _, err = e.bridge.AskModeTool(context.Background(), nil, protocol.AskModeInput{})
+	require.NoError(t, err)
+	_, _, err = e.bridge.AskModeTool(context.Background(), nil, protocol.AskModeInput{Off: true})
+	require.NoError(t, err)
+	_, _, err = e.bridge.Ask(context.Background(), nil, question("retries use exponential backoff capped at 30s"))
+	require.NoError(t, err)
+}

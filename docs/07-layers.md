@@ -151,8 +151,9 @@ matching files count.
 5. After the first pick, the hook tells Claude in one line: "`<file>` is now
    the working document in ai-specview; call `spec_show` to show another."
    Claude can correct a wrong pick.
-6. A picked document is not a spec Claude opened. It stays on screen after
-   ask mode ends, but it no longer blocks the built-in question tool.
+6. A picked document is not a spec Claude opened. When ask mode ends, the
+   viewer and the pane clear it and go back to their state without a
+   document; a spec shown with `spec_show` stays.
 
 So, in one session that runs `spec-elaborate` and then a company's spec skill
 on the same ticket, the first spec stays the working document until the

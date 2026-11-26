@@ -718,9 +718,10 @@ test('a picked document stops blocking AskUserQuestion when ask mode ends', asyn
   await call($, { tool: 'Write', file_path: 'docs/design.md', content: 'x' })
   expect(failed(await call($, { tool: 'AskUserQuestion', questions: [] }))).toBe(true)
   await call($, { tool: ASK_MODE, off: true })
-  // Still on screen, but not a spec Claude opened.
+  // The picked document is cleared, and blocks nothing.
   const ui = await $.ui.mount(pane('desktop', 140))
-  expect(await ui.find({ type: 'Text', text: /^docs\/design\.md$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^docs\/design\.md$/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /^No spec shown yet/ })).toBeDefined()
   await ui.unmount()
   expect(failed(await call($, { tool: 'AskUserQuestion', questions: [] }))).toBe(false)
   // Claude's own spec_show blocks it again.

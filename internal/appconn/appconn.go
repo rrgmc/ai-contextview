@@ -475,6 +475,16 @@ func (c *Client) HasResult(qs string) bool {
 	return ok
 }
 
+// ClearAutoSpec forgets the last spec_show when it replays a document the
+// daemon picked (doc_shown), so a reconnect does not show it again.
+func (c *Client) ClearAutoSpec() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.lastSpecShow != nil && c.lastSpecShow.Auto {
+		c.lastSpecShow = nil
+	}
+}
+
 // Close sends bye and closes the connection without reconnecting.
 func (c *Client) Close() {
 	c.mu.Lock()

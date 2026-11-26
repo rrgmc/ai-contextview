@@ -388,8 +388,12 @@ async function askMode($: EngineInterface, args: Args) {
     if (!(await read($, viewAtom))) await update($, viewAtom, () => noSpecView())
     void $.ui.open({ id: PANE, title: 'Spec' })
   } else {
-    // The empty view only stood for ask mode; a spec shown since stays.
-    await update($, viewAtom, v => (v?.specPath === '' ? null : v))
+    // The empty view only stood for ask mode, and a document picked from a
+    // write only served it: clear both. A spec Claude showed stays.
+    const picked = (await read($, workAtom)).autoShown
+    await update($, viewAtom, v => (v?.specPath === '' || (v && v.specPath === picked) ? null : v))
+    await update($, workAtom, w => ({ ...w, autoShown: '' }))
+    await update($, uiAtom, () => ({ file: '', shown: -1, codeTab: 0 }))
   }
   return spec ? { on, spec } : { on }
 }
