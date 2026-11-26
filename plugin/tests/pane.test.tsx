@@ -710,3 +710,44 @@ test('spec mode with paths, and spec_show wins over writes', async ($, on) => {
   expect(await ui.find({ type: 'Text', text: /^docs\/design\.md$/ })).toBeDefined()
   await ui.unmount()
 })
+
+test('a picked document stops blocking AskUserQuestion when ask mode ends', async ($, on) => {
+  engine(on)
+  await $.session.start({ cwd: '/repo', surface: 'desktop', isInteractive: true })
+  await call($, { tool: ASK_MODE })
+  await call($, { tool: 'Write', file_path: 'docs/design.md', content: 'x' })
+  expect(failed(await call($, { tool: 'AskUserQuestion', questions: [] }))).toBe(true)
+  await call($, { tool: ASK_MODE, off: true })
+  // Still on screen, but not a spec Claude opened.
+  const ui = await $.ui.mount(pane('desktop', 140))
+  expect(await ui.find({ type: 'Text', text: /^docs\/design\.md$/ })).toBeDefined()
+  await ui.unmount()
+  expect(failed(await call($, { tool: 'AskUserQuestion', questions: [] }))).toBe(false)
+  // Claude's own spec_show blocks it again.
+  await call($, { tool: SPEC_SHOW, path: 'docs/spec.md' })
+  expect(failed(await call($, { tool: 'AskUserQuestion', questions: [] }))).toBe(true)
+})
+
+test('a question with no document says so while a spec is open', async ($, on) => {
+  const clk = engine(on)
+  await start($)
+  const questions = [
+    { id: 'q1', text: 'Where?', options: [{ label: 'A' }, { label: 'B' }], spec_quote: 'kept in memory' },
+    {
+      id: 'q2',
+      text: 'Keep Get?',
+      options: [{ label: 'Yes' }, { label: 'No' }],
+      code_refs: [{ path: 'store/store.go', symbol: 'store.(*Store).Get' }],
+    },
+  ]
+  const pending = call($, { tool: ASK, title: 'Storage', questions })
+  await clk.settle()
+  const ui = await $.ui.mount(pane('desktop', 140))
+  expect(await ui.find({ type: 'Text', text: /^This question has no document/ })).toBeUndefined()
+  await ui.press({ key: 'step-1' })
+  expect(await ui.find({ type: 'Text', text: /^This question has no document/ })).toBeDefined()
+  await ui.press({ key: 'skip' })
+  await clk.advance(POLL)
+  expect((await result(pending)).status).toBe('dismissed')
+  await ui.unmount()
+})

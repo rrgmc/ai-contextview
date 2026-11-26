@@ -121,8 +121,13 @@ export type WorkDoc = {
   paths: string[]
   /** A skill whose name looks like a spec skill started. */
   specSkill: boolean
-  /** The working document picked from a write, absolute. */
+  /** The working document picked from a write, absolute; cleared when ask mode ends. */
   doc: string
+  /**
+   * The spec file the pane shows because a write picked it, absolute; kept after
+   * ask mode ends, so that file does not count as a spec Claude opened.
+   */
+  autoShown: string
   /** Writes per candidate file, absolute. */
   edits: Record<string, number>
 }

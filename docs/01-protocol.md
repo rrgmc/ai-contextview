@@ -230,7 +230,10 @@ session goes through `ask`, with or without a spec.
 
   After that, later writes do not switch it, but an `ask` whose doc refs name
   another written file does. Claude's own `spec_show` always wins: once it
-  is called, writes are ignored. Turning ask mode off forgets the pick.
+  is called, writes are ignored. Turning ask mode off forgets the pick. A
+  picked document stays on screen, but it does not count as an open spec, so
+  `ai-specview hook` allows the built-in question tool again once ask mode is
+  off.
 - While it is on, `ask` accepts questions with no refs, the daemon counts the
   session as active, so `ai-specview hook` blocks the built-in question tool
   even with no spec open (04), and the spec pane of an empty viewer says that

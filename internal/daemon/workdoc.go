@@ -165,6 +165,7 @@ func (d *Daemon) showWorking(w *Workspace, path string) bool {
 		return false
 	}
 	w.work.doc = path
+	w.RootAuto = true
 	w.send(protocol.TypeDocShown, "", &protocol.DocShown{RootAbs: path})
 	return true
 }

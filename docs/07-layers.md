@@ -65,9 +65,10 @@ Rules:
 The left panel becomes a **document panel**. It shows the main document of the
 current question, with the passage highlighted.
 
-- **Which document.** The first `doc_refs` entry of the current question. In a
-  session with a working document, a question with no doc ref shows the
-  working document, as the spec is shown today.
+- **Which document.** The first `doc_refs` entry of the current question. A
+  question with no document keeps the document shown before, so the panel
+  does not jump, and says that the question has no document. This holds in a
+  spec session too.
 - **More than one document.** The question's other documents open as tabs in
   the document panel.
 - **Highlighting.** A quoted passage is highlighted as today. A doc ref may
@@ -150,6 +151,8 @@ matching files count.
 5. After the first pick, the hook tells Claude in one line: "`<file>` is now
    the working document in ai-specview; call `spec_show` to show another."
    Claude can correct a wrong pick.
+6. A picked document is not a spec Claude opened. It stays on screen after
+   ask mode ends, but it no longer blocks the built-in question tool.
 
 So, in one session that runs `spec-elaborate` and then a company's spec skill
 on the same ticket, the first spec stays the working document until the

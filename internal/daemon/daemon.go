@@ -120,7 +120,9 @@ func (d *Daemon) active(pids []int) *protocol.ActiveResult {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	for _, w := range d.sessionWorkspaces(pids) {
-		specOpen := w.Root != nil && w.Done == nil
+		// A document picked from a write is not a spec Claude opened: once
+		// ask mode is off, it no longer blocks the built-in question tool.
+		specOpen := w.Root != nil && w.Done == nil && !w.RootAuto
 		if specOpen || w.AskMode {
 			return &protocol.ActiveResult{Active: true, WS: w.ID, URL: d.wsURL(w.ID), AskMode: !specOpen}
 		}
@@ -207,6 +209,7 @@ func (d *Daemon) specShow(id string, req *protocol.SpecShow) (*protocol.SpecShow
 		// Claude's own spec_show wins over the working document the daemon
 		// picks from writes; a replay of a picked one does not.
 		w.work.explicit = !req.Auto
+		w.RootAuto = req.Auto
 		if req.Auto {
 			w.work.doc = req.RootAbs
 		}

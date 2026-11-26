@@ -404,7 +404,7 @@
     const doc = $(".chip-doc", sec);
     const code = $(".chip-code", sec);
     // A question with no document keeps the last one, without a highlight.
-    $("#doc-note").hidden = !!doc || hasSpec;
+    $("#doc-note").hidden = !!doc;
     docEl.classList.toggle("no-hl", !doc);
     if (doc) focusDoc(doc.dataset.doc, doc.dataset.ref).then(() => renderQDocTabs(sec));
     else { focusDoc(null, null); activeRef = null; updateJump(); renderQDocTabs(null); }

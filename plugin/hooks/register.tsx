@@ -52,8 +52,16 @@ const askAtom = atom({ plugin: 'ai-specview', key: 'ask' } as const, null as Ask
 })
 // Ask mode: every question of the session goes through the pane, with or without a spec.
 const modeAtom = atom({ plugin: 'ai-specview', key: 'mode' } as const, false, { shape: 'mode-1' })
-const noWork = (): WorkDoc => ({ explicit: false, spec: false, paths: [], specSkill: false, doc: '', edits: {} })
-const workAtom = atom({ plugin: 'ai-specview', key: 'work' } as const, noWork(), { shape: 'work-1' })
+const noWork = (): WorkDoc => ({
+  explicit: false,
+  spec: false,
+  paths: [],
+  specSkill: false,
+  doc: '',
+  autoShown: '',
+  edits: {},
+})
+const workAtom = atom({ plugin: 'ai-specview', key: 'work' } as const, noWork(), { shape: 'work-2' })
 // The score a written file needs in spec mode without paths, as the daemon's.
 const SCORE_THRESHOLD = 2
 const SPEC_SKILL = /spec|rfc|design/i
@@ -373,7 +381,9 @@ async function askMode($: EngineInterface, args: Args) {
   await update($, modeAtom, () => on)
   const spec = on && args.spec === true
   const paths = spec ? ((args.paths as string[] | undefined) ?? []).map(p => p.trim()).filter(p => p !== '').map(abs) : []
-  await update($, workAtom, w => (on ? { ...w, spec, paths } : { ...noWork(), explicit: w.explicit }))
+  await update($, workAtom, w =>
+    on ? { ...w, spec, paths } : { ...noWork(), explicit: w.explicit, autoShown: w.autoShown },
+  )
   if (on) {
     if (!(await read($, viewAtom))) await update($, viewAtom, () => noSpecView())
     void $.ui.open({ id: PANE, title: 'Spec' })
@@ -387,7 +397,7 @@ async function askMode($: EngineInterface, args: Args) {
 /** Shows a written file as the working document, as spec_show would. */
 async function showWorking($: EngineInterface, path: string) {
   await showSpec($, { path })
-  await update($, workAtom, w => ({ ...w, doc: path }))
+  await update($, workAtom, w => ({ ...w, doc: path, autoShown: path }))
   $.ui.toast(`ai-specview shows ${rel(path)} as the working document`)
 }
 
@@ -691,7 +701,9 @@ export const register: Register = on => {
     // mod blocks the built-in question tool itself while a spec is open here.
     if (e.tool === 'AskUserQuestion') {
       const v = await read($, viewAtom)
-      if (v && v.specPath !== '' && !v.isDone) return { deny: BLOCK_REASON }
+      // A file the pane shows because a write picked it is not a spec Claude opened.
+      const picked = (await read($, workAtom)).autoShown
+      if (v && v.specPath !== '' && !v.isDone && v.specPath !== picked) return { deny: BLOCK_REASON }
       if (await read($, modeAtom)) return { deny: BLOCK_REASON_ASK_MODE }
       return next(e)
     }
@@ -720,7 +732,7 @@ export const register: Register = on => {
       if (name === 'spec_show') {
         const { root, file, text } = await showSpec($, args)
         // Claude's own spec_show wins over the document picked from writes.
-        await update($, workAtom, w => ({ ...w, explicit: true }))
+        await update($, workAtom, w => ({ ...w, explicit: true, autoShown: '' }))
         const artifacts = []
         for (const f of root.files) {
           const body: string = f === file ? text : await $.fs.read(f)
@@ -846,7 +858,7 @@ export const register: Register = on => {
     // any of its questions has a document, so it does not come and go.
     const setHasDocs = !!asking && asking.questions.some(q => q.docs.length > 0)
     const hideDocs = view.specPath === '' && !!asking && !setHasDocs
-    const noDocNote = !!question && view.specPath === '' && setHasDocs && question.docs.length === 0
+    const noDocNote = !!question && !hideDocs && question.docs.length === 0 && question.quoteStart < 0
     const specColumn = hideDocs ? null : (
       <Box key="spec-col" flexDirection="column" width={wide && (formShown || codes.length > 0) ? '55%' : '100%'} flexShrink={1}>
         {noSpec && (

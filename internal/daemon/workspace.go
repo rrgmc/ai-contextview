@@ -103,6 +103,9 @@ type Workspace struct {
 	AskMode bool
 	// work picks the working document from the files Claude writes (07).
 	work workDoc
+	// RootAuto is set while Root is a document picked from a write, not one
+	// Claude showed with spec_show.
+	RootAuto bool
 	// AnswersAt is when the user last replied to a question set (send, back
 	// to chat or skip); the Changes tab compares against the files then.
 	AnswersAt time.Time
@@ -129,6 +132,7 @@ func (w *Workspace) adopt(old *Workspace) {
 	w.Done = old.Done
 	w.AskMode = old.AskMode
 	w.work = old.work
+	w.RootAuto = old.RootAuto
 	w.AnswersAt = old.AnswersAt
 }
 
