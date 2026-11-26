@@ -7,6 +7,12 @@ The `ai-specview` plugin has two ways to show a spec:
 | `ai-specview:spec-elaborate` | The bridge's MCP tools, `mcp__plugin_ai-specview_ai-specview__…` | The browser page served by the daemon |
 | `ai-specview:spec-elaborate-mod` | The mod's own tools, `mcp__ai-specview__…` | A pane beside the chat, drawn by a Claude Code mod |
 
+Ask mode (04) has a skill for each: `ai-specview:ask-mode` uses the bridge's
+`ask_mode` tool, `ai-specview:ask-mode-mod` the mod's. The mod keeps the mode
+in its state, blocks `AskUserQuestion` while it is on, accepts questions with
+no refs, and with no spec shown draws the pane as "Ask mode" without a spec
+file or section list. A `spec_quote` still needs a spec.
+
 The mod is `plugin/hooks/register.tsx`, listed under `modules` in
 `plugin/hooks/hooks.json` beside the `PreToolUse` hook. It does not use the
 bridge or the daemon. Both skills run the same workflow; the user picks one by

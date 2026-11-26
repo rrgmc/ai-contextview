@@ -8,6 +8,7 @@ const FOCUS = 'mcp__ai-specview__focus'
 const ASK = 'mcp__ai-specview__ask'
 const ASK_WAIT = 'mcp__ai-specview__ask_wait'
 const SPEC_DONE = 'mcp__ai-specview__spec_done'
+const ASK_MODE = 'mcp__ai-specview__ask_mode'
 
 const SPEC = `# Widget
 
@@ -561,4 +562,36 @@ test('a question with its own Decide later option shows no second one', async ($
   await clk.advance(POLL)
   expect((await result(pending)).status).toBe('dismissed')
   await ui.unmount()
+})
+
+test('ask mode asks without a spec and blocks AskUserQuestion until turned off', async ($, on) => {
+  const clk = engine(on)
+  await $.session.start({ cwd: '/repo', surface: 'desktop', isInteractive: true })
+  const noRefs = [{ id: 'q1', text: 'Tabs or spaces?', options: [{ label: 'Tabs' }, { label: 'Spaces' }] }]
+
+  // Without ask mode a question needs a ref, and there is no spec.
+  expect(failed(await call($, { tool: ASK, questions: noRefs }))).toBe(true)
+
+  expect(await result(call($, { tool: ASK_MODE }))).toEqual({ on: true })
+  expect(failed(await call($, { tool: 'AskUserQuestion', questions: [] }))).toBe(true)
+
+  const pending = call($, { tool: ASK, title: 'Style', questions: noRefs })
+  await clk.settle()
+  const ui = await $.ui.mount(pane('desktop', 140))
+  expect(await ui.find({ type: 'Text', text: /^Ask mode is on/ })).toBeDefined()
+  expect(await ui.find({ key: 'outline' })).toBeUndefined()
+  await ui.press({ key: 'opt-1' })
+  await ui.press({ key: 'send' })
+  await clk.advance(POLL)
+  const out = await result(pending)
+  expect(out.status).toBe('answered')
+  expect(out.answers[0].selected).toEqual(['Spaces'])
+  await ui.unmount()
+
+  // A spec_quote needs a spec.
+  const quoted = [{ ...noRefs[0], spec_quote: 'kept in memory' }]
+  expect(failed(await call($, { tool: ASK, questions: quoted }))).toBe(true)
+
+  expect(await result(call($, { tool: ASK_MODE, off: true }))).toEqual({ on: false })
+  expect(failed(await call($, { tool: 'AskUserQuestion', questions: [] }))).toBe(false)
 })

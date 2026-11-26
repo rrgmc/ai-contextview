@@ -71,7 +71,8 @@ resolve code refs → forward → return the doc matches, `spec_match` and the
 resolved code refs.
 
 ### `ask`
-1. `validate.Ask(input)`: counts, required refs, string lengths.
+1. `validate.Ask(input, refsOptional)`: counts, required refs (optional in ask
+   mode), string lengths.
 2. **Quote pre-check** (`specsrc`): fold `spec_quote`/`spec_section` into
    `doc_refs[0]`, resolve each doc ref's path against `currentRoot` (no path =
    the primary file), then for each, normalize the file's source and the quote

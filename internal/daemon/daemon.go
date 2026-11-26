@@ -126,11 +126,12 @@ func (d *Daemon) active(pids []int) *protocol.ActiveResult {
 		}
 	}
 	for _, w := range d.workspaces {
-		if !w.Live || w.Root == nil || w.Done != nil {
+		specOpen := w.Root != nil && w.Done == nil
+		if !w.Live || (!specOpen && !w.AskMode) {
 			continue
 		}
 		if (w.BridgePPID > 1 && set[w.BridgePPID]) || (w.ClaudePID > 1 && set[w.ClaudePID]) {
-			return &protocol.ActiveResult{Active: true, WS: w.ID, URL: d.wsURL(w.ID)}
+			return &protocol.ActiveResult{Active: true, WS: w.ID, URL: d.wsURL(w.ID), AskMode: !specOpen}
 		}
 	}
 	return &protocol.ActiveResult{}
@@ -375,6 +376,19 @@ func (d *Daemon) cancel(id string, req *protocol.AskCancel) error {
 // done marks the spec as finished (spec_done). A pending question set is
 // withdrawn: Claude said no more answers are needed. Highlights and code
 // tabs are cleared.
+// askMode turns ask mode on or off for a workspace.
+func (d *Daemon) askMode(id string, req *protocol.AskMode) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	w := d.workspaces[id]
+	if w == nil {
+		return errors.New("unknown workspace")
+	}
+	w.AskMode = req.On
+	d.hub.Publish(w.ID, d.docEvent(w, w.CurrentDoc))
+	return nil
+}
+
 func (d *Daemon) done(id string, req *protocol.Done) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()

@@ -61,7 +61,7 @@ export function focus(args: Record<string, unknown>): string[] {
   return errs
 }
 
-export function ask(args: Record<string, unknown>): string[] {
+export function ask(args: Record<string, unknown>, refsOptional = false): string[] {
   const errs: string[] = []
   const qs = (args.questions as QuestionArg[] | undefined) ?? []
   if (qs.length < 1 || qs.length > MAX_QUESTIONS) errs.push(`questions: got ${qs.length}, want 1-${MAX_QUESTIONS}`)
@@ -89,7 +89,7 @@ export function ask(args: Record<string, unknown>): string[] {
     const specQuote = q.spec_quote ?? ''
     const docs = q.doc_refs ?? []
     const code = q.code_refs ?? []
-    if (specQuote === '' && docs.length === 0 && code.length === 0) {
+    if (!refsOptional && specQuote === '' && docs.length === 0 && code.length === 0) {
       errs.push(`${label}: needs at least one of spec_quote, doc_refs or code_refs`)
     }
     refs(errs, label, specQuote, q.spec_section ?? '', docs, code)

@@ -144,7 +144,9 @@ retries:
 - 1–6 questions; each has 2–6 options. At most one option per question has
   `recommended: true`. A label ending in "(Recommended)" is accepted too: the
   bridge strips the suffix and sets the flag.
-- Each question has **at least one of** `spec_quote`, `doc_refs` or `code_refs`.
+- Each question has **at least one of** `spec_quote`, `doc_refs` or `code_refs`,
+  except in ask mode (see `ask_mode`), where refs are optional. The daemon
+  accepts a question with no refs; the bridge enforces this rule.
 - At most 4 doc refs and 4 code refs per question.
 - Each quote is 3–300 characters and must pre-match its file's source (normalized
   match, see 02). If it doesn't match, the error names the file and lists its
@@ -191,6 +193,28 @@ each of them as an `open-questions/` file (04, M8). Omitted when empty.
 
 `{"question_set_id": "qs_7f3a"}` → same result shape as `ask`. It exists because
 an MCP tool call can't block forever (see the timeouts in 02).
+
+### `ask_mode`
+
+Turns ask mode on or off for the session. In ask mode every question of the
+session goes through `ask`, with or without a spec.
+
+```json
+{}
+{"off": true}
+```
+
+- With no input (or `off: false`) it turns ask mode on; `off: true` turns it
+  off.
+- While it is on, `ask` accepts questions with no refs, the daemon counts the
+  session as active, so `ai-specview hook` blocks the built-in question tool
+  even with no spec open (04), and the spec pane of an empty viewer says that
+  ask mode is on.
+- `spec_done` does not end ask mode.
+- The bridge replays it after a reconnect.
+
+Result: `{"on": true, "url": "...", "open": "pane"}` when turned on (`url` and
+`open` as in `spec_show`), `{"on": false}` when turned off.
 
 ### `spec_done`
 
@@ -258,6 +282,7 @@ Match          = "exact" | "normalized" | "fuzzy" | "heading" | "none"
 | `ask_cancel` | `{qs_id, reason}` | `result` |
 | `done` | `{summary?}` | `result {}` |
 | `viewers` | `{}` | `result {viewers: int}` (open browser pages of the workspace) |
+| `ask_mode` | `{on: bool}` | `result {}` |
 | `bye` | `{}` | (none; the bridge closes) |
 
 In `ask`, `spec_quote`/`spec_section` have already been folded into `docs` by
@@ -300,8 +325,8 @@ Error codes: `bad_request`, `file_not_found`, `not_markdown`, `empty_folder`,
     waits as usual.
   - `never`: the bridge opens nothing and waits as usual.
 - **If the daemon restarts,** the bridge reconnects, re-sends `hello` with the
-  same `ws`, re-sends the last `spec_show`, any pending `ask`, and the last
-  `done` (unless an `ask` came after it).
+  same `ws`, re-sends the last `spec_show`, the last `ask_mode`, any pending
+  `ask`, and the last `done` (unless an `ask` came after it).
 - **Disconnect** (`bye` or EOF): the daemon archives the workspace (03).
 
 ### Example session

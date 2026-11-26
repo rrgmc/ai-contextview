@@ -1,11 +1,11 @@
 // The pane mode of ai-specview: a Claude Code mod that draws the spec, the
 // code and the questions in a pane beside the chat.
 //
-// It registers its own tools (spec_show, focus, ask, ask_wait, spec_done),
+// It registers its own tools (spec_show, focus, ask, ask_wait, ask_mode, spec_done),
 // listed as mcp__<plugin>__<name>, beside the bridge's MCP tools of the same
 // names. The spec-elaborate-mod skill uses these; spec-elaborate uses the
 // bridge and the browser page. No daemon runs for the pane. While a spec is
-// open in the pane, the built-in AskUserQuestion is blocked.
+// open in the pane, or ask mode is on, the built-in AskUserQuestion is blocked.
 
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
@@ -49,6 +49,8 @@ const uiAtom = atom({ plugin: 'ai-specview', key: 'ui' } as const, { file: '', s
 const askAtom = atom({ plugin: 'ai-specview', key: 'ask' } as const, null as AskView | null, {
   shape: 'ask-3',
 })
+// Ask mode: every question of the session goes through the pane, with or without a spec.
+const modeAtom = atom({ plugin: 'ai-specview', key: 'mode' } as const, false, { shape: 'mode-1' })
 
 // Messages returned to Claude, as internal/tools sends them.
 const MSG_IN_CHAT = 'The user will answer in the chat. Wait for their message.'
@@ -63,6 +65,10 @@ const BLOCK_REASON =
   'A spec is open in ai-specview for this session. Ask this with the ai-specview `ask` tool ' +
   'instead of AskUserQuestion: quote the spec verbatim with spec_quote and ' +
   'spec_section, and point at the code with code_refs.'
+// As internal/hook's ReasonAskMode.
+const BLOCK_REASON_ASK_MODE =
+  'Ask mode is on in ai-specview for this session. Ask this with the ai-specview `ask` tool ' +
+  'instead of AskUserQuestion. Refs are optional: add code_refs or doc_refs when the question is about them.'
 
 type Args = Record<string, unknown>
 
@@ -317,12 +323,52 @@ async function focus($: EngineInterface, args: Args) {
 
 // ---------------------------------------------------------------- questions
 
+/** The view of ask mode with no spec open: no file, refs relative to the project directory. */
+const noSpecView = (): SpecView => ({
+  ...noQuote,
+  specPath: '',
+  title: '',
+  dir: ctx.cwd,
+  isDir: false,
+  files: [],
+  changedFiles: [],
+  docs: [],
+  text: '',
+  changedSections: [],
+  match: '',
+  code: [],
+  error: '',
+  isDone: false,
+  summary: '',
+})
+
+async function askMode($: EngineInterface, args: Args) {
+  const on = args.off !== true
+  await update($, modeAtom, () => on)
+  if (on) {
+    if (!(await read($, viewAtom))) await update($, viewAtom, () => noSpecView())
+    void $.ui.open({ id: PANE, title: 'Spec' })
+  } else {
+    // The empty view only stood for ask mode; a spec shown since stays.
+    await update($, viewAtom, v => (v?.specPath === '' ? null : v))
+  }
+  return { on }
+}
+
 async function ask($: EngineInterface, args: Args, signal: AbortSignal): Promise<AskOutput> {
-  const invalid = check.ask(args)
+  const mode = await read($, modeAtom)
+  const invalid = check.ask(args, mode)
   if (invalid.length > 0) throw new Error('invalid input:\n- ' + invalid.join('\n- '))
-  const prev = await read($, viewAtom)
+  let prev = await read($, viewAtom)
+  if (!prev && mode) {
+    prev = noSpecView()
+    await update($, viewAtom, () => prev)
+  }
   if (!prev) throw new Error('ask: no spec is shown yet; call spec_show first')
-  const text: string = await $.fs.read(prev.specPath)
+  if (prev.specPath === '' && (args.questions as check.QuestionArg[] | undefined)?.some(q => q.spec_quote)) {
+    throw new Error('ask: no spec is shown, so spec_quote has nothing to quote; call spec_show first, or use doc_refs or code_refs')
+  }
+  const text: string = prev.specPath === '' ? '' : await $.fs.read(prev.specPath)
 
   const errs: string[] = []
   const questions: QuestionView[] = []
@@ -561,7 +607,9 @@ export const register: Register = on => {
     // mod blocks the built-in question tool itself while a spec is open here.
     if (e.tool === 'AskUserQuestion') {
       const v = await read($, viewAtom)
-      return v && !v.isDone ? { deny: BLOCK_REASON } : next(e)
+      if (v && v.specPath !== '' && !v.isDone) return { deny: BLOCK_REASON }
+      if (await read($, modeAtom)) return { deny: BLOCK_REASON_ASK_MODE }
+      return next(e)
     }
 
     const prefix = `mcp__${$.plugin.name}__`
@@ -585,6 +633,8 @@ export const register: Register = on => {
         out = await focus($, args)
       } else if (name === 'ask') {
         out = await ask($, args, next.signal)
+      } else if (name === 'ask_mode') {
+        out = await askMode($, args)
       } else if (name === 'ask_wait') {
         out = await askWait($, args, next.signal)
       } else {
@@ -681,8 +731,15 @@ export const register: Register = on => {
       label: `${label(p)}${view.changedFiles.includes(p) ? '  (changed)' : ''}${docs.some(d => d.path === p) || (p === primary && at.quoteStart >= 0) ? '  (quoted)' : ''}`,
     }))
 
+    // Ask mode with no spec open: no file to show.
+    const noSpec = view.specPath === '' && shownFile === ''
     const specColumn = (
       <Box key="spec-col" flexDirection="column" width={wide && (formShown || codes.length > 0) ? '55%' : '100%'} flexShrink={1}>
+        {noSpec && (
+          <Text key="no-spec" dimColor wrap="wrap">
+            Ask mode is on: Claude asks every question of this session here. No spec is open.
+          </Text>
+        )}
         {parts.before !== '' && <Markdown key="before" text={parts.before.slice(-MAX_MARKDOWN)} />}
         {parts.focus !== '' && (
           <Box key="quote" flexDirection="column" borderStyle="round" borderColor="yellow" paddingX={1}>
@@ -908,7 +965,7 @@ export const register: Register = on => {
     // One line: the file, then the section shown, the spec it belongs to and the match.
     const crumbs = [
       section ? `› ${section.title}` : `› ${shownFile === primary ? 'Whole spec' : 'Whole file'}`,
-      shownFile !== primary ? `in the spec ${view.title}` : '',
+      shownFile !== primary && view.title !== '' ? `in the spec ${view.title}` : '',
       view.match !== '' && !question && shownFile === primary ? `quote match ${view.match}` : '',
     ].filter(s => s !== '')
     const jumps =
@@ -920,8 +977,8 @@ export const register: Register = on => {
       <Box flexDirection="column" rowGap={1}>
         <Box flexDirection="column">
           <Box key="crumbs" flexDirection="row" flexWrap="wrap" columnGap={1}>
-            <Text bold>{label(shownFile)}</Text>
-            {crumbs.map((c, i) => (
+            <Text bold>{noSpec ? 'Ask mode' : label(shownFile)}</Text>
+            {!noSpec && crumbs.map((c, i) => (
               <Text key={`crumb-${i}`} dimColor>
                 {c}
               </Text>
@@ -942,13 +999,15 @@ export const register: Register = on => {
           {files.length > 1 && (
             <Select key="file" label="File" options={fileOptions} value={shownFile} onSelect={v => void showFile(v)} />
           )}
-          <Select
-            key="outline"
-            label="Section"
-            options={options}
-            value={String(ui.shown)}
-            onSelect={v => void showSection(Number(v))}
-          />
+          {!noSpec && (
+            <Select
+              key="outline"
+              label="Section"
+              options={options}
+              value={String(ui.shown)}
+              onSelect={v => void showSection(Number(v))}
+            />
+          )}
         </Box>
         {jumps && (
         <Box key="jumps" flexDirection="row" flexWrap="wrap" columnGap={2} alignItems="center">

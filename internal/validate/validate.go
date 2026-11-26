@@ -36,8 +36,10 @@ func (e Errors) Err() error {
 	return errors.New("invalid input:\n- " + strings.Join(e, "\n- "))
 }
 
-// Ask validates the ask tool input.
-func Ask(in *protocol.AskInput) error {
+// Ask validates the ask tool input. refsOptional drops the rule that each
+// question needs a ref; it is set in ask mode, where a question may be about
+// neither a spec nor code.
+func Ask(in *protocol.AskInput, refsOptional bool) error {
 	var errs Errors
 	if n := len(in.Questions); n < 1 || n > MaxQuestions {
 		errs.add("questions: got %d, want 1-%d", n, MaxQuestions)
@@ -76,7 +78,7 @@ func Ask(in *protocol.AskInput) error {
 		if recommended > 1 {
 			errs.add("%s: %d options are marked recommended, at most 1", label, recommended)
 		}
-		if q.SpecQuote == "" && len(q.DocRefs) == 0 && len(q.CodeRefs) == 0 {
+		if !refsOptional && q.SpecQuote == "" && len(q.DocRefs) == 0 && len(q.CodeRefs) == 0 {
 			errs.add("%s: needs at least one of spec_quote, doc_refs or code_refs", label)
 		}
 		refs(&errs, label, q.SpecQuote, q.SpecSection, q.DocRefs, q.CodeRefs)

@@ -126,3 +126,35 @@ func TestAncestorPIDs(t *testing.T) {
 	require.NotEmpty(t, pids)
 	assert.Equal(t, os.Getppid(), pids[0])
 }
+
+func TestBlocksInAskMode(t *testing.T) {
+	e := startDaemon(t)
+	cwd := t.TempDir()
+	spec := filepath.Join(cwd, "spec.md")
+	require.NoError(t, os.WriteFile(spec, []byte("# Spec\n\nText.\n"), 0o644))
+	ancestors := []int{1111, claudePID, 1}
+	e.bridge(cwd)
+
+	// Ask mode with no spec: block, with the ask-mode reason.
+	e.req(protocol.TypeAskMode, &protocol.AskMode{On: true})
+	code, msg := run(e.sock, askEvent, ancestors)
+	assert.Equal(t, ExitBlock, code)
+	assert.Equal(t, ReasonAskMode+"\n", msg)
+
+	// A spec open in ask mode: the spec reason.
+	e.req(protocol.TypeSpecShow, &protocol.SpecShow{RootAbs: spec})
+	code, msg = run(e.sock, askEvent, ancestors)
+	assert.Equal(t, ExitBlock, code)
+	assert.Equal(t, Reason+"\n", msg)
+
+	// spec_done does not end ask mode.
+	e.req(protocol.TypeDone, &protocol.Done{})
+	code, msg = run(e.sock, askEvent, ancestors)
+	assert.Equal(t, ExitBlock, code)
+	assert.Equal(t, ReasonAskMode+"\n", msg)
+
+	// Ask mode off: allow.
+	e.req(protocol.TypeAskMode, &protocol.AskMode{On: false})
+	code, _ = run(e.sock, askEvent, ancestors)
+	assert.Equal(t, ExitAllow, code)
+}

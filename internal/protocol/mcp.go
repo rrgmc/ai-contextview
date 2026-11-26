@@ -79,6 +79,18 @@ type SpecDoneOutput struct {
 	URL string `json:"url,omitempty"`
 }
 
+// AskModeInput is the input of ask_mode.
+type AskModeInput struct {
+	Off bool `json:"off,omitempty" jsonschema:"true turns ask mode off; omit to turn it on"`
+}
+
+// AskModeOutput is the output of ask_mode.
+type AskModeOutput struct {
+	On   bool   `json:"on"`
+	URL  string `json:"url,omitempty" jsonschema:"the viewer page for this session"`
+	Open string `json:"open,omitempty" jsonschema:"where the user wants the viewer: pane means open url in the built-in browser pane when one is available"`
+}
+
 // AskWaitInput is the input of ask_wait.
 type AskWaitInput struct {
 	QuestionSetID string `json:"question_set_id" jsonschema:"the id returned by a pending ask"`

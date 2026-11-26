@@ -245,6 +245,10 @@ func (d *Daemon) artifactsEvent(w *Workspace) Event {
 func (d *Daemon) docPayload(w *Workspace, rel string) map[string]any {
 	out := map[string]any{"path": rel}
 	abs, ok := w.docAbs(rel)
+	if !ok && w.AskMode && w.Root == nil {
+		out["html"] = `<p class="empty">Ask mode is on: Claude asks every question of this session here. No spec is open.</p>`
+		return out
+	}
 	if !ok {
 		out["html"] = `<p class="empty">No spec shown yet. The skill calls <code>spec_show</code> when it creates or opens a spec.</p>`
 		return out

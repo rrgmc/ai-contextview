@@ -31,6 +31,11 @@ const Reason = "A spec is open in ai-specview for this session. Ask this with th
 	"instead of AskUserQuestion: quote the spec verbatim with spec_quote and " +
 	"spec_section, and point at the code with code_refs."
 
+// ReasonAskMode is shown instead of Reason when the session is in ask mode
+// with no spec open.
+const ReasonAskMode = "Ask mode is on in ai-specview for this session. Ask this with the ai-specview `ask` tool " +
+	"instead of AskUserQuestion. Refs are optional: add code_refs or doc_refs when the question is about them."
+
 // timeout bounds the daemon query; a slow or missing daemon must never hold
 // up Claude.
 const timeout = 800 * time.Millisecond
@@ -53,7 +58,11 @@ func Run(in io.Reader, errOut io.Writer, socket string, pids []int) int {
 	if err != nil || !res.Active {
 		return ExitAllow
 	}
-	fmt.Fprintln(errOut, Reason)
+	if res.AskMode {
+		fmt.Fprintln(errOut, ReasonAskMode)
+	} else {
+		fmt.Fprintln(errOut, Reason)
+	}
 	return ExitBlock
 }
 

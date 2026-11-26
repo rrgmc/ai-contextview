@@ -1,5 +1,5 @@
 // Package tools implements the MCP tools of `ai-specview mcp`: spec_show, focus,
-// ask and ask_wait.
+// ask, ask_wait, ask_mode and spec_done.
 package tools
 
 import (
@@ -51,6 +51,7 @@ type Bridge struct {
 	mu      sync.Mutex
 	root    *specsrc.Root
 	pending map[string]bool
+	askMode bool
 }
 
 // Messages returned to Claude.
@@ -134,7 +135,7 @@ func Register(s *mcp.Server, b *Bridge) {
 	mcp.AddTool(s, &mcp.Tool{
 		Name: "ask",
 		Description: "Ask the user 1-6 clarifying questions in the ai-specview viewer and wait for the answers. " +
-			"Use this for every clarifying question instead of asking in chat. Each question needs refs: " +
+			"Use this for every clarifying question instead of asking in chat. Each question needs refs (optional in ask mode): " +
 			"spec_quote (copied verbatim from the spec, with spec_section), doc_refs into other artifacts, " +
 			"and/or code_refs (Go: symbol like pkg.(*Type).Method; other files: lines N-M). " +
 			"Results: answered (apply the answers), in_chat (wait for the user's chat message), " +
@@ -149,6 +150,13 @@ func Register(s *mcp.Server, b *Bridge) {
 			"Call it once at the end of a spec session, with a summary as markdown with a **Decided** heading and a **Still open** heading, each followed by a bullet list with one item per decision or open point (never a run-on paragraph). " +
 			"The page shows it as a finished banner. Asking again later reopens the session.",
 	}, b.SpecDone)
+	mcp.AddTool(s, &mcp.Tool{
+		Name: "ask_mode",
+		Description: "Turn ask mode on (or off with off: true) for this session. In ask mode, ask every question of the session " +
+			"with the ask tool, with or without a spec: refs are optional, so add code_refs or doc_refs only when the question is about them. " +
+			"The built-in question tool is blocked while it is on. " +
+			"If the result has open: \"pane\", open the url in the built-in browser pane when that tool is available.",
+	}, b.AskModeTool)
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "ask_wait",
 		Description: "Keep waiting for a pending question set returned by ask. Same result shape as ask.",
@@ -310,7 +318,10 @@ func (b *Bridge) Focus(ctx context.Context, _ *mcp.CallToolRequest, in protocol.
 // Ask implements the ask tool.
 func (b *Bridge) Ask(ctx context.Context, _ *mcp.CallToolRequest, in protocol.AskInput) (*mcp.CallToolResult, protocol.AskOutput, error) {
 	var out protocol.AskOutput
-	if err := validate.Ask(&in); err != nil {
+	b.mu.Lock()
+	refsOptional := b.askMode
+	b.mu.Unlock()
+	if err := validate.Ask(&in, refsOptional); err != nil {
 		return nil, out, err
 	}
 	normalizeRecommended(&in)
@@ -427,6 +438,23 @@ func normalizeRecommended(in *protocol.AskInput) {
 			}
 		}
 	}
+}
+
+// AskModeTool implements the ask_mode tool.
+func (b *Bridge) AskModeTool(ctx context.Context, _ *mcp.CallToolRequest, in protocol.AskModeInput) (*mcp.CallToolResult, protocol.AskModeOutput, error) {
+	on := !in.Off
+	if _, err := b.Daemon.Request(ctx, protocol.TypeAskMode, &protocol.AskMode{On: on}); err != nil {
+		return nil, protocol.AskModeOutput{}, err
+	}
+	b.mu.Lock()
+	b.askMode = on
+	b.mu.Unlock()
+	out := protocol.AskModeOutput{On: on}
+	if on {
+		out.URL = b.Daemon.URL()
+		out.Open = b.OpenIn
+	}
+	return nil, out, nil
 }
 
 // AskWaitTool implements the ask_wait tool.

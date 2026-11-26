@@ -193,7 +193,7 @@ func (s *Server) handle(c *conn) {
 			}
 		case protocol.TypeViewers:
 			s.reply(c, env.ID, protocol.TypeResult, &protocol.ViewersResult{Viewers: s.viewers()})
-		case protocol.TypeAskCancel, protocol.TypePing, protocol.TypeDone:
+		case protocol.TypeAskCancel, protocol.TypePing, protocol.TypeDone, protocol.TypeAskMode:
 			s.reply(c, env.ID, protocol.TypeResult, map[string]any{})
 		case protocol.TypeBye:
 			return

@@ -657,3 +657,24 @@ func TestViewersMessage(t *testing.T) {
 	require.NoError(t, res.Decode(&v))
 	assert.Equal(t, 1, v.Viewers)
 }
+
+func TestAskModeWithoutSpec(t *testing.T) {
+	h := newHarness(t)
+	cwd, _ := writeSpec(t)
+	b := h.bridge("ws_A", cwd)
+	res := b.req(protocol.TypeAskMode, &protocol.AskMode{On: true})
+	require.Equal(t, protocol.TypeResult, res.Type)
+
+	// A question with no refs and no spec is shown.
+	res = b.req(protocol.TypeAsk, &protocol.Ask{QSID: "qs_1", Questions: []protocol.AskQuestion{{
+		ID: "q1", Text: "Tabs?", Options: []protocol.Option{{Label: "Yes"}, {Label: "No"}},
+	}}})
+	require.Equal(t, protocol.TypeAskShown, res.Type)
+
+	h.d.mu.Lock()
+	w := h.d.workspaces["ws_A"]
+	assert.True(t, w.AskMode)
+	doc := h.d.docEvent(w, w.CurrentDoc)
+	h.d.mu.Unlock()
+	assert.Contains(t, string(doc.Data), "Ask mode is on")
+}

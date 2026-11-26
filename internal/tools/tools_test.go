@@ -341,3 +341,44 @@ func TestAskWithViewerPaneWaits(t *testing.T) {
 	assert.Empty(t, out.URL)
 	assert.Empty(t, e.openedURLs())
 }
+
+func TestAskModeMakesRefsOptional(t *testing.T) {
+	e := setup(t, func(_ string, a *protocol.Ask) *protocol.AskResult {
+		return &protocol.AskResult{QSID: a.QSID, Status: protocol.StatusAnswered,
+			Answers: []protocol.Answer{{ID: "q1", Selected: []string{"Yes"}}}}
+	})
+	e.fake.SetViewers(1)
+	noRefs := protocol.AskInput{Questions: []protocol.QuestionInput{{
+		ID: "q1", Text: "Use tabs?", Options: []protocol.Option{{Label: "Yes"}, {Label: "No"}},
+	}}}
+
+	// Without ask mode a question needs a ref.
+	_, _, err := e.bridge.Ask(context.Background(), nil, noRefs)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "needs at least one of")
+
+	_, mode, err := e.bridge.AskModeTool(context.Background(), nil, protocol.AskModeInput{})
+	require.NoError(t, err)
+	assert.True(t, mode.On)
+	assert.Contains(t, mode.URL, "/w/ws_test")
+
+	// In ask mode, with no spec shown, it does not.
+	_, out, err := e.bridge.Ask(context.Background(), nil, noRefs)
+	require.NoError(t, err)
+	assert.Equal(t, protocol.StatusAnswered, out.Status)
+
+	var sent protocol.AskMode
+	for _, m := range e.fake.Received() {
+		if m.Type == protocol.TypeAskMode {
+			require.NoError(t, m.Decode(&sent))
+		}
+	}
+	assert.True(t, sent.On)
+
+	_, mode, err = e.bridge.AskModeTool(context.Background(), nil, protocol.AskModeInput{Off: true})
+	require.NoError(t, err)
+	assert.False(t, mode.On)
+	assert.Empty(t, mode.URL)
+	_, _, err = e.bridge.Ask(context.Background(), nil, noRefs)
+	require.Error(t, err)
+}

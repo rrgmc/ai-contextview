@@ -27,6 +27,10 @@ What changed from the plan while building and using it:
   more choice per question. Claude gets the deferred question ids
   (`deferred` in the result) and records them as open items in the spec.
   `keep_open` stays in the protocol for "Back to chat" and "Skip".
+- **Ask mode.** The `ask-mode` and `ask-mode-mod` skills turn on a mode
+  (`ask_mode` tool and message) that routes every question of a session
+  through ai-specview, with or without a spec. Refs are optional in it, and
+  the hook blocks the built-in question tool while it is on.
 - **A closed viewer is reopened.** When an `ask` finds no open page (the user
   closed the browser pane), it returns `pending` with the `url` at once, so
   Claude reopens the pane and then calls `ask_wait`. A new `viewers` message

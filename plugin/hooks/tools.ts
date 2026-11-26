@@ -99,7 +99,7 @@ export const TOOLS: readonly ToolDef[] = [
     name: 'ask',
     description:
       'Ask the user 1-6 clarifying questions in the ai-specview pane and wait for the answers. ' +
-      'Use this for every clarifying question instead of asking in chat. Each question needs refs: ' +
+      'Use this for every clarifying question instead of asking in chat. Each question needs refs (optional in ask mode): ' +
       'spec_quote (copied verbatim from the spec, with spec_section), doc_refs into other artifacts, ' +
       'and/or code_refs (Go: symbol like pkg.(*Type).Method; other files: lines N-M). ' +
       'Results: answered (apply the answers), in_chat (wait for the user\'s chat message), ' +
@@ -162,6 +162,18 @@ export const TOOLS: readonly ToolDef[] = [
       additionalProperties: false,
       required: ['question_set_id'],
       properties: { question_set_id: { type: 'string', description: 'the id returned by a pending ask' } },
+    },
+  },
+  {
+    name: 'ask_mode',
+    description:
+      'Turn ask mode on (or off with off: true) for this session. In ask mode, ask every question of the session ' +
+      'with the ask tool, with or without a spec: refs are optional, so add code_refs or doc_refs only when the question is about them. ' +
+      'The built-in question tool is blocked while it is on. The pane opens.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: { off: { type: 'boolean', description: 'true turns ask mode off; omit to turn it on' } },
     },
   },
   {

@@ -93,6 +93,9 @@ type Workspace struct {
 	History []*HistoryEntry
 	// Done is set by spec_done: the spec is finished. A later ask clears it.
 	Done *DoneState
+	// AskMode is set by ask_mode: every question of the session goes
+	// through ai-specview, with or without a spec.
+	AskMode bool
 	// AnswersAt is when the user last replied to a question set (send, back
 	// to chat or skip); the Changes tab compares against the files then.
 	AnswersAt time.Time
@@ -117,6 +120,7 @@ func (w *Workspace) adopt(old *Workspace) {
 	w.Root, w.files, w.extraDocs, w.CurrentDoc = old.Root, old.files, old.extraDocs, old.CurrentDoc
 	w.Code, w.codeAllowed, w.focus, w.History = old.Code, old.codeAllowed, old.focus, old.History
 	w.Done = old.Done
+	w.AskMode = old.AskMode
 	w.AnswersAt = old.AnswersAt
 }
 

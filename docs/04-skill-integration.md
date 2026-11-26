@@ -41,9 +41,16 @@ ends with a clean `pending` result instead of a timeout error.
 The skill and the `ask` tool description already tell Claude to ask every
 question with `ask`. As a safety net, `ai-specview hook` blocks the built-in
 question tool (`AskUserQuestion`) **only while this Claude session has a spec
-open in ai-specview** (shown with `spec_show` and not finished with `spec_done`),
-and tells Claude to use `ask` instead. Other sessions, and spec-free work in
-the same session, keep the built-in tool.
+open in ai-specview** (shown with `spec_show` and not finished with `spec_done`)
+**or is in ask mode**, and tells Claude to use `ask` instead. Other sessions,
+and spec-free work in the same session, keep the built-in tool.
+
+Ask mode routes every question of a session through ai-specview without a
+spec. The user turns it on at the start of a session with the `ask-mode`
+skill (`/ai-specview:ask-mode`), which calls the `ask_mode` tool (01); the
+`ask-mode-mod` skill does the same in the pane (06). In ask mode refs are
+optional, so Claude can ask about anything, and the hook's message to Claude
+says so. `/ai-specview:ask-mode off` turns it off.
 
 Add it to the user settings (`~/.claude/settings.json`) once:
 

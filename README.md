@@ -82,6 +82,14 @@ plugin; it needs neither the binary nor the daemon. Ask for the pane (for
 example "spec this in the pane") or name the skill. `/specview-pane` opens the
 pane again after you close it. See [docs/06-pane-mod.md](docs/06-pane-mod.md).
 
+### Ask mode: every question through ai-specview
+
+To send every question of a session to ai-specview, with or without a spec,
+run `/ai-specview:ask-mode` at the start of the session. Claude then asks each
+question in the viewer, with the code it is about when there is any, and the
+hook blocks the built-in question tool. `/ai-specview:ask-mode off` turns it
+off. `/ai-specview:ask-mode-mod` does the same in the pane.
+
 ### The browser page inside the desktop app
 
 In the Claude desktop app, Claude opens the browser viewer in the app's
@@ -187,7 +195,7 @@ directory within 2 hours takes the old workspace over.
 | `ai-specview mcp` | The stdio MCP server. Claude Code starts one per instance. |
 | `ai-specview serve` | The viewer daemon. `--detach` starts it in the background, `--restart` replaces a running one (or starts one) in the background, `--stop` stops it, `--addr` sets the address (default `127.0.0.1:7878`, the next 9 ports are tried), `--idle-exit 30m` exits when unused. |
 | `ai-specview fakeapp` | A terminal stand-in for the daemon, for testing the MCP path. |
-| `ai-specview hook` | Claude Code PreToolUse hook: blocks the built-in question tool only while this session has a spec open. |
+| `ai-specview hook` | Claude Code PreToolUse hook: blocks the built-in question tool only while this session has a spec open or is in ask mode. |
 | `ai-specview version` | Prints the version: the git tag (`v1.2.3`), a Go pseudo-version for a build between tags, with `+dirty` for uncommitted changes, or `devel` when the build has no version information. |
 
 ## Environment

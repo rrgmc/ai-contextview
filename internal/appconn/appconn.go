@@ -54,6 +54,7 @@ type Client struct {
 	lastSpecShow *protocol.SpecShow
 	pendingAsk   *protocol.Ask
 	lastDone     *protocol.Done
+	lastAskMode  *protocol.AskMode
 
 	writeMu sync.Mutex
 }
@@ -209,12 +210,18 @@ func (c *Client) connect(ctx context.Context) error {
 	spec := c.lastSpecShow
 	ask := c.pendingAsk
 	done := c.lastDone
+	mode := c.lastAskMode
 	c.mu.Unlock()
 
 	// Replay: spec_show, then the pending ask. Replies are not needed.
 	if spec != nil {
 		if _, err := c.roundTrip(hctx, protocol.TypeSpecShow, spec); err != nil {
 			c.opts.Logf("replay spec_show: %v", err)
+		}
+	}
+	if mode != nil {
+		if _, err := c.roundTrip(hctx, protocol.TypeAskMode, mode); err != nil {
+			c.opts.Logf("replay ask_mode: %v", err)
 		}
 	}
 	if ask != nil {
@@ -382,7 +389,8 @@ func (c *Client) roundTrip(ctx context.Context, typ string, body any) (protocol.
 }
 
 // Request connects if needed and sends one request, returning its reply.
-// spec_show and ask are remembered for replay after a reconnect.
+// spec_show, ask, done and ask_mode are remembered for replay after a
+// reconnect.
 func (c *Client) Request(ctx context.Context, typ string, body any) (protocol.Envelope, error) {
 	switch b := body.(type) {
 	case *protocol.SpecShow:
@@ -397,6 +405,10 @@ func (c *Client) Request(ctx context.Context, typ string, body any) (protocol.En
 	case *protocol.Done:
 		c.mu.Lock()
 		c.lastDone = b
+		c.mu.Unlock()
+	case *protocol.AskMode:
+		c.mu.Lock()
+		c.lastAskMode = b
 		c.mu.Unlock()
 	case *protocol.AskCancel:
 		c.mu.Lock()

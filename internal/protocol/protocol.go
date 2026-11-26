@@ -37,6 +37,9 @@ const (
 	// TypeViewers asks how many pages show the workspace; the reply is a
 	// result with ViewersResult.
 	TypeViewers = "viewers"
+	// TypeAskMode turns ask mode on or off for the workspace; the reply is
+	// result {}.
+	TypeAskMode = "ask_mode"
 	// TypePing and TypeShutdown are daemon-management messages used by
 	// `ai-specview serve` itself (single-instance check and --restart).
 	TypePing     = "ping"
@@ -347,9 +350,8 @@ func (a *Ask) Validate() error {
 		if len(q.Options) < 2 || len(q.Options) > 6 {
 			return fmt.Errorf("ask: question %s has %d options, want 2-6", q.ID, len(q.Options))
 		}
-		if len(q.Docs) == 0 && len(q.Code) == 0 {
-			return fmt.Errorf("ask: question %s has no refs", q.ID)
-		}
+		// A question may have no refs: in ask mode the bridge allows it, and
+		// it checks the rule itself otherwise.
 		for i := range q.Docs {
 			if err := q.Docs[i].Validate(); err != nil {
 				return err
@@ -392,6 +394,15 @@ func (d *Done) Validate() error {
 	}
 	return nil
 }
+
+// AskMode turns ask mode on or off. In ask mode every question of the
+// session goes through ai-specview, with or without a spec, and the hook
+// blocks the built-in question tool.
+type AskMode struct {
+	On bool `json:"on"`
+}
+
+func (a *AskMode) Validate() error { return nil }
 
 // Bye closes the workspace.
 type Bye struct{}
@@ -523,6 +534,9 @@ type ActiveResult struct {
 	Active bool   `json:"active"`
 	WS     string `json:"ws,omitempty"`
 	URL    string `json:"url,omitempty"`
+	// AskMode is true when the session is active because of ask mode, with
+	// no spec open.
+	AskMode bool `json:"ask_mode,omitempty"`
 }
 
 // Viewers asks how many browser pages show the bridge's workspace. Its body

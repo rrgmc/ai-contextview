@@ -4,11 +4,12 @@ ai-specview shows the spec and the code side by side while Claude elaborates a
 spec. It is one Go binary, `ai-specview`:
 
 - `ai-specview mcp`: a stdio MCP server ("bridge"), one per Claude session. It
-  offers the tools `spec_show`, `focus`, `ask`, `ask_wait` and `spec_done`.
+  offers the tools `spec_show`, `focus`, `ask`, `ask_wait`, `ask_mode` and
+  `spec_done`.
 - `ai-specview serve`: the viewer daemon, one per user. It serves the web page
   (`http://127.0.0.1:7878`) and talks to the bridges over a Unix socket.
 - `ai-specview hook`: a Claude Code `PreToolUse` hook that blocks the built-in
-  `AskUserQuestion` only in a session that has a spec open.
+  `AskUserQuestion` only in a session that has a spec open or is in ask mode.
 - `ai-specview fakeapp`: a terminal stand-in for the daemon, for testing.
 
 The design is in [docs/](docs/README.md); the contract between the parts is
@@ -58,7 +59,7 @@ Read-only work (reading code, answering questions) needs no worktree.
 | `internal/identity/` | Workspace id, project name, Claude and ancestor process ids |
 | `internal/e2e/` | End-to-end tests, including the multi-process test |
 | `protocol/` | Golden message fixtures and quote-matching fixtures |
-| `plugin/` | The Claude Code plugin: `.mcp.json`, launcher script, `skills/spec-elaborate/` (browser) and `skills/spec-elaborate-mod/` (pane), `hooks/` (the `PreToolUse` hook and the pane mod's TypeScript module), `types/` and `tests/` of the mod |
+| `plugin/` | The Claude Code plugin: `.mcp.json`, launcher script, `skills/spec-elaborate/` and `skills/ask-mode/` (browser), `skills/spec-elaborate-mod/` and `skills/ask-mode-mod/` (pane), `hooks/` (the `PreToolUse` hook and the pane mod's TypeScript module), `types/` and `tests/` of the mod |
 | `.claude-plugin/` | `marketplace.json`: the repository is a plugin marketplace |
 | `tools/changelog/` | Release tool: merges `changelog.d/` into `CHANGELOG.md`, checks a tag, prints release notes |
 | `.github/workflows/` | `ci.yml` (tests) and `release.yml` (on `v*` tags) |

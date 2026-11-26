@@ -114,6 +114,7 @@ declare module 'claude-code' {
       view: Shaped<SpecView | null>
       ui: Shaped<PaneUi>
       ask: Shaped<AskView | null>
+      mode: Shaped<boolean>
     }
   }
 }
