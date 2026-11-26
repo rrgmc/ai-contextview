@@ -1,7 +1,7 @@
 # 07 — Layers: questions first, specs on top
 
-Status: proposed. Nothing in this document is built yet, except ask mode as
-described in 04 and 06.
+Status: phase 1 is built (see "Phases"); phases 2 and 3 are proposed. Ask
+mode itself is described in 04 and 06.
 
 ## Why
 
@@ -37,17 +37,21 @@ The user picks the highest layer they need. The lower layers come with it.
 | The user wants | How they select it | What is on |
 |---|---|---|
 | Questions with context in any session | `/ai-specview:ask-mode`, or the `AI_SPECVIEW_ASK_MODE=always` setting | Layer 1, until turned off |
-| Claude writes a document with them | Ask in words ("write the plan in the viewer"), or `/ai-specview:doc <path>` | Layers 1 and 2, until the document is done |
-| A spec | `/ai-specview:spec-elaborate`, or ask in words ("spec this") | Layers 1, 2 and 3, until `done` |
+| Claude writes a document with them | Ask mode finds it (see "Finding the working document"), or ask in words ("write the plan in the viewer"), or `/ai-specview:doc <path>` | Layers 1 and 2, until the document is done |
+| A spec, written by any skill (their own, a company's, or none) | `/ai-specview:spec-mode [path or glob]` | Layers 1 and 2, with a stronger search for the spec, until turned off |
+| A spec written with ai-specview's own workflow | `/ai-specview:spec-elaborate`, or ask in words ("spec this") | Layers 1, 2 and 3, until `done` |
 
 Rules:
 
 - **Ask mode is off by default.** It starts only when the user turns it on.
   `AI_SPECVIEW_ASK_MODE=always`, in the `env` block of the Claude Code
   settings, turns it on for every session.
-- **Layer 2 from inside ask mode.** The ask-mode skill tells Claude: when you
-  write or change a document together with the user, show it as the working
-  document. The user rarely needs `/ai-specview:doc`.
+- **Layer 2 from inside ask mode.** A hook finds the document Claude writes
+  and shows it as the working document (see "Finding the working document").
+  The user rarely needs `/ai-specview:doc`.
+- **Spec mode** is ask mode that expects a spec. It suits a spec skill that
+  is not ai-specview's own, such as a company's: that skill keeps its
+  workflow, and ai-specview adds the questions and the working document.
 - **Ending.** `done` ends layers 2 and 3. Ask mode stays on if the user turned
   it on. Otherwise question routing ends with the document, as it ends with
   the spec today.
@@ -91,28 +95,123 @@ would jump. The layout is therefore chosen once per question set.
   jumpy in use, a set without documents can keep the panel of the previous set
   instead.
 
+## Finding the working document
+
+Claude does not tell ai-specview which document it is writing unless a skill
+says so (`spec_show`). Another skill, such as a company's spec skill, has its
+own instructions and will not. In one real session, a company skill's spec
+still showed as the working document, but only because the `spec-elaborate`
+instructions from earlier in the same session were still in Claude's context.
+A fresh session would not have shown it. Phase 2 makes this reliable with a
+hook, independent of the skill.
+
+### The write hook
+
+A `PostToolUse` hook on `Write`, `Edit` and `MultiEdit` reports each file
+Claude writes to the daemon. The hook finds its session as `ai-specview hook`
+does today, through the Claude Code process (04), and sends a new socket
+message, for example `doc_written {pids, path}`. The pane mod sees the same
+tool calls in its `tool.call` hook and applies the same rules without a
+daemon. The hook runs only in ask mode or spec mode.
+
+An explicit `spec_show` always wins over everything below.
+
+### Which files count
+
+Markdown files (`.md`, `.markdown`) count, except bookkeeping:
+
+- `CLAUDE.md` and `AGENTS.md` files, `CHANGELOG.md` and `changelog.d/`
+- Claude's memory (`~/.claude/projects/…`)
+- files in dot-folders (`.agent/`, `.github/`, `.claude/`), except
+  `.claude/specs/`
+
+Outside the project, drafts in `~/.claude/specs/` and plans in
+`~/.claude/plans/` count.
+
+Nothing names a particular layout such as `docs/specs/`: every team and skill
+keeps documents in other places. The optional setting
+`AI_SPECVIEW_DOC_PATHS` (glob patterns, for example
+`docs/specs/**,docs/rfc/**`) replaces these rules: when it is set, only
+matching files count.
+
+### Ask mode: the first file, then questions
+
+1. The first markdown file Claude writes that counts becomes the working
+   document. In a spec flow that is almost always the spec, since the skill
+   writes it before anything else.
+2. Later writes to other files do not switch it. They are noted as
+   candidates.
+3. A question whose `doc_refs` names a candidate other than the working
+   document switches to that file: Claude is asking about it.
+4. A write to another markdown file in the working document's folder refreshes
+   the folder view (as a folder `spec_show` does) instead of switching. A
+   spec's ADRs and open questions stay part of one document.
+5. After the first pick, the hook tells Claude in one line: "`<file>` is now
+   the working document in ai-specview; call `spec_show` to show another."
+   Claude can correct a wrong pick.
+
+So, in one session that runs `spec-elaborate` and then a company's spec skill
+on the same ticket, the first spec stays the working document until the
+company skill's first question quotes its own spec; then the panel moves to
+it.
+
+### Spec mode: a stronger search
+
+`/ai-specview:spec-mode` turns on ask mode and says that a spec is coming.
+
+- **With a path or glob** (`/ai-specview:spec-mode docs/specs/SW-1234.md`),
+  there is no detection: the first write to a matching file makes it the
+  working document. The file need not exist yet. This is the main way to use
+  spec mode.
+- **Without one,** each markdown write that counts gets a score, and the best
+  candidate becomes the working document:
+
+  | Signal | Weight | Notes |
+  |---|---|---|
+  | A spec skill is running | High | A `PreToolUse` hook on the `Skill` tool sees the skill's name; a name with `spec`, `rfc` or `design` marks the session as writing a spec from then on |
+  | Questions quote the file | High | As step 3 above |
+  | Where the file is | Medium | A folder named `specs`, `spec`, `rfc`, `rfcs`, `design` or `adr`, or `~/.claude/specs/`, `~/.claude/plans/` |
+  | What the file holds | Medium | `kind: spec` frontmatter, or headings such as Requirements, Goals, Design, Acceptance criteria, Open questions |
+  | How it grows | Medium | The file Claude keeps editing between questions, rather than writing once |
+
+  The weights and the threshold are tuned in use; the first version can be a
+  simple sum.
+- **Limits.** Without a path, spec mode still guesses, with more information.
+  A spec with unusual headings in an unusual folder may need the path, or one
+  `spec_show` from Claude. Spec mode also cannot tell when a spec is
+  finished: a skill other than `spec-elaborate` does not call `spec_done`. It
+  ends when the user turns it off, starts another spec mode, or the session
+  ends.
+
+Spec mode adds no spec workflow (layer 3). It works under any spec skill:
+`spec-elaborate`, a company's, or Claude with no skill.
+
 ## Changes by part
 
 | Part | Change |
 |---|---|
-| Protocol (01) | `doc_refs` gains `lines`; a doc ref may name any text file in the project. The working-document tool is generalized from `spec_show` (a new name such as `doc_show`, with `spec_show` kept as an alias so installed skills keep working). `spec_done` likewise becomes `done` with an alias. |
+| Protocol (01) | `doc_refs` gains `lines`; a doc ref may name any text file in the project. The working-document tool is generalized from `spec_show` (a new name such as `doc_show`, with `spec_show` kept as an alias so installed skills keep working). `spec_done` likewise becomes `done` with an alias. New socket messages for the write hook (`doc_written`) and for spec mode (its path or glob). |
 | Bridge (02) | Resolves doc refs outside the spec folder and by line range. Reads `AI_SPECVIEW_ASK_MODE` and turns ask mode on at start. Reads `AI_SPECVIEW_VIEW`. |
 | Daemon and page (03) | The document panel, document tabs, the per-set layout, source view for non-markdown documents. |
-| Skills (04) | One skill per layer: `ask-mode`, `doc` (new), `spec-elaborate`. The `-mod` skills go away. |
-| Pane mod (06) | The same layout rules and tools, drawn in the pane. |
+| Hooks (04) | A `PostToolUse` hook on `Write`, `Edit` and `MultiEdit`, and a `PreToolUse` hook on `Skill` for spec mode, both in `ai-specview hook`. |
+| Skills (04) | One skill per layer: `ask-mode`, `spec-mode` (new), `doc` (new), `spec-elaborate`. The `-mod` skills go away. |
+| Pane mod (06) | The same layout rules and tools, drawn in the pane, and the same rules for finding the working document in its `tool.call` hook. |
 | README and plugin description | Present ask mode as the main feature, with the working document and the spec workflow built on it. |
 
 ## Phases
 
 Each phase can be released on its own.
 
-1. **Questions with context (layer 1).** The document panel, document tabs,
-   `lines` in doc refs, documents outside the spec folder, the per-set layout,
-   the `AI_SPECVIEW_ASK_MODE` setting, and the new README and plugin
-   description.
+1. **Questions with context (layer 1).** Built. The document panel, document
+   tabs, `lines` in doc refs, documents outside the spec folder or with no
+   spec, the per-set layout, the `AI_SPECVIEW_ASK_MODE` setting, and the new
+   README and plugin description. In the pane, a source document shows the
+   lines before, in and after the range as code; document tabs are the
+   pane's file list.
 2. **Working document (layer 2).** Generalize `spec_show` and `spec_done`,
-   add `/ai-specview:doc`, and have the ask-mode skill show a document Claude
-   writes with the user.
+   add `/ai-specview:doc`, the write hook with its file rules and the
+   `AI_SPECVIEW_DOC_PATHS` setting, and spec mode (`/ai-specview:spec-mode`)
+   with its path argument and its scoring.
 3. **Skills and viewer choice.** One skill per layer, `AI_SPECVIEW_VIEW`
    choosing the viewer, and `spec-elaborate` as the spec workflow on top of
    layers 1 and 2.
@@ -128,5 +227,7 @@ Each phase can be released on its own.
 - **Diff ref.** A ref to a file's uncommitted changes (`git diff` of a path),
   if snippets prove too manual for changes.
 - **Name of the working-document tool.** `doc_show` is a placeholder.
+- **Spec-mode scoring.** The weights and the threshold need real sessions to
+  tune. Until then, the path argument is the reliable way.
 - **Removing the `-mod` skills** changes what users type. The old skill names
   could stay for one release, pointing at the new ones.
