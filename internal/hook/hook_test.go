@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"io"
 	"net"
 	"os"
 	"path/filepath"
@@ -77,7 +78,7 @@ func (e *env) req(typ string, body any) protocol.Envelope {
 
 func run(sock string, event string, pids []int) (int, string) {
 	var errOut bytes.Buffer
-	code := Run(strings.NewReader(event), &errOut, sock, pids)
+	code := Run(strings.NewReader(event), io.Discard, &errOut, sock, pids)
 	return code, errOut.String()
 }
 
@@ -156,5 +157,79 @@ func TestBlocksInAskMode(t *testing.T) {
 	// Ask mode off: allow.
 	e.req(protocol.TypeAskMode, &protocol.AskMode{On: false})
 	code, _ = run(e.sock, askEvent, ancestors)
+	assert.Equal(t, ExitAllow, code)
+}
+
+func TestCounts(t *testing.T) {
+	home := "/home/u"
+	yes := []string{
+		"/r/docs/specs/SW-1.md", "/r/README.md", "/r/design.markdown",
+		"/r/.claude/specs/draft.md", "/home/u/.claude/specs/p/draft.md", "/home/u/.claude/plans/plan.md",
+	}
+	no := []string{
+		"/r/main.go", "/r/CLAUDE.md", "/r/sub/AGENTS.md", "/r/CHANGELOG.md", "/r/changelog.d/x.md",
+		"/r/.agent/spec-review.md", "/r/.github/pull.md", "/r/.claude/notes.md",
+		"/home/u/.claude/projects/p/memory/MEMORY.md",
+	}
+	for _, p := range yes {
+		assert.True(t, Counts(p, home, nil), p)
+	}
+	for _, p := range no {
+		assert.False(t, Counts(p, home, nil), p)
+	}
+	// Patterns replace the rules.
+	pat := docPaths("/r", "docs/rfc/**, /abs/*.md")
+	assert.Equal(t, []string{"/r/docs/rfc/**", "/abs/*.md"}, pat)
+	assert.True(t, Counts("/r/docs/rfc/a/b.md", home, pat))
+	assert.False(t, Counts("/r/docs/specs/SW-1.md", home, pat))
+	assert.False(t, Counts("/r/docs/rfc/a.go", home, pat))
+}
+
+func TestWrittenDocBecomesWorkingDoc(t *testing.T) {
+	e := startDaemon(t)
+	cwd := t.TempDir()
+	spec := filepath.Join(cwd, "docs", "specs", "SW-1.md")
+	require.NoError(t, os.MkdirAll(filepath.Dir(spec), 0o755))
+	require.NoError(t, os.WriteFile(spec, []byte("# SW-1\n\n## Requirements\n\nR1.\n"), 0o644))
+	notes := filepath.Join(cwd, "notes.md")
+	require.NoError(t, os.WriteFile(notes, []byte("# Notes\n"), 0o644))
+	ancestors := []int{1111, claudePID, 1}
+	e.bridge(cwd)
+	post := func(path string) string {
+		ev, _ := json.Marshal(map[string]any{"hook_event_name": "PostToolUse", "tool_name": "Write", "cwd": cwd,
+			"tool_input": map[string]string{"file_path": path}})
+		var out bytes.Buffer
+		code := Run(bytes.NewReader(ev), &out, io.Discard, e.sock, ancestors)
+		assert.Equal(t, ExitAllow, code)
+		return out.String()
+	}
+
+	// Not in ask mode: nothing happens.
+	assert.Empty(t, post(spec))
+
+	e.req(protocol.TypeAskMode, &protocol.AskMode{On: true})
+	// Bookkeeping never counts.
+	assert.Empty(t, post(filepath.Join(cwd, "CLAUDE.md")))
+	// The first document becomes the working document, and Claude is told.
+	out := post("docs/specs/SW-1.md")
+	assert.Contains(t, out, `"hookEventName":"PostToolUse"`)
+	assert.Contains(t, out, "now shows "+spec)
+	// Later writes do not switch it.
+	assert.Empty(t, post(notes))
+
+	// The bridge is told, unasked.
+	var shown protocol.DocShown
+	for e.sc.Scan() {
+		var env protocol.Envelope
+		require.NoError(t, json.Unmarshal(e.sc.Bytes(), &env))
+		if env.Type == protocol.TypeDocShown {
+			require.NoError(t, env.Decode(&shown))
+			break
+		}
+	}
+	assert.Equal(t, spec, shown.RootAbs)
+
+	// A skill start is accepted and never blocks.
+	code, _ := run(e.sock, `{"hook_event_name":"PreToolUse","tool_name":"Skill","tool_input":{"skill":"harness-core:harness-elaborate-spec"}}`, ancestors)
 	assert.Equal(t, ExitAllow, code)
 }

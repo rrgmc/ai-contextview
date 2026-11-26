@@ -119,18 +119,9 @@ func (d *Daemon) hello(c *Conn, h *protocol.Hello) (*protocol.HelloAck, error) {
 func (d *Daemon) active(pids []int) *protocol.ActiveResult {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	set := map[int]bool{}
-	for _, p := range pids {
-		if p > 1 {
-			set[p] = true
-		}
-	}
-	for _, w := range d.workspaces {
+	for _, w := range d.sessionWorkspaces(pids) {
 		specOpen := w.Root != nil && w.Done == nil
-		if !w.Live || (!specOpen && !w.AskMode) {
-			continue
-		}
-		if (w.BridgePPID > 1 && set[w.BridgePPID]) || (w.ClaudePID > 1 && set[w.ClaudePID]) {
+		if specOpen || w.AskMode {
 			return &protocol.ActiveResult{Active: true, WS: w.ID, URL: d.wsURL(w.ID), AskMode: !specOpen}
 		}
 	}
@@ -211,6 +202,20 @@ func (d *Daemon) specShow(id string, req *protocol.SpecShow) (*protocol.SpecShow
 	if w == nil {
 		return nil, errors.New("unknown workspace")
 	}
+	res, err := d.specShowLocked(w, req)
+	if err == nil {
+		// Claude's own spec_show wins over the working document the daemon
+		// picks from writes; a replay of a picked one does not.
+		w.work.explicit = !req.Auto
+		if req.Auto {
+			w.work.doc = req.RootAbs
+		}
+	}
+	return res, err
+}
+
+// specShowLocked shows a root in w; d.mu is held.
+func (d *Daemon) specShowLocked(w *Workspace, req *protocol.SpecShow) (*protocol.SpecShowResult, error) {
 	root, err := specsrc.LoadRoot(req.RootAbs, req.Primary)
 	if err != nil {
 		return nil, err
@@ -316,6 +321,7 @@ func (d *Daemon) ask(id string, req *protocol.Ask) (*protocol.AskShown, error) {
 	if w == nil {
 		return nil, errors.New("unknown workspace")
 	}
+	d.switchToAsked(w, req)
 	if w.Pending != nil && w.Pending.Ask.QSID != req.QSID {
 		old := w.Pending.Ask.QSID
 		d.closePending(w, statusReplace, nil, nil)
@@ -384,6 +390,14 @@ func (d *Daemon) askMode(id string, req *protocol.AskMode) error {
 		return errors.New("unknown workspace")
 	}
 	w.AskMode = req.On
+	w.work.spec = req.On && req.Spec
+	w.work.paths = nil
+	if w.work.spec {
+		w.work.paths = req.Paths
+	}
+	if !req.On {
+		w.work = workDoc{explicit: w.work.explicit}
+	}
 	d.hub.Publish(w.ID, d.docEvent(w, w.CurrentDoc))
 	return nil
 }

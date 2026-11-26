@@ -172,11 +172,25 @@ export const TOOLS: readonly ToolDef[] = [
     description:
       'Turn ask mode on (or off with off: true) for this session. In ask mode, ask every question of the session ' +
       'with the ask tool, with or without a spec: refs are optional, so add code_refs or doc_refs only when the question is about them. ' +
-      'The built-in question tool is blocked while it is on. The pane opens.',
+      'The built-in question tool is blocked while it is on. The pane opens. The first markdown document you write becomes the ' +
+      'working document the user sees beside the questions; spec_show picks another. spec: true is spec mode, which expects a spec: ' +
+      'with paths (globs) the first written file that matches is shown, without them the file that looks most like a spec.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
-      properties: { off: { type: 'boolean', description: 'true turns ask mode off; omit to turn it on' } },
+      properties: {
+        off: { type: 'boolean', description: 'true turns ask mode off; omit to turn it on' },
+        spec: {
+          type: 'boolean',
+          description: 'spec mode: ask mode that expects a spec and shows it as the working document once it is written',
+        },
+        paths: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'spec mode: glob patterns of the spec file, relative to the project dir or absolute (** for any folders); the first written file that matches is shown',
+        },
+      },
     },
   },
   {

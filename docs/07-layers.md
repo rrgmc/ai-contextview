@@ -1,7 +1,7 @@
 # 07 — Layers: questions first, specs on top
 
-Status: phase 1 is built (see "Phases"); phases 2 and 3 are proposed. Ask
-mode itself is described in 04 and 06.
+Status: phase 1 and most of phase 2 are built (see "Phases"); phase 3 is
+proposed. Ask mode itself is described in 04 and 06.
 
 ## Why
 
@@ -143,9 +143,10 @@ matching files count.
    candidates.
 3. A question whose `doc_refs` names a candidate other than the working
    document switches to that file: Claude is asking about it.
-4. A write to another markdown file in the working document's folder refreshes
-   the folder view (as a folder `spec_show` does) instead of switching. A
-   spec's ADRs and open questions stay part of one document.
+4. A write to another markdown file in the working document's folder stays a
+   candidate, like any other write. (The first design refreshed the folder
+   view instead; it was left out, because two specs in one folder are often
+   unrelated. A folder spec shown with `spec_show` still lists its files.)
 5. After the first pick, the hook tells Claude in one line: "`<file>` is now
    the working document in ai-specview; call `spec_show` to show another."
    Claude can correct a wrong pick.
@@ -208,10 +209,14 @@ Each phase can be released on its own.
    README and plugin description. In the pane, a source document shows the
    lines before, in and after the range as code; document tabs are the
    pane's file list.
-2. **Working document (layer 2).** Generalize `spec_show` and `spec_done`,
-   add `/ai-specview:doc`, the write hook with its file rules and the
-   `AI_SPECVIEW_DOC_PATHS` setting, and spec mode (`/ai-specview:spec-mode`)
-   with its path argument and its scoring.
+2. **Working document (layer 2).** Built: the write hook with its file
+   rules and the `AI_SPECVIEW_DOC_PATHS` setting, spec mode
+   (`/ai-specview:spec-mode`) with its path argument and its scoring, in the
+   viewer and in the pane. Spec mode is `ask_mode` with `spec: true`, not a
+   tool of its own. The folder rule (step 4 of "Ask mode") is left out: two
+   specs in one folder are often unrelated, so a sibling write stays a
+   candidate. Not built yet: renaming `spec_show` and `spec_done`, and
+   `/ai-specview:doc`; with the write hook, `spec_show` covers it.
 3. **Skills and viewer choice.** One skill per layer, `AI_SPECVIEW_VIEW`
    choosing the viewer, and `spec-elaborate` as the spec workflow on top of
    layers 1 and 2.

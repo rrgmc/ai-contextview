@@ -21,6 +21,13 @@ its questions has a document, and is left out otherwise; a question with no
 document keeps the last one and says so. `AI_SPECVIEW_ASK_MODE=always` turns
 ask mode on when the session starts.
 
+The mod picks the working document from written files as the daemon does (01,
+`ask_mode`; 07): its `tool.call` hook sees `Write`, `Edit` and `MultiEdit`
+after they run, applies the hook's file rules and `AI_SPECVIEW_DOC_PATHS`, and
+shows the picked file as `spec_show` would; a `Skill` call raises the spec-mode
+score. The pick lives in the mod's state (`work`). Instead of a line to Claude,
+it shows a toast to the user.
+
 The mod is `plugin/hooks/register.tsx`, listed under `modules` in
 `plugin/hooks/hooks.json` beside the `PreToolUse` hook. It does not use the
 bridge or the daemon. Both skills run the same workflow; the user picks one by

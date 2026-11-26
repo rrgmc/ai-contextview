@@ -41,7 +41,7 @@ commands:
   mcp       run the stdio MCP server (Claude Code starts this)
   serve     run the web viewer daemon (--detach, --restart, --stop, --addr, --idle-exit)
   fakeapp   run a terminal stand-in for the daemon (testing)
-  hook      PreToolUse hook: block the built-in question tool while a spec is open in ai-specview
+  hook      Claude Code hook: block the built-in question tool while a spec is open or ask mode is on; report written documents and started skills
   version   print the version
 `)
 }
@@ -61,7 +61,7 @@ func main() {
 		err = runFakeapp()
 	case "hook":
 		// A Claude Code PreToolUse hook: exit 2 blocks the tool.
-		os.Exit(hook.Run(os.Stdin, os.Stderr, protocol.SocketPath(), identity.AncestorPIDs(16)))
+		os.Exit(hook.Run(os.Stdin, os.Stdout, os.Stderr, protocol.SocketPath(), identity.AncestorPIDs(16)))
 	case "version", "--version", "-v":
 		fmt.Println("ai-specview", version)
 	case "help", "-h", "--help":
@@ -96,6 +96,7 @@ func runMCP() error {
 	if err != nil {
 		return err
 	}
+	var bridge *tools.Bridge
 	client := appconn.New(appconn.Options{
 		Socket:    protocol.SocketPath(),
 		DaemonCmd: daemonCmd,
@@ -104,10 +105,15 @@ func runMCP() error {
 			BridgeVersion: version, ProjectName: id.ProjectName,
 		},
 		Logf: logger.Printf,
+		OnDocShown: func(d protocol.DocShown) {
+			if bridge != nil {
+				bridge.DocShown(d)
+			}
+		},
 	})
 	defer client.Close()
 
-	bridge := &tools.Bridge{
+	bridge = &tools.Bridge{
 		Cwd: id.Cwd, Daemon: client, Resolver: resolve.New(), AskWait: askWait,
 		Open: tools.OpenBrowser, OpenIn: tools.OpenInFromEnv(), Logf: logger.Printf,
 	}

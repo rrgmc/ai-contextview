@@ -442,3 +442,31 @@ func TestAskModeFromEnv(t *testing.T) {
 	t.Setenv("AI_SPECVIEW_ASK_MODE", "")
 	assert.False(t, AskModeFromEnv())
 }
+
+func TestDocShownAndSpecModePaths(t *testing.T) {
+	e := setup(t, func(_ string, a *protocol.Ask) *protocol.AskResult {
+		return &protocol.AskResult{QSID: a.QSID, Status: protocol.StatusDismissed}
+	})
+	e.fake.SetViewers(1)
+
+	_, mode, err := e.bridge.AskModeTool(context.Background(), nil, protocol.AskModeInput{Spec: true, Paths: []string{"docs/*.md", " "}})
+	require.NoError(t, err)
+	assert.True(t, mode.Spec)
+	var sent protocol.AskMode
+	for _, m := range e.fake.Received() {
+		if m.Type == protocol.TypeAskMode {
+			require.NoError(t, m.Decode(&sent))
+		}
+	}
+	assert.Equal(t, []string{filepath.Join(e.cwd, "docs/*.md")}, sent.Paths)
+
+	// Without a working document, spec_quote has nothing to quote.
+	_, _, err = e.bridge.Ask(context.Background(), nil, question("retries use exponential backoff capped at 30s"))
+	require.Error(t, err)
+
+	// The daemon picked docs/spec.md: spec_quote now quotes it.
+	e.bridge.DocShown(protocol.DocShown{RootAbs: filepath.Join(e.cwd, "docs/spec.md")})
+	_, out, err := e.bridge.Ask(context.Background(), nil, question("retries use exponential backoff capped at 30s"))
+	require.NoError(t, err)
+	assert.Equal(t, protocol.StatusDismissed, out.Status)
+}

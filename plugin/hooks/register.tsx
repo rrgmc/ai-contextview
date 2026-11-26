@@ -21,6 +21,7 @@ import type {
   QuestionView,
   QuoteView,
   SpecView,
+  WorkDoc,
 } from '../types'
 import * as spec from './spec'
 import { TOOLS } from './tools'
@@ -51,6 +52,12 @@ const askAtom = atom({ plugin: 'ai-specview', key: 'ask' } as const, null as Ask
 })
 // Ask mode: every question of the session goes through the pane, with or without a spec.
 const modeAtom = atom({ plugin: 'ai-specview', key: 'mode' } as const, false, { shape: 'mode-1' })
+const noWork = (): WorkDoc => ({ explicit: false, spec: false, paths: [], specSkill: false, doc: '', edits: {} })
+const workAtom = atom({ plugin: 'ai-specview', key: 'work' } as const, noWork(), { shape: 'work-1' })
+// The score a written file needs in spec mode without paths, as the daemon's.
+const SCORE_THRESHOLD = 2
+const SPEC_SKILL = /spec|rfc|design/i
+const WRITE_TOOLS = new Set(['Write', 'Edit', 'MultiEdit'])
 
 // Messages returned to Claude, as internal/tools sends them.
 const MSG_IN_CHAT = 'The user will answer in the chat. Wait for their message.'
@@ -364,6 +371,9 @@ const noSpecView = (): SpecView => ({
 async function askMode($: EngineInterface, args: Args) {
   const on = args.off !== true
   await update($, modeAtom, () => on)
+  const spec = on && args.spec === true
+  const paths = spec ? ((args.paths as string[] | undefined) ?? []).map(p => p.trim()).filter(p => p !== '').map(abs) : []
+  await update($, workAtom, w => (on ? { ...w, spec, paths } : { ...noWork(), explicit: w.explicit }))
   if (on) {
     if (!(await read($, viewAtom))) await update($, viewAtom, () => noSpecView())
     void $.ui.open({ id: PANE, title: 'Spec' })
@@ -371,13 +381,58 @@ async function askMode($: EngineInterface, args: Args) {
     // The empty view only stood for ask mode; a spec shown since stays.
     await update($, viewAtom, v => (v?.specPath === '' ? null : v))
   }
-  return { on }
+  return spec ? { on, spec } : { on }
+}
+
+/** Shows a written file as the working document, as spec_show would. */
+async function showWorking($: EngineInterface, path: string) {
+  await showSpec($, { path })
+  await update($, workAtom, w => ({ ...w, doc: path }))
+  $.ui.toast(`ai-specview shows ${rel(path)} as the working document`)
+}
+
+/** A markdown file Claude wrote, in ask mode: maybe the working document (07). */
+async function docWritten($: EngineInterface, path: string) {
+  if (!(await read($, modeAtom))) return
+  const patterns = ((await $.env.get('AI_SPECVIEW_DOC_PATHS')) ?? '')
+    .split(',')
+    .map(p => p.trim())
+    .filter(p => p !== '')
+    .map(abs)
+  if (!spec.countsAsDoc(path, ctx.home, patterns)) return
+  let w = await read($, workAtom)
+  if (w.explicit) return
+  const edits = (w.edits[path] ?? 0) + 1
+  await update($, workAtom, cur => ({ ...cur, edits: { ...cur.edits, [path]: edits } }))
+  w = await read($, workAtom)
+  if (w.doc !== '') return
+  let wants = true
+  if (w.spec && w.paths.length > 0) wants = spec.matchAny(w.paths, path)
+  else if (w.spec) {
+    let text = ''
+    try {
+      text = await $.fs.read(path)
+    } catch {
+      text = ''
+    }
+    wants = spec.specScore(path, text, ctx.home, w.specSkill, edits) >= SCORE_THRESHOLD
+  }
+  if (wants) await showWorking($, path)
 }
 
 async function ask($: EngineInterface, args: Args, signal: AbortSignal): Promise<AskOutput> {
   const mode = await read($, modeAtom)
   const invalid = check.ask(args, mode)
   if (invalid.length > 0) throw new Error('invalid input:\n- ' + invalid.join('\n- '))
+  // A question about another written file makes it the working document.
+  const work = await read($, workAtom)
+  if (mode && !work.explicit) {
+    const asked = ((args.questions as check.QuestionArg[] | undefined) ?? [])
+      .flatMap(q => q.doc_refs ?? [])
+      .map(d => (d.path ? clean(abs(d.path)) : ''))
+      .find(p => p !== '' && (work.edits[p] ?? 0) > 0 && p !== work.doc && MARKDOWN.test(p))
+    if (asked) await showWorking($, asked)
+  }
   let prev = await read($, viewAtom)
   if (!prev && mode) {
     prev = noSpecView()
@@ -641,6 +696,18 @@ export const register: Register = on => {
       return next(e)
     }
 
+    if (e.tool === 'Skill') {
+      const skill = String((e as unknown as Args).skill ?? '')
+      if (SPEC_SKILL.test(skill)) await update($, workAtom, w => ({ ...w, specSkill: true }))
+      return next(e)
+    }
+    if (WRITE_TOOLS.has(e.tool)) {
+      const res = await next(e)
+      const given = String((e as unknown as Args).file_path ?? '')
+      if (given) await docWritten($, clean(abs(given)))
+      return res
+    }
+
     const prefix = `mcp__${$.plugin.name}__`
     const name = e.tool.startsWith(prefix) ? e.tool.slice(prefix.length) : ''
     if (!TOOL_NAMES.has(name)) return next(e)
@@ -652,6 +719,8 @@ export const register: Register = on => {
       let out: unknown
       if (name === 'spec_show') {
         const { root, file, text } = await showSpec($, args)
+        // Claude's own spec_show wins over the document picked from writes.
+        await update($, workAtom, w => ({ ...w, explicit: true }))
         const artifacts = []
         for (const f of root.files) {
           const body: string = f === file ? text : await $.fs.read(f)

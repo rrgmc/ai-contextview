@@ -161,7 +161,9 @@ func Register(s *mcp.Server, b *Bridge) {
 		Name: "ask_mode",
 		Description: "Turn ask mode on (or off with off: true) for this session. In ask mode, ask every question of the session " +
 			"with the ask tool, with or without a spec: refs are optional, so add code_refs or doc_refs only when the question is about them. " +
-			"The built-in question tool is blocked while it is on. " +
+			"The built-in question tool is blocked while it is on. The first markdown document you write becomes the working document " +
+			"the user sees beside the questions; spec_show picks another. spec: true is spec mode, which expects a spec: with paths " +
+			"(globs) the first written file that matches is shown, without them the file that looks most like a spec. " +
 			"If the result has open: \"pane\", open the url in the built-in browser pane when that tool is available.",
 	}, b.AskModeTool)
 	mcp.AddTool(s, &mcp.Tool{
@@ -504,18 +506,39 @@ func normalizeRecommended(in *protocol.AskInput) {
 // AskModeTool implements the ask_mode tool.
 func (b *Bridge) AskModeTool(ctx context.Context, _ *mcp.CallToolRequest, in protocol.AskModeInput) (*mcp.CallToolResult, protocol.AskModeOutput, error) {
 	on := !in.Off
-	if _, err := b.Daemon.Request(ctx, protocol.TypeAskMode, &protocol.AskMode{On: on}); err != nil {
+	req := &protocol.AskMode{On: on, Spec: on && in.Spec}
+	if req.Spec {
+		for _, p := range in.Paths {
+			if p = strings.TrimSpace(p); p != "" {
+				req.Paths = append(req.Paths, b.absPath(p))
+			}
+		}
+	}
+	if _, err := b.Daemon.Request(ctx, protocol.TypeAskMode, req); err != nil {
 		return nil, protocol.AskModeOutput{}, err
 	}
 	b.mu.Lock()
 	b.askMode = on
 	b.mu.Unlock()
-	out := protocol.AskModeOutput{On: on}
+	out := protocol.AskModeOutput{On: on, Spec: req.Spec}
 	if on {
 		out.URL = b.Daemon.URL()
 		out.Open = b.OpenIn
 	}
 	return nil, out, nil
+}
+
+// DocShown follows the daemon when it made a written file the working
+// document, so spec_quote quotes that file.
+func (b *Bridge) DocShown(d protocol.DocShown) {
+	root, err := specsrc.LoadRoot(d.RootAbs, "")
+	if err != nil {
+		b.logf("doc_shown %s: %v", d.RootAbs, err)
+		return
+	}
+	b.mu.Lock()
+	b.root = root
+	b.mu.Unlock()
 }
 
 // AskWaitTool implements the ask_wait tool.

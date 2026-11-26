@@ -153,6 +153,23 @@ func (d *Daemon) dispatch(c *Conn, env protocol.Envelope) bool {
 		}
 		c.send(protocol.TypeResult, env.ID, d.active(b.PIDs))
 		return true
+	case protocol.TypeDocWritten:
+		var b protocol.DocWritten
+		if err := decode(env, &b); err != nil {
+			c.sendError(env.ID, err)
+			return true
+		}
+		c.send(protocol.TypeResult, env.ID, d.docWritten(&b))
+		return true
+	case protocol.TypeSkillStarted:
+		var b protocol.SkillStarted
+		if err := decode(env, &b); err != nil {
+			c.sendError(env.ID, err)
+			return true
+		}
+		d.skillStarted(&b)
+		c.send(protocol.TypeResult, env.ID, map[string]any{})
+		return true
 	case protocol.TypeShutdown:
 		c.send(protocol.TypeResult, env.ID, map[string]any{})
 		d.RequestShutdown()

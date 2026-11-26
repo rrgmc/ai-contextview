@@ -40,6 +40,15 @@ const (
 	// TypeAskMode turns ask mode on or off for the workspace; the reply is
 	// result {}.
 	TypeAskMode = "ask_mode"
+	// TypeDocWritten is sent by `ai-specview hook` after Claude writes a
+	// markdown file; the reply is a result with DocWrittenResult.
+	TypeDocWritten = "doc_written"
+	// TypeSkillStarted is sent by `ai-specview hook` when Claude starts a
+	// skill; the reply is result {}.
+	TypeSkillStarted = "skill_started"
+	// TypeDocShown is sent by the daemon to the bridge, unasked, when it
+	// made a written file the working document.
+	TypeDocShown = "doc_shown"
 	// TypePing and TypeShutdown are daemon-management messages used by
 	// `ai-specview serve` itself (single-instance check and --restart).
 	TypePing     = "ping"
@@ -284,6 +293,9 @@ type SpecShow struct {
 	Primary         string        `json:"primary,omitempty"`
 	ChangedSections []string      `json:"changed_sections,omitempty"`
 	Changed         []ChangedFile `json:"changed,omitempty"`
+	// Auto marks a replay of a working document the daemon picked from a
+	// write (doc_shown), so it does not count as Claude's own spec_show.
+	Auto bool `json:"auto,omitempty"`
 }
 
 func (s *SpecShow) Validate() error {
@@ -406,9 +418,65 @@ func (d *Done) Validate() error {
 // blocks the built-in question tool.
 type AskMode struct {
 	On bool `json:"on"`
+	// Spec turns on spec mode: ask mode that expects a spec and searches
+	// harder for it (07).
+	Spec bool `json:"spec,omitempty"`
+	// Paths are absolute glob patterns; in spec mode, the first written
+	// file that matches becomes the working document.
+	Paths []string `json:"paths,omitempty"`
 }
 
 func (a *AskMode) Validate() error { return nil }
+
+// DocWritten tells the daemon that the Claude session of one of PIDs wrote
+// Path, an absolute markdown file that the hook's file rules let through.
+type DocWritten struct {
+	PIDs []int  `json:"pids"`
+	Path string `json:"path"`
+}
+
+func (d *DocWritten) Validate() error {
+	if !filepath.IsAbs(d.Path) {
+		return fmt.Errorf("doc_written: path %q is not absolute", d.Path)
+	}
+	return nil
+}
+
+// DocWrittenResult answers doc_written. Shown is true when the file just
+// became the working document.
+type DocWrittenResult struct {
+	Shown bool   `json:"shown"`
+	Path  string `json:"path,omitempty"`
+}
+
+func (r *DocWrittenResult) Validate() error { return nil }
+
+// SkillStarted tells the daemon that the Claude session of one of PIDs
+// started the skill Name.
+type SkillStarted struct {
+	PIDs []int  `json:"pids"`
+	Name string `json:"name"`
+}
+
+func (s *SkillStarted) Validate() error {
+	if s.Name == "" {
+		return errors.New("skill_started: missing name")
+	}
+	return nil
+}
+
+// DocShown tells the bridge that the daemon made RootAbs the working
+// document, as if spec_show had shown it.
+type DocShown struct {
+	RootAbs string `json:"root_abs"`
+}
+
+func (d *DocShown) Validate() error {
+	if !filepath.IsAbs(d.RootAbs) {
+		return fmt.Errorf("doc_shown: root_abs %q is not absolute", d.RootAbs)
+	}
+	return nil
+}
 
 // Bye closes the workspace.
 type Bye struct{}

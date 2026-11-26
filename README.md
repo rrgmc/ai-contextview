@@ -96,6 +96,19 @@ blocks the built-in question tool. `/ai-specview:ask-mode off` turns it off.
 `/ai-specview:ask-mode-mod` does the same in the pane. To turn ask mode on for
 every session, set `AI_SPECVIEW_ASK_MODE=always` (see the settings below).
 
+### Spec mode: a spec from any skill
+
+`/ai-specview:spec-mode` is ask mode that expects a spec. Run it before your
+own spec skill, a company's, or plain Claude: ai-specview shows the spec as
+soon as it is written, follows each edit, and marks what changed, as in a
+`spec-elaborate` session. Give the spec's path or a glob, for example
+`/ai-specview:spec-mode docs/specs/**`, to say which file it is; without one,
+ai-specview picks the written file that looks most like a spec.
+`/ai-specview:spec-mode-mod` does the same in the pane.
+
+In plain ask mode, the first markdown document Claude writes shows the same
+way. `AI_SPECVIEW_DOC_PATHS` limits which files count.
+
 A question's document can be any text file of the project: a markdown passage
 is highlighted by quote or by lines, and another file (YAML, JSON, SQL) shows
 as source with the lines highlighted. When no question of a set has a
@@ -156,17 +169,25 @@ ends with a `pending` result that Claude continues with `ask_wait`, instead of a
 timeout error.
 
 To keep Claude from falling back to its built-in question tool while a spec
-is open, add the `ai-specview hook` PreToolUse hook to `~/.claude/settings.json`
+is open, and to show the documents Claude writes in ask mode, add the
+`ai-specview hook` hooks to `~/.claude/settings.json`
 (see [examples/settings.example.json](examples/settings.example.json)). It blocks
-`AskUserQuestion` only in the Claude session that has a spec open in ai-specview,
-so other sessions are not affected. Don't deny `AskUserQuestion` globally.
+`AskUserQuestion` only in the Claude session that has a spec open in ai-specview
+or is in ask mode, so other sessions are not affected. Don't deny
+`AskUserQuestion` globally.
 
 ```json
 {
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "AskUserQuestion",
+        "matcher": "AskUserQuestion|Skill",
+        "hooks": [{ "type": "command", "command": "ai-specview hook" }]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
         "hooks": [{ "type": "command", "command": "ai-specview hook" }]
       }
     ]
@@ -206,7 +227,7 @@ directory within 2 hours takes the old workspace over.
 | `ai-specview mcp` | The stdio MCP server. Claude Code starts one per instance. |
 | `ai-specview serve` | The viewer daemon. `--detach` starts it in the background, `--restart` replaces a running one (or starts one) in the background, `--stop` stops it, `--addr` sets the address (default `127.0.0.1:7878`, the next 9 ports are tried), `--idle-exit 30m` exits when unused. |
 | `ai-specview fakeapp` | A terminal stand-in for the daemon, for testing the MCP path. |
-| `ai-specview hook` | Claude Code PreToolUse hook: blocks the built-in question tool only while this session has a spec open or is in ask mode. |
+| `ai-specview hook` | Claude Code hook: blocks the built-in question tool only while this session has a spec open or is in ask mode; reports the markdown files Claude writes and the skills it starts, to pick the working document. |
 | `ai-specview version` | Prints the version: the git tag (`v1.2.3`), a Go pseudo-version for a build between tags, with `+dirty` for uncommitted changes, or `devel` when the build has no version information. |
 
 ## Environment
@@ -215,6 +236,7 @@ directory within 2 hours takes the old workspace over.
 |---|---|---|
 | `AI_SPECVIEW_ASK_WAIT` | `10m` | How long `ask` blocks before returning `pending`. |
 | `AI_SPECVIEW_ASK_MODE` | | `always` turns ask mode on for every session, in the viewer and in the pane. |
+| `AI_SPECVIEW_DOC_PATHS` | | Comma-separated globs (relative to the project or absolute; `**` for any folders). When set, only matching files Claude writes can become the working document in ask mode. |
 | `AI_SPECVIEW_OPEN` | `pane` | `pane` asks Claude to open the viewer in the built-in browser of the Claude desktop app; when the user closed it, `ask` returns at once so Claude reopens it; without the pane, the default browser opens 10 seconds after a question arrives with no page open. `browser` always uses the default browser. `never` opens nothing. |
 | `AI_SPECVIEW_SOCKET` | see below | Socket path shared by bridge and daemon. |
 | `AI_SPECVIEW_ADDR` | `127.0.0.1:7878` | Daemon HTTP address. |

@@ -111,6 +111,22 @@ export type PaneUi = {
   codeTab: number
 }
 
+/** How the working document is picked from written files (docs/07-layers.md). */
+export type WorkDoc = {
+  /** Claude's own spec_show, which always wins. */
+  explicit: boolean
+  /** Spec mode: ask mode that expects a spec. */
+  spec: boolean
+  /** Spec mode's absolute glob patterns. */
+  paths: string[]
+  /** A skill whose name looks like a spec skill started. */
+  specSkill: boolean
+  /** The working document picked from a write, absolute. */
+  doc: string
+  /** Writes per candidate file, absolute. */
+  edits: Record<string, number>
+}
+
 declare module 'claude-code' {
   interface PluginState {
     'ai-specview': {
@@ -118,6 +134,7 @@ declare module 'claude-code' {
       ui: Shaped<PaneUi>
       ask: Shaped<AskView | null>
       mode: Shaped<boolean>
+      work: Shaped<WorkDoc>
     }
   }
 }

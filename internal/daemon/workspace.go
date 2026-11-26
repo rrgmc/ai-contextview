@@ -101,6 +101,8 @@ type Workspace struct {
 	// AskMode is set by ask_mode: every question of the session goes
 	// through ai-specview, with or without a spec.
 	AskMode bool
+	// work picks the working document from the files Claude writes (07).
+	work workDoc
 	// AnswersAt is when the user last replied to a question set (send, back
 	// to chat or skip); the Changes tab compares against the files then.
 	AnswersAt time.Time
@@ -126,6 +128,7 @@ func (w *Workspace) adopt(old *Workspace) {
 	w.Code, w.codeAllowed, w.focus, w.History = old.Code, old.codeAllowed, old.focus, old.History
 	w.Done = old.Done
 	w.AskMode = old.AskMode
+	w.work = old.work
 	w.AnswersAt = old.AnswersAt
 }
 

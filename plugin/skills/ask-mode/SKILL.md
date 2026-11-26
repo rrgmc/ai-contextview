@@ -59,6 +59,14 @@ viewer's tools.
     essential.
   - `deferred` (with `answered`): the user chose **Decide later**. Continue
     without the decision and ask again before you finish the task.
+- **The working document.** The first markdown document you write while ask
+  mode is on (a spec, a plan, a design note) shows beside the questions as
+  the working document, and `spec_quote` quotes it. A hook picks it; the
+  first time, it tells you which file it picked. Bookkeeping files
+  (`CLAUDE.md`, changelogs, memory, files in dot-folders) never count. If the
+  wrong file shows, call `spec_show` with the right one: your own
+  `spec_show` always wins. A question whose `doc_refs` quotes another file
+  you wrote also switches to that file.
 - If the user starts a spec, follow the spec-elaborate skill as usual; ask
   mode stays on after `spec_done`.
 - Ask mode lasts until the user turns it off or the session ends.

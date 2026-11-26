@@ -638,3 +638,75 @@ test('lineOffsets and lineCount', () => {
   expect(spec.lineOffsets('a\nbb\nc', 2, 2)).toEqual({ start: 2, end: 4 })
   expect(spec.lineOffsets('a\nbb\nc', 2, 3)).toEqual({ start: 2, end: 6 })
 })
+
+test('countsAsDoc, matchAny and specScore follow the hook and the daemon', () => {
+  const home = '/home/me'
+  for (const p of ['/repo/docs/specs/SW-1.md', '/repo/.claude/specs/d.md', '/home/me/.claude/plans/p.md']) {
+    expect(spec.countsAsDoc(p, home, [])).toBe(true)
+  }
+  for (const p of ['/repo/CLAUDE.md', '/repo/.agent/review.md', '/repo/changelog.d/x.md', '/home/me/.claude/projects/m.md', '/repo/a.go']) {
+    expect(spec.countsAsDoc(p, home, [])).toBe(false)
+  }
+  expect(spec.countsAsDoc('/repo/docs/rfc/a/b.md', home, ['/repo/docs/rfc/**'])).toBe(true)
+  expect(spec.countsAsDoc('/repo/docs/specs/x.md', home, ['/repo/docs/rfc/**'])).toBe(false)
+  expect(spec.matchAny(['/repo/**/rfc/*.md'], '/repo/rfc/x.md')).toBe(true)
+  expect(spec.matchAny(['/repo/docs/SW-?.md'], '/repo/docs/SW-12.md')).toBe(false)
+  expect(spec.specScore('/repo/docs/specs/a.md', '# A\n\n## Requirements\n\n## Design\n', home, false, 1)).toBe(2)
+  expect(spec.specScore('/repo/README.md', '# Readme\n', home, false, 2)).toBe(1)
+  expect(spec.specScore('/repo/README.md', '# Readme\n', home, true, 1)).toBe(2)
+})
+
+test('in ask mode the first written document becomes the working document', async ($, on) => {
+  const clk = engine(on)
+  await $.session.start({ cwd: '/repo', surface: 'desktop', isInteractive: true })
+  await call($, { tool: ASK_MODE })
+  // Bookkeeping does not count; the first document does.
+  await call($, { tool: 'Write', file_path: 'CLAUDE.md', content: 'x' })
+  let ui = await $.ui.mount(pane('desktop', 140))
+  expect(await ui.find({ type: 'Text', text: /^Ask mode is on/ })).toBeDefined()
+  await ui.unmount()
+  await call($, { tool: 'Write', file_path: 'docs/design.md', content: 'x' })
+  ui = await $.ui.mount(pane('desktop', 140))
+  expect((await ui.find({ type: 'Text', text: /^docs\/design\.md$/ }))?.text).toBe('docs/design.md')
+  await ui.unmount()
+  // A later write does not switch.
+  await call($, { tool: 'Edit', file_path: '/repo/docs/spec.md' })
+  ui = await $.ui.mount(pane('desktop', 140))
+  expect(await ui.find({ type: 'Text', text: /^docs\/design\.md$/ })).toBeDefined()
+  await ui.unmount()
+  // A question quoting the other written file switches to it.
+  const pending = call($, {
+    tool: ASK,
+    questions: [{ id: 'q1', text: 'Ok?', options: [{ label: 'Yes' }, { label: 'No' }], doc_refs: [{ path: 'docs/spec.md', quote: 'kept in memory' }] }],
+  })
+  await clk.settle()
+  ui = await $.ui.mount(pane('desktop', 140))
+  expect(await ui.find({ type: 'Text', text: /^docs\/spec\.md$/ })).toBeDefined()
+  await ui.press({ key: 'skip' })
+  await clk.advance(POLL)
+  expect((await result(pending)).status).toBe('dismissed')
+  await ui.unmount()
+})
+
+test('spec mode with paths, and spec_show wins over writes', async ($, on) => {
+  engine(on)
+  await $.session.start({ cwd: '/repo', surface: 'desktop', isInteractive: true })
+  expect(await result(call($, { tool: ASK_MODE, spec: true, paths: ['docs/spec.md'] }))).toEqual({ on: true, spec: true })
+  await call($, { tool: 'Write', file_path: 'docs/design.md', content: 'x' })
+  let ui = await $.ui.mount(pane('desktop', 140))
+  expect(await ui.find({ type: 'Text', text: /^docs\/design\.md$/ })).toBeUndefined()
+  await ui.unmount()
+  await call($, { tool: 'Write', file_path: 'docs/spec.md', content: 'x' })
+  ui = await $.ui.mount(pane('desktop', 140))
+  expect(await ui.find({ type: 'Text', text: /^docs\/spec\.md$/ })).toBeDefined()
+  await ui.unmount()
+
+  // Claude's own spec_show wins: writes no longer pick.
+  await call($, { tool: ASK_MODE, off: true })
+  await call($, { tool: ASK_MODE })
+  await call($, { tool: SPEC_SHOW, path: 'docs/design.md' })
+  await call($, { tool: 'Write', file_path: 'docs/spec.md', content: 'x' })
+  ui = await $.ui.mount(pane('desktop', 140))
+  expect(await ui.find({ type: 'Text', text: /^docs\/design\.md$/ })).toBeDefined()
+  await ui.unmount()
+})

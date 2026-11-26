@@ -33,6 +33,9 @@ type Options struct {
 	// ConnectTimeout bounds one connect attempt including daemon start.
 	ConnectTimeout time.Duration
 	Logf           func(format string, args ...any)
+	// OnDocShown is called when the daemon made a written file the working
+	// document (doc_shown). The client already replays it after a reconnect.
+	OnDocShown func(protocol.DocShown)
 }
 
 // Client is the bridge side of one workspace connection.
@@ -273,6 +276,19 @@ func (c *Client) readLoop(conn net.Conn) {
 }
 
 func (c *Client) dispatch(env protocol.Envelope) {
+	if env.Type == protocol.TypeDocShown {
+		var d protocol.DocShown
+		if err := env.Decode(&d); err != nil || d.Validate() != nil {
+			return
+		}
+		c.mu.Lock()
+		c.lastSpecShow = &protocol.SpecShow{RootAbs: d.RootAbs, Auto: true}
+		c.mu.Unlock()
+		if c.opts.OnDocShown != nil {
+			c.opts.OnDocShown(d)
+		}
+		return
+	}
 	if env.Type == protocol.TypeAskResult {
 		var r protocol.AskResult
 		if err := env.Decode(&r); err != nil {

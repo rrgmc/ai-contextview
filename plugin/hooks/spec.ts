@@ -197,3 +197,64 @@ export function lineOffsets(text: string, start: number, end: number): { start: 
   }
   return { start: s < 0 ? text.length : s, end: text.length }
 }
+
+/** Turns a glob (`*`, `?`, `**`) into a RegExp, as internal/glob. */
+export function globRegExp(pattern: string): RegExp {
+  let re = '^'
+  for (let i = 0; i < pattern.length; i++) {
+    const c = pattern[i]
+    if (c === '*') {
+      if (pattern[i + 1] === '*') {
+        i++
+        if (pattern[i + 1] === '/') {
+          i++
+          re += '(?:.*/)?'
+        } else re += '.*'
+      } else re += '[^/]*'
+    } else if (c === '?') re += '[^/]'
+    else re += (c ?? '').replace(/[.+^${}()|[\]\\]/g, '\\$&')
+  }
+  return new RegExp(re + '$')
+}
+
+export const matchAny = (patterns: string[], path: string) => patterns.some(p => globRegExp(p).test(path))
+
+/**
+ * Whether a written file can become the working document, as internal/hook
+ * Counts: markdown that is not bookkeeping. Non-empty patterns replace the rules.
+ */
+export function countsAsDoc(path: string, home: string, patterns: string[]): boolean {
+  if (!/\.(md|markdown)$/i.test(path)) return false
+  if (patterns.length > 0) return matchAny(patterns, path)
+  const base = (path.split('/').pop() ?? '').toLowerCase()
+  if (['claude.md', 'claude.local.md', 'agents.md', 'changelog.md'].includes(base)) return false
+  const claude = home ? `${home.replace(/\/$/, '')}/.claude/` : ''
+  if (claude && path.startsWith(claude)) {
+    const rest = path.slice(claude.length)
+    return rest.startsWith('specs/') || rest.startsWith('plans/')
+  }
+  const parts = path.split('/').slice(0, -1)
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i] ?? ''
+    if (part === 'changelog.d') return false
+    if (part.startsWith('.') && part !== '.' && part !== '..') {
+      if (part === '.claude' && parts[i + 1] === 'specs') continue
+      return false
+    }
+  }
+  return true
+}
+
+const SPEC_FOLDERS = new Set(['specs', 'spec', 'rfc', 'rfcs', 'design', 'designs', 'adr', 'adrs'])
+const SPEC_HEADING = /^#{1,6}\s+(requirements|goals?|non-goals|design|acceptance criteria|open questions|motivation|proposal|decisions?)\b/gim
+
+/** How much a written file looks like a spec, as internal/daemon workDoc.score. */
+export function specScore(path: string, text: string, home: string, specSkill: boolean, edits: number): number {
+  let n = specSkill ? 2 : 0
+  const claude = home ? `${home.replace(/\/$/, '')}/.claude/` : ''
+  const inClaude = !!claude && (path.startsWith(claude + 'specs/') || path.startsWith(claude + 'plans/'))
+  if (inClaude || path.split('/').slice(0, -1).some(d => SPEC_FOLDERS.has(d.toLowerCase()))) n++
+  if (/^kind:\s*spec\s*$/m.test(text) || (text.match(SPEC_HEADING) ?? []).length >= 2) n++
+  if (edits >= 2) n++
+  return n
+}

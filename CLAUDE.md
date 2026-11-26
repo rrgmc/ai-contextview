@@ -8,8 +8,10 @@ spec. It is one Go binary, `ai-specview`:
   `spec_done`.
 - `ai-specview serve`: the viewer daemon, one per user. It serves the web page
   (`http://127.0.0.1:7878`) and talks to the bridges over a Unix socket.
-- `ai-specview hook`: a Claude Code `PreToolUse` hook that blocks the built-in
-  `AskUserQuestion` only in a session that has a spec open or is in ask mode.
+- `ai-specview hook`: a Claude Code hook. It blocks the built-in
+  `AskUserQuestion` only in a session that has a spec open or is in ask mode,
+  and reports written markdown files and started skills, so the daemon can
+  pick the working document (docs/07-layers.md).
 - `ai-specview fakeapp`: a terminal stand-in for the daemon, for testing.
 
 The design is in [docs/](docs/README.md); the contract between the parts is
@@ -55,11 +57,12 @@ Read-only work (reading code, answering questions) needs no worktree.
 | `internal/render/` | Markdown with quote highlights, code with Chroma, the Changes diff |
 | `internal/specsrc/` | Quote matching (exact, normalized, fuzzy, heading), sections, spec roots |
 | `internal/resolve/` | Code refs: line ranges, Go symbols via `go/packages` |
-| `internal/hook/` | The `PreToolUse` hook |
+| `internal/hook/` | The hook: blocking `AskUserQuestion`, reporting written documents and skills |
+| `internal/glob/` | Glob patterns with `**`, for spec-mode paths and `AI_SPECVIEW_DOC_PATHS` |
 | `internal/identity/` | Workspace id, project name, Claude and ancestor process ids |
 | `internal/e2e/` | End-to-end tests, including the multi-process test |
 | `protocol/` | Golden message fixtures and quote-matching fixtures |
-| `plugin/` | The Claude Code plugin: `.mcp.json`, launcher script, `skills/spec-elaborate/` and `skills/ask-mode/` (browser), `skills/spec-elaborate-mod/` and `skills/ask-mode-mod/` (pane), `hooks/` (the `PreToolUse` hook and the pane mod's TypeScript module), `types/` and `tests/` of the mod |
+| `plugin/` | The Claude Code plugin: `.mcp.json`, launcher script, `skills/spec-elaborate/`, `skills/ask-mode/` and `skills/spec-mode/` (browser), `skills/spec-elaborate-mod/`, `skills/ask-mode-mod/` and `skills/spec-mode-mod/` (pane), `hooks/` (the `PreToolUse` hook and the pane mod's TypeScript module), `types/` and `tests/` of the mod |
 | `.claude-plugin/` | `marketplace.json`: the repository is a plugin marketplace |
 | `tools/changelog/` | Release tool: merges `changelog.d/` into `CHANGELOG.md`, checks a tag, prints release notes |
 | `.github/workflows/` | `ci.yml` (tests) and `release.yml` (on `v*` tags) |
@@ -128,6 +131,6 @@ go install ./cmd/ai-specview && ai-specview serve --restart
 - HTTP accepts loopback only, checks the `Host` header, checks `Origin` on
   POSTs and sends no CORS headers. Keep it that way.
 - The environment variables (`AI_SPECVIEW_SOCKET`, `AI_SPECVIEW_ADDR`,
-  `AI_SPECVIEW_ASK_MODE`,
+  `AI_SPECVIEW_ASK_MODE`, `AI_SPECVIEW_DOC_PATHS`,
   `AI_SPECVIEW_ASK_WAIT`, `AI_SPECVIEW_OPEN`, `AI_SPECVIEW_DAEMON`) are listed in the
   README.

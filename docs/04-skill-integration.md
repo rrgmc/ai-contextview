@@ -45,6 +45,23 @@ open in ai-specview** (shown with `spec_show` and not finished with `spec_done`)
 **or is in ask mode**, and tells Claude to use `ask` instead. Other sessions,
 and spec-free work in the same session, keep the built-in tool.
 
+The same command also handles two more events. After Claude writes or edits a
+markdown file (`PostToolUse` on `Write`, `Edit` and `MultiEdit`), it reports
+the file, so that in ask mode the daemon can make it the working document. It
+skips bookkeeping: `CLAUDE.md` and `AGENTS.md`, changelogs, Claude's memory,
+and files in dot-folders other than `.claude/specs`. `AI_SPECVIEW_DOC_PATHS`
+(comma-separated globs) replaces these rules. When the file becomes the
+working document, the hook tells Claude in one line (`additionalContext`).
+When Claude starts a skill (`PreToolUse` on `Skill`), it reports the name, a
+signal for spec mode. Neither ever blocks.
+
+**Spec mode** (`/ai-specview:spec-mode [path or glob]`, the `spec-mode` skill)
+is ask mode that expects a spec, for a spec written by any skill: the user's
+own, a company's, or `spec-elaborate`. With a path or glob, the first written
+file that matches becomes the working document; without one, the written
+file that looks most like a spec (01, `ask_mode`; 07). The `spec-mode-mod`
+skill does the same in the pane.
+
 Ask mode routes every question of a session through ai-specview without a
 spec. The user turns it on at the start of a session with the `ask-mode`
 skill (`/ai-specview:ask-mode`), which calls the `ask_mode` tool (01); the
@@ -59,7 +76,13 @@ Add it to the user settings (`~/.claude/settings.json`) once:
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "AskUserQuestion",
+        "matcher": "AskUserQuestion|Skill",
+        "hooks": [{ "type": "command", "command": "ai-specview hook" }]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
         "hooks": [{ "type": "command", "command": "ai-specview hook" }]
       }
     ]

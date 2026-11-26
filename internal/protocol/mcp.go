@@ -81,12 +81,15 @@ type SpecDoneOutput struct {
 
 // AskModeInput is the input of ask_mode.
 type AskModeInput struct {
-	Off bool `json:"off,omitempty" jsonschema:"true turns ask mode off; omit to turn it on"`
+	Off   bool     `json:"off,omitempty" jsonschema:"true turns ask mode off; omit to turn it on"`
+	Spec  bool     `json:"spec,omitempty" jsonschema:"spec mode: ask mode that expects a spec and shows it as the working document once it is written"`
+	Paths []string `json:"paths,omitempty" jsonschema:"spec mode: glob patterns of the spec file, relative to the project dir or absolute (** for any folders); the first written file that matches is shown"`
 }
 
 // AskModeOutput is the output of ask_mode.
 type AskModeOutput struct {
 	On   bool   `json:"on"`
+	Spec bool   `json:"spec,omitempty"`
 	URL  string `json:"url,omitempty" jsonschema:"the viewer page for this session"`
 	Open string `json:"open,omitempty" jsonschema:"where the user wants the viewer: pane means open url in the built-in browser pane when one is available"`
 }

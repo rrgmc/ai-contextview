@@ -207,11 +207,30 @@ session goes through `ask`, with or without a spec.
 
 ```json
 {}
+{"spec": true, "paths": ["docs/specs/**"]}
 {"off": true}
 ```
 
 - With no input (or `off: false`) it turns ask mode on; `off: true` turns it
   off.
+- `spec: true` turns on **spec mode**: ask mode that expects a spec. `paths`
+  (optional, spec mode only) are glob patterns of the spec file, relative to
+  the project directory or absolute; `*` and `?` match within a folder, `**`
+  any folders. The bridge makes them absolute.
+- **The working document.** In ask mode, the markdown files Claude writes are
+  reported by `ai-specview hook` (04) and one of them becomes the working
+  document, as if `spec_show` had shown it (07, "Finding the working
+  document"):
+  - ask mode: the first written file;
+  - spec mode with `paths`: the first written file that matches;
+  - spec mode without `paths`: the first written file that scores at least 2:
+    a spec skill started (2), a spec folder (`specs`, `rfc`, `design`, `adr`,
+    …, or `~/.claude/specs` and `~/.claude/plans`) (1), spec headings or
+    `kind: spec` frontmatter (1), written at least twice (1).
+
+  After that, later writes do not switch it, but an `ask` whose doc refs name
+  another written file does. Claude's own `spec_show` always wins: once it
+  is called, writes are ignored. Turning ask mode off forgets the pick.
 - While it is on, `ask` accepts questions with no refs, the daemon counts the
   session as active, so `ai-specview hook` blocks the built-in question tool
   even with no spec open (04), and the spec pane of an empty viewer says that
@@ -220,7 +239,8 @@ session goes through `ask`, with or without a spec.
 - The bridge replays it after a reconnect.
 
 Result: `{"on": true, "url": "...", "open": "pane"}` when turned on (`url` and
-`open` as in `spec_show`), `{"on": false}` when turned off.
+`open` as in `spec_show`; `"spec": true` in spec mode), `{"on": false}` when
+turned off.
 
 ### `spec_done`
 
@@ -283,17 +303,28 @@ Match          = "exact" | "normalized" | "fuzzy" | "heading" | "none"
 | type | body | reply |
 |---|---|---|
 | `hello` | `{protocol: 1, ws, cwd, claude_pid, bridge_pid, bridge_version, tty?, project_name}` | `hello_ack {daemon_version, url, adopted_from?}` |
-| `spec_show` | `{root_abs, is_dir, primary?, changed_sections?, changed?: [{path, sections?}]}` | `result {primary, sections[], artifacts[]}` or `error` |
+| `spec_show` | `{root_abs, is_dir, primary?, changed_sections?, changed?: [{path, sections?}], auto?: bool}` (`auto` marks the replay of a working document the daemon picked, which does not count as Claude's own `spec_show`) | `result {primary, sections[], artifacts[]}` or `error` |
 | `focus` | `{docs: [ResolvedDocRef], code: [ResolvedRef]}` | `result {docs: [{path, match}]}` |
 | `ask` | `{qs_id, title?, questions: [ {…, docs: [ResolvedDocRef], code: [ResolvedRef]} ]}` | `ask_shown {matches}` right away, **then later** `ask_result` |
 | `ask_cancel` | `{qs_id, reason}` | `result` |
 | `done` | `{summary?}` | `result {}` |
 | `viewers` | `{}` | `result {viewers: int}` (open browser pages of the workspace) |
-| `ask_mode` | `{on: bool}` | `result {}` |
+| `ask_mode` | `{on: bool, spec?: bool, paths?: [abs glob]}` | `result {}` |
 | `bye` | `{}` | (none; the bridge closes) |
 
 In `ask`, `spec_quote`/`spec_section` have already been folded into `docs` by
 the bridge, so the daemon only sees `docs`.
+
+### Messages: hook → daemon
+
+`ai-specview hook` opens its own short connection, sends no `hello`, and finds
+its session by its ancestor processes, as `active` does.
+
+| type | body | reply |
+|---|---|---|
+| `active` | `{pids: [int]}` | `result {active, ws?, url?, ask_mode?}` |
+| `doc_written` | `{pids: [int], path: abs}` (a markdown file the hook's file rules let through) | `result {shown: bool, path?}` (`shown` when it just became the working document) |
+| `skill_started` | `{pids: [int], name}` | `result {}` |
 
 ### Messages: daemon → bridge
 
@@ -304,6 +335,7 @@ the bridge, so the daemon only sees `docs`.
 | `error` | `{code, message}` (reply to `re`) |
 | `ask_shown` | `{qs_id, viewers: int, matches: [{id, doc: int, match}]}` (`doc` indexes the question's `docs`; `viewers` is the number of open browser pages) |
 | `ask_result` | `{qs_id, status: "answered"\|"in_chat"\|"dismissed", answers?, deferred?: [id], keep_open?: [id]}` |
+| `doc_shown` | `{root_abs}`: the daemon made a written file the working document. The bridge loads it as its spec root, so `spec_quote` quotes it, and replays it after a reconnect as `spec_show` with `auto: true`. |
 
 Error codes: `bad_request`, `file_not_found`, `not_markdown`, `empty_folder`,
 `unknown_qs`, `busy` (another question set is pending in this workspace),
@@ -332,7 +364,7 @@ Error codes: `bad_request`, `file_not_found`, `not_markdown`, `empty_folder`,
     waits as usual.
   - `never`: the bridge opens nothing and waits as usual.
 - **If the daemon restarts,** the bridge reconnects, re-sends `hello` with the
-  same `ws`, re-sends the last `spec_show`, the last `ask_mode`, any pending
+  same `ws`, re-sends the last `spec_show` (or `doc_shown`), the last `ask_mode`, any pending
   `ask`, and the last `done` (unless an `ask` came after it).
 - **Disconnect** (`bye` or EOF): the daemon archives the workspace (03).
 
