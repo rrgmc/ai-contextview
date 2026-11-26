@@ -14,6 +14,15 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.3.1] - 2026-11-26
+
+### Fixed
+
+- A document picked from a write no longer counts as an open spec after ask
+  mode or spec mode is turned off, so the built-in question tool works again.
+- A question with no document says so above the document it keeps showing,
+  also while a spec is open.
+
 ## [1.3.0] - 2026-11-26
 
 ### Added
@@ -190,7 +199,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/rrgmc/ai-specview/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/rrgmc/ai-specview/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/rrgmc/ai-specview/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/rrgmc/ai-specview/compare/v1.0.0...v1.1.0
