@@ -14,6 +14,15 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.3.5] - 2026-11-26
+
+### Fixed
+
+- In spec mode without a path, a running spec skill no longer makes the first
+  markdown file it writes the working document on its own. The file also
+  needs a spec folder, spec headings or a second write, so a README or notes
+  file written before the spec does not take its place.
+
 ## [1.3.4] - 2026-11-26
 
 ### Fixed
@@ -231,7 +240,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.3.4...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.3.5...HEAD
+[1.3.5]: https://github.com/rrgmc/ai-specview/compare/v1.3.4...v1.3.5
 [1.3.4]: https://github.com/rrgmc/ai-specview/compare/v1.3.3...v1.3.4
 [1.3.3]: https://github.com/rrgmc/ai-specview/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/rrgmc/ai-specview/compare/v1.3.1...v1.3.2
