@@ -254,7 +254,7 @@ const SPEC_HEADING = /^#{1,6}\s+(requirements|goals?|non-goals|design|acceptance
 
 /** How much a written file looks like a spec, as internal/daemon workDoc.score. */
 export function specScore(path: string, text: string, home: string, specSkill: boolean, edits: number): number {
-  let n = specSkill ? 2 : 0
+  let n = specSkill ? 1 : 0
   const claude = home ? `${home.replace(/\/$/, '')}/.claude/` : ''
   const inClaude = !!claude && (path.startsWith(claude + 'specs/') || path.startsWith(claude + 'plans/'))
   if (inClaude || path.split('/').slice(0, -1).some(d => SPEC_FOLDERS.has(d.toLowerCase()))) n++

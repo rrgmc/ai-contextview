@@ -653,7 +653,8 @@ test('countsAsDoc, matchAny and specScore follow the hook and the daemon', () =>
   expect(spec.matchAny(['/repo/docs/SW-?.md'], '/repo/docs/SW-12.md')).toBe(false)
   expect(spec.specScore('/repo/docs/specs/a.md', '# A\n\n## Requirements\n\n## Design\n', home, false, 1)).toBe(2)
   expect(spec.specScore('/repo/README.md', '# Readme\n', home, false, 2)).toBe(1)
-  expect(spec.specScore('/repo/README.md', '# Readme\n', home, true, 1)).toBe(2)
+  expect(spec.specScore('/repo/README.md', '# Readme\n', home, true, 1)).toBe(1)
+  expect(spec.specScore('/repo/docs/specs/a.md', '# A\n', home, true, 1)).toBe(2)
 })
 
 test('in ask mode the first written document becomes the working document', async ($, on) => {

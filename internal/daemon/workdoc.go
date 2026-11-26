@@ -109,8 +109,10 @@ func (wd *workDoc) wants(path string) bool {
 // without paths. The weights are a first guess, tuned in use.
 func (wd *workDoc) score(path string) int {
 	n := 0
+	// A spec skill counts once: alone it does not pick a file, so a README
+	// or notes file written before the spec does not take its place.
 	if wd.specSkill {
-		n += 2
+		n++
 	}
 	if inSpecFolder(path) {
 		n++

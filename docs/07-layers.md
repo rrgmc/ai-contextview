@@ -173,7 +173,7 @@ it.
 
   | Signal | Weight | Notes |
   |---|---|---|
-  | A spec skill is running | High | A `PreToolUse` hook on the `Skill` tool sees the skill's name; a name with `spec`, `rfc` or `design` marks the session as writing a spec from then on |
+  | A spec skill is running | Medium | A `PreToolUse` hook on the `Skill` tool sees the skill's name; a name with `spec`, `rfc` or `design` marks the session as writing a spec from then on. It counts as much as one other signal, so a README or notes file written before the spec is not picked |
   | Questions quote the file | High | As step 3 above |
   | Where the file is | Medium | A folder named `specs`, `spec`, `rfc`, `rfcs`, `design` or `adr`, or `~/.claude/specs/`, `~/.claude/plans/` |
   | What the file holds | Medium | `kind: spec` frontmatter, or headings such as Requirements, Goals, Design, Acceptance criteria, Open questions |

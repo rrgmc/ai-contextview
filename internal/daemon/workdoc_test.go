@@ -111,11 +111,21 @@ func TestSpecModeScoring(t *testing.T) {
 	// The spec: a spec folder and spec headings, 2.
 	assert.True(t, written(h, spec).Shown)
 
-	// A spec skill alone reaches the threshold.
+	// A spec skill counts once: a file written before the spec is not
+	// picked, the spec is.
 	h2, b2, cwd2 := workSetup(t)
 	b2.req(protocol.TypeAskMode, &protocol.AskMode{On: true, Spec: true})
 	h2.d.skillStarted(&protocol.SkillStarted{PIDs: []int{testPID}, Name: "harness-core:harness-elaborate-spec"})
-	assert.True(t, written(h2, filepath.Join(cwd2, "docs/other.md")).Shown)
+	assert.False(t, written(h2, filepath.Join(cwd2, "README.md")).Shown)
+	assert.True(t, written(h2, filepath.Join(cwd2, "docs/specs/SW-1.md")).Shown)
+
+	// With a spec skill, one more signal is enough: here a second write.
+	h3, b3, cwd3 := workSetup(t)
+	b3.req(protocol.TypeAskMode, &protocol.AskMode{On: true, Spec: true})
+	h3.d.skillStarted(&protocol.SkillStarted{PIDs: []int{testPID}, Name: "harness-core:harness-elaborate-spec"})
+	other := filepath.Join(cwd3, "docs/other.md")
+	assert.False(t, written(h3, other).Shown)
+	assert.True(t, written(h3, other).Shown)
 
 	// Turning ask mode off resets the pick.
 	b.req(protocol.TypeAskMode, &protocol.AskMode{On: false})

@@ -224,7 +224,7 @@ session goes through `ask`, with or without a spec.
   - ask mode: the first written file;
   - spec mode with `paths`: the first written file that matches;
   - spec mode without `paths`: the first written file that scores at least 2:
-    a spec skill started (2), a spec folder (`specs`, `rfc`, `design`, `adr`,
+    a spec skill started (1), a spec folder (`specs`, `rfc`, `design`, `adr`,
     …, or `~/.claude/specs` and `~/.claude/plans`) (1), spec headings or
     `kind: spec` frontmatter (1), written at least twice (1).
 
