@@ -14,6 +14,14 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.3.2] - 2026-11-26
+
+### Fixed
+
+- Turning ask mode or spec mode off clears a document that was picked from a
+  write, in the viewer and in the pane, so the next question set starts from
+  a clean page. A spec shown by Claude stays.
+
 ## [1.3.1] - 2026-11-26
 
 ### Fixed
@@ -199,7 +207,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.3.2...HEAD
+[1.3.2]: https://github.com/rrgmc/ai-specview/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/rrgmc/ai-specview/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/rrgmc/ai-specview/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/rrgmc/ai-specview/compare/v1.1.0...v1.2.0

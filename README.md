@@ -36,12 +36,12 @@ from the latest release:
 go install github.com/rrgmc/ai-specview/cmd/ai-specview@latest
 ```
 
-Releases are git tags such as `v1.3.1` (see the
+Releases are git tags such as `v1.3.2` (see the
 [tags](https://github.com/rrgmc/ai-specview/tags)). To install one release, put
 its tag after the `@`:
 
 ```bash
-go install github.com/rrgmc/ai-specview/cmd/ai-specview@v1.3.1
+go install github.com/rrgmc/ai-specview/cmd/ai-specview@v1.3.2
 ```
 
 Each release on the
