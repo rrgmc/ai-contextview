@@ -34,6 +34,8 @@
   let reviewing = false;     // the review replaces the question view
   let live = true;
   let baseTitle = document.title;
+  let hasSpec = false;       // a spec is shown: the document panel always shows
+  let sawState = false;
 
   // ------------------------------------------------------------ helpers
 
@@ -72,8 +74,8 @@
     currentDoc = p.path;
     currentAbs = p.abs || "";
     docEl.innerHTML = p.html || "";
-    $("#doc-title").textContent = p.path || "Spec";
-    $("#docname").textContent = p.path || "";
+    $("#doc-title").textContent = p.name || p.path || "";
+    $("#docname").textContent = p.name || p.path || "";
     const link = $("#doc-editor");
     link.hidden = !currentAbs;
     if (currentAbs) link.href = editorURL(currentAbs, 1);
@@ -153,8 +155,36 @@
     activeRef = { path: path || currentDoc, ref };
     const marks = $$('[data-ref="' + CSS.escape(ref) + '"]', docEl);
     marks.forEach((m) => m.classList.add("active"));
-    if (marks.length) scrollIntoPane(docEl, marks[0]);
+    // A source document marks its lines, not a data-ref.
+    const at = marks[0] || $(".line.hl", docEl);
+    if (at) scrollIntoPane(docEl, at);
     updateJump();
+  }
+
+  // The document panel shows for a whole question set, or always with a spec.
+  function setDocPanel(on) {
+    layout.classList.toggle("no-doc", !on);
+    $("#docname").hidden = !on;
+  }
+
+  // Tabs for the documents of the current question, when it has more than one.
+  function renderQDocTabs(sec) {
+    const box = $("#qdoc-tabs");
+    box.innerHTML = "";
+    const seen = new Map();
+    if (sec) $$(".chip-doc", sec).forEach((c) => { if (!seen.has(c.dataset.doc)) seen.set(c.dataset.doc, c); });
+    box.hidden = seen.size < 2;
+    $("#doc-title").hidden = seen.size >= 2;
+    if (seen.size < 2) return;
+    for (const [path, chip] of seen) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "tab" + (path === currentDoc ? " active" : "");
+      b.title = chip.title;
+      b.textContent = path.split("/").pop();
+      b.addEventListener("click", () => focusDoc(path, chip.dataset.ref).then(() => renderQDocTabs(sec)));
+      box.appendChild(b);
+    }
   }
 
   // "Show current passage" is shown while a passage is highlighted for the
@@ -373,7 +403,11 @@
   function focusQuestionRefs(sec) {
     const doc = $(".chip-doc", sec);
     const code = $(".chip-code", sec);
-    if (doc) focusDoc(doc.dataset.doc, doc.dataset.ref);
+    // A question with no document keeps the last one, without a highlight.
+    $("#doc-note").hidden = !!doc || hasSpec;
+    docEl.classList.toggle("no-hl", !doc);
+    if (doc) focusDoc(doc.dataset.doc, doc.dataset.ref).then(() => renderQDocTabs(sec));
+    else { focusDoc(null, null); activeRef = null; updateJump(); renderQDocTabs(null); }
     if (code) focusCode(code.dataset.path, +code.dataset.start, +code.dataset.end);
     else showNoCode();
   }
@@ -511,6 +545,12 @@
       setPending(d.pending && !!pendingQS);
       $("#done-pill").hidden = !d.done;
       document.title = (d.done ? "✓ " : (d.pending && pendingQS ? "● " : "")) + baseTitle;
+      hasSpec = !!d.has_spec;
+      $('.dtab[data-view="changes"]').hidden = !hasSpec;
+      if (!hasSpec && docView === "changes") setView("spec");
+      if (hasSpec) setDocPanel(true);
+      else if (!sawState && !d.pending) setDocPanel(false);
+      sawState = true;
       const oq = $("#oq");
       oq.hidden = !d.open_questions;
       oq.textContent = d.open_questions + " open question" + (d.open_questions === 1 ? "" : "s");
@@ -554,6 +594,7 @@
       if (d.qs_id) {
         const isNew = d.qs_id !== pendingQS;
         if (isNew) {
+          setDocPanel(hasSpec || !!d.doc_panel);
           pendingQS = d.qs_id;
           q.innerHTML = d.html;
           $("#panel-summary").textContent = "";
@@ -564,6 +605,8 @@
       } else {
         pendingQS = "";
         activeRef = null;
+        $("#doc-note").hidden = true;
+        renderQDocTabs(null);
         updateJump();
         if (!codeTabs.length) renderTabs(); // drop "these questions have no code"
         setPending(false);

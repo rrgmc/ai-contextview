@@ -3,12 +3,12 @@
   "owner": {
     "name": "Rangel Reale"
   },
-  "description": "ai-specview: the spec and the code side by side while Claude elaborates a spec.",
+  "description": "ai-specview: a front end for Claude's questions, with the documents and code they are about.",
   "plugins": [
     {
       "name": "ai-specview",
       "source": "./plugin",
-      "description": "Shows the spec and the code side by side while Claude elaborates a spec, in a browser page or in a pane beside the chat."
+      "description": "A front end for Claude's questions, with the documents and code they are about, and spec elaboration on top of it; in a browser page or in a pane beside the chat."
     }
   ]
 }

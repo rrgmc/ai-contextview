@@ -48,6 +48,8 @@ type fileState struct {
 
 type docMark struct {
 	Rel, Ref, Quote, Section string
+	// StartLine and EndLine are set for a line-range ref instead of Quote.
+	StartLine, EndLine int
 }
 
 type questionSet struct {
@@ -80,10 +82,13 @@ type Workspace struct {
 
 	conn *Conn
 
-	Root       *specsrc.Root
-	files      map[string]*fileState
-	extraDocs  map[string]bool
-	CurrentDoc string
+	Root      *specsrc.Root
+	files     map[string]*fileState
+	extraDocs map[string]bool
+	// outsideDocs are documents outside the spec folder, or shown with no
+	// spec, keyed by absolute path. They are shown but not watched.
+	outsideDocs map[string]bool
+	CurrentDoc  string
 
 	Code        []*CodeTab
 	codeAllowed map[string]bool
@@ -111,13 +116,13 @@ func newWorkspace(h *protocol.Hello) *Workspace {
 	return &Workspace{
 		ID: h.WS, Project: h.ProjectName, Cwd: h.Cwd, ClaudePID: h.ClaudePID, BridgePID: h.BridgePID, BridgePPID: h.BridgePPID,
 		BridgeVersion: h.BridgeVersion, Started: time.Now(), Live: true,
-		files: map[string]*fileState{}, extraDocs: map[string]bool{}, codeAllowed: map[string]bool{},
+		files: map[string]*fileState{}, extraDocs: map[string]bool{}, outsideDocs: map[string]bool{}, codeAllowed: map[string]bool{},
 	}
 }
 
 // adopt moves the state of an archived workspace into w.
 func (w *Workspace) adopt(old *Workspace) {
-	w.Root, w.files, w.extraDocs, w.CurrentDoc = old.Root, old.files, old.extraDocs, old.CurrentDoc
+	w.Root, w.files, w.extraDocs, w.outsideDocs, w.CurrentDoc = old.Root, old.files, old.extraDocs, old.outsideDocs, old.CurrentDoc
 	w.Code, w.codeAllowed, w.focus, w.History = old.Code, old.codeAllowed, old.focus, old.History
 	w.Done = old.Done
 	w.AskMode = old.AskMode
@@ -171,6 +176,9 @@ func (w *Workspace) baseFor(rel, base string) []byte {
 
 // docAbs returns the absolute path for a doc key, if it may be shown.
 func (w *Workspace) docAbs(rel string) (string, bool) {
+	if w.outsideDocs[rel] {
+		return rel, true
+	}
 	if w.Root == nil {
 		return "", false
 	}
@@ -180,14 +188,32 @@ func (w *Workspace) docAbs(rel string) (string, bool) {
 	return filepath.Join(w.Root.Dir, filepath.FromSlash(rel)), true
 }
 
-// docKey turns an absolute doc path into its key (relative to the root dir).
+// docKey turns an absolute doc path into its key: relative to the root dir,
+// or the absolute path for a document outside it or with no spec shown.
 func (w *Workspace) docKey(abs string) string {
 	if w.Root == nil {
+		w.outsideDocs[abs] = true
 		return abs
 	}
 	rel := w.Root.Rel(abs)
+	if strings.HasPrefix(rel, "../") {
+		w.outsideDocs[abs] = true
+		return abs
+	}
 	if w.Root.Artifact(rel) == nil {
 		w.extraDocs[rel] = true
+	}
+	return rel
+}
+
+// docName is a doc key for display: the key itself, or for an outside
+// document its path relative to the project directory.
+func (w *Workspace) docName(rel string) string {
+	if !filepath.IsAbs(rel) {
+		return rel
+	}
+	if r, err := filepath.Rel(w.Cwd, rel); err == nil && !strings.HasPrefix(r, "..") {
+		return filepath.ToSlash(r)
 	}
 	return rel
 }
@@ -293,6 +319,11 @@ func (w *Workspace) marksFor(rel string, src []byte) []render.Mark {
 		if m.Rel != rel {
 			continue
 		}
+		if m.StartLine > 0 {
+			s, e := lineOffsets(src, m.StartLine, m.EndLine)
+			out = append(out, render.Mark{Start: s, End: e, Ref: m.Ref, Lines: true})
+			continue
+		}
 		r := specsrc.Match(src, m.Quote, m.Section)
 		switch {
 		case r.Found():
@@ -306,11 +337,51 @@ func (w *Workspace) marksFor(rel string, src []byte) []render.Mark {
 
 func markRef(qid string, j int) string { return qid + "-" + itoa(j) }
 
+// lineOffsets returns the byte range of lines start..end (1-based) of src.
+func lineOffsets(src []byte, start, end int) (int, int) {
+	s, e, line := -1, len(src), 1
+	for i := 0; i <= len(src); i++ {
+		if line == start && s < 0 {
+			s = i
+		}
+		if i == len(src) {
+			break
+		}
+		if src[i] == '\n' {
+			if line == end {
+				e = i
+				break
+			}
+			line++
+		}
+	}
+	if s < 0 {
+		s = len(src)
+	}
+	return s, e
+}
+
+// lineMark returns the first line-range mark of a doc, if any.
+func (w *Workspace) lineMark(rel string) (int, int) {
+	var all []docMark
+	if w.Pending != nil {
+		all = append(all, w.pendingMarks()...)
+	}
+	all = append(all, w.focus...)
+	for _, m := range all {
+		if m.Rel == rel && m.StartLine > 0 {
+			return m.StartLine, m.EndLine
+		}
+	}
+	return 0, 0
+}
+
 func (w *Workspace) pendingMarks() []docMark {
 	var out []docMark
 	for _, q := range w.Pending.Ask.Questions {
 		for j, d := range q.Docs {
-			out = append(out, docMark{Rel: w.docKey(d.Path), Ref: markRef(q.ID, j), Quote: d.Quote, Section: d.Section})
+			out = append(out, docMark{Rel: w.docKey(d.Path), Ref: markRef(q.ID, j), Quote: d.Quote, Section: d.Section,
+				StartLine: d.StartLine, EndLine: d.EndLine})
 		}
 	}
 	return out

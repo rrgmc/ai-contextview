@@ -175,3 +175,25 @@ export function isLaterLabel(label: string): boolean {
   }
   return ['later', 'defer', 'defer it', 'defer this', 'defer for now', 'defer decision', 'defer the decision'].includes(l)
 }
+
+/** The number of lines of text; a final line without a newline counts. */
+export function lineCount(text: string): number {
+  if (text === '') return 0
+  const n = text.split('\n').length
+  return text.endsWith('\n') ? n - 1 : n
+}
+
+/** The offsets of lines start..end (1-based, inclusive) of text, the last newline excluded. */
+export function lineOffsets(text: string, start: number, end: number): { start: number; end: number } {
+  let s = -1
+  let line = 1
+  for (let i = 0; i <= text.length; i++) {
+    if (line === start && s < 0) s = i
+    if (i === text.length) break
+    if (text[i] === '\n') {
+      if (line === end) return { start: s < 0 ? text.length : s, end: i }
+      line++
+    }
+  }
+  return { start: s < 0 ? text.length : s, end: text.length }
+}

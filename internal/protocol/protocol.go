@@ -184,17 +184,20 @@ func (r *ResolvedRef) Validate() error {
 
 // DocRef points into a markdown document, as given by Claude.
 type DocRef struct {
-	Path    string `json:"path,omitempty" jsonschema:"markdown file relative to the spec_show folder (or project dir for a single file); omit for the primary spec file"`
-	Quote   string `json:"quote" jsonschema:"verbatim passage copied from the file (3-300 characters)"`
+	Path    string `json:"path,omitempty" jsonschema:"document path: relative to the spec_show folder, else to the project dir, or absolute; omit for the primary spec file"`
+	Quote   string `json:"quote,omitempty" jsonschema:"verbatim passage copied from a markdown file (3-300 characters); give quote or lines"`
+	Lines   string `json:"lines,omitempty" jsonschema:"line or line range N or N-M; the only choice for a file that is not markdown"`
 	Section string `json:"section,omitempty" jsonschema:"heading of the section containing the quote"`
 }
 
 // ResolvedDocRef is a doc ref with an absolute path and artifact kind.
 type ResolvedDocRef struct {
-	Path    string       `json:"path"`
-	Quote   string       `json:"quote"`
-	Section string       `json:"section,omitempty"`
-	Kind    ArtifactKind `json:"kind"`
+	Path      string       `json:"path"`
+	Quote     string       `json:"quote,omitempty"`
+	StartLine int          `json:"start_line,omitempty"`
+	EndLine   int          `json:"end_line,omitempty"`
+	Section   string       `json:"section,omitempty"`
+	Kind      ArtifactKind `json:"kind"`
 }
 
 // Validate checks a resolved doc ref.
@@ -202,8 +205,11 @@ func (r *ResolvedDocRef) Validate() error {
 	if !filepath.IsAbs(r.Path) {
 		return fmt.Errorf("doc ref path %q is not absolute", r.Path)
 	}
-	if r.Quote == "" {
-		return errors.New("doc ref without quote")
+	if (r.Quote == "") == (r.StartLine == 0) {
+		return errors.New("doc ref needs exactly one of quote or start_line")
+	}
+	if r.StartLine < 0 || (r.StartLine > 0 && r.EndLine < r.StartLine) {
+		return fmt.Errorf("doc ref %s: bad lines %d-%d", r.Path, r.StartLine, r.EndLine)
 	}
 	if !r.Kind.Valid() {
 		return fmt.Errorf("doc ref %s: bad kind %q", r.Path, r.Kind)

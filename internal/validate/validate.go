@@ -6,6 +6,7 @@ package validate
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -109,7 +110,15 @@ func refs(errs *Errors, label, specQuote, specSection string, docs []protocol.Do
 		errs.add("%s: %d doc refs, at most %d", label, nDocs, MaxDocRefs)
 	}
 	for i, d := range docs {
-		quote(errs, fmt.Sprintf("%s doc_refs[%d]", label, i), d.Quote)
+		l := fmt.Sprintf("%s doc_refs[%d]", label, i)
+		switch {
+		case (d.Quote == "") == (d.Lines == ""):
+			errs.add("%s: give exactly one of quote or lines", l)
+		case d.Quote != "":
+			quote(errs, l, d.Quote)
+		default:
+			lines(errs, l, d.Lines)
+		}
 	}
 	if len(code) > MaxCodeRefs {
 		errs.add("%s: %d code refs, at most %d", label, len(code), MaxCodeRefs)
@@ -122,6 +131,19 @@ func refs(errs *Errors, label, specQuote, specSection string, docs []protocol.Do
 		if (c.Symbol == "") == (c.Lines == "") {
 			errs.add("%s: give exactly one of symbol or lines", l)
 		}
+	}
+}
+
+// lines checks "N" or "N-M" with 1 <= N <= M.
+func lines(errs *Errors, label, s string) {
+	a, b, isRange := strings.Cut(strings.TrimSpace(s), "-")
+	start, err := strconv.Atoi(strings.TrimSpace(a))
+	end := start
+	if err == nil && isRange {
+		end, err = strconv.Atoi(strings.TrimSpace(b))
+	}
+	if err != nil || start < 1 || end < start {
+		errs.add("%s: bad lines %q: want N or N-M with N <= M", label, s)
 	}
 }
 

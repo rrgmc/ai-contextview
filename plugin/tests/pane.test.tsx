@@ -308,8 +308,11 @@ test('a folder spec lists its markdown files and picks the primary as the bridge
   expect((await ui.find({ type: 'Text', text: /^notes\/cache\.md$/ }))?.text).toBe('notes/cache.md')
   await ui.unmount()
 
-  // A doc ref outside the folder is refused.
-  expect(failed(await call($, { tool: FOCUS, doc_refs: [{ path: '../design.md', quote: 'at most 100 widgets' }] }))).toBe(
+  // A doc ref outside the folder is a project file, as for the bridge.
+  expect(failed(await call($, { tool: FOCUS, doc_refs: [{ path: 'docs/design.md', quote: 'at most 100 widgets' }] }))).toBe(
+    false,
+  )
+  expect(failed(await call($, { tool: FOCUS, doc_refs: [{ path: 'docs/missing.md', quote: 'at most 100 widgets' }] }))).toBe(
     true,
   )
 })
@@ -574,11 +577,15 @@ test('ask mode asks without a spec and blocks AskUserQuestion until turned off',
 
   expect(await result(call($, { tool: ASK_MODE }))).toEqual({ on: true })
   expect(failed(await call($, { tool: 'AskUserQuestion', questions: [] }))).toBe(true)
+  const idle = await $.ui.mount(pane('desktop', 140))
+  expect(await idle.find({ type: 'Text', text: /^Ask mode is on/ })).toBeDefined()
+  await idle.unmount()
 
   const pending = call($, { tool: ASK, title: 'Style', questions: noRefs })
   await clk.settle()
   const ui = await $.ui.mount(pane('desktop', 140))
-  expect(await ui.find({ type: 'Text', text: /^Ask mode is on/ })).toBeDefined()
+  // A set with no documents uses the full width: no document column.
+  expect(await ui.find({ key: 'spec-col' })).toBeUndefined()
   expect(await ui.find({ key: 'outline' })).toBeUndefined()
   await ui.press({ key: 'opt-1' })
   await ui.press({ key: 'send' })
@@ -594,4 +601,40 @@ test('ask mode asks without a spec and blocks AskUserQuestion until turned off',
 
   expect(await result(call($, { tool: ASK_MODE, off: true }))).toEqual({ on: false })
   expect(failed(await call($, { tool: 'AskUserQuestion', questions: [] }))).toBe(false)
+})
+
+test('doc refs by lines, outside a spec, and a source file', async ($, on) => {
+  const clk = engine(on)
+  await $.session.start({ cwd: '/repo', surface: 'desktop', isInteractive: true })
+  await call($, { tool: ASK_MODE })
+  const questions = [
+    { id: 'q1', text: 'Cache size?', options: [{ label: '100' }, { label: '1000' }], doc_refs: [{ path: 'docs/design.md', lines: '3' }] },
+    { id: 'q2', text: 'Commit now?', options: [{ label: 'Yes' }, { label: 'No' }] },
+  ]
+  // A doc ref without path needs a spec; a quote needs markdown.
+  expect(failed(await call($, { tool: ASK, questions: [{ ...questions[0], doc_refs: [{ quote: 'at most 100 widgets' }] }] }))).toBe(true)
+  expect(
+    failed(await call($, { tool: ASK, questions: [{ ...questions[0], doc_refs: [{ path: 'store/store.go', quote: 'func Get' }] }] })),
+  ).toBe(true)
+
+  const pending = call($, { tool: ASK, title: 'Docs', questions })
+  await clk.settle()
+  const ui = await $.ui.mount(pane('desktop', 140))
+  expect(await ui.find({ key: 'spec-col' })).toBeDefined()
+  expect(await ui.find({ key: 'quote' })).toBeDefined()
+  // A question with no document keeps the last one and says so.
+  await ui.press({ key: 'step-1' })
+  expect(await ui.find({ key: 'spec-col' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^This question has no document/ })).toBeDefined()
+  await ui.press({ key: 'skip' })
+  await clk.advance(POLL)
+  expect((await result(pending)).status).toBe('dismissed')
+  await ui.unmount()
+})
+
+test('lineOffsets and lineCount', () => {
+  expect(spec.lineCount('a\nb\n')).toBe(2)
+  expect(spec.lineCount('a\nb')).toBe(2)
+  expect(spec.lineOffsets('a\nbb\nc', 2, 2)).toEqual({ start: 2, end: 4 })
+  expect(spec.lineOffsets('a\nbb\nc', 2, 3)).toEqual({ start: 2, end: 6 })
 })

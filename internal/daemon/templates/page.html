@@ -26,7 +26,7 @@
 <main id="layout" class="layout">
   <nav id="artifacts" class="artifacts" hidden></nav>
   <section class="pane doc-pane">
-    <div class="pane-head"><span class="doc-tabs"><button type="button" class="dtab active" data-view="spec">Spec</button><button type="button" class="dtab" data-view="changes" title="What changed in this document">Changes<span id="chg-count"></span></button></span><span id="doc-title" class="muted">Spec</span><span class="grow"></span><a id="doc-jump" class="small" href="#" hidden title="Scroll back to the passage the current question is about">Show current passage</a><a id="doc-editor" class="ghost small" hidden>open in editor</a></div>
+    <div class="pane-head"><span class="doc-tabs"><button type="button" class="dtab active" data-view="spec">Document</button><button type="button" class="dtab" data-view="changes" title="What changed in this document" hidden>Changes<span id="chg-count"></span></button></span><span id="doc-title" class="muted"></span><span id="qdoc-tabs" class="qdoc-tabs" hidden></span><span id="doc-note" class="muted small" hidden>This question has no document.</span><span class="grow"></span><a id="doc-jump" class="small" href="#" hidden title="Scroll back to the passage the current question is about">Show current passage</a><a id="doc-editor" class="ghost small" hidden>open in editor</a></div>
     <div id="chg-bar" class="chg-bar" hidden>
       <select id="chg-base" aria-label="Compare against">
         <option value="answers">Since your last answers</option>
@@ -35,7 +35,7 @@
       <span class="seg"><button type="button" class="seg-btn active" data-mode="rendered">Rendered</button><button type="button" class="seg-btn" data-mode="source">Source</button></span>
       <span id="chg-since" class="muted small"></span>
     </div>
-    <article id="doc" class="doc"><p class="empty">Waiting for the spec…</p></article>
+    <article id="doc" class="doc"><p class="empty">Waiting for a document…</p></article>
     <article id="changes" class="doc changes" hidden></article>
   </section>
   <div class="splitter" id="split-v" title="Drag to resize"></div>

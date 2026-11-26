@@ -217,6 +217,9 @@ func (s *Server) viewers() int {
 }
 
 func match(d protocol.ResolvedDocRef) protocol.Match {
+	if d.StartLine > 0 {
+		return protocol.MatchExact
+	}
 	src, err := specsrc.ReadPrepared(d.Path)
 	if err != nil {
 		return protocol.MatchNone

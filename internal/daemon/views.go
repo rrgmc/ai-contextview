@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -96,14 +97,20 @@ func (d *Daemon) chips(w *Workspace, q protocol.AskQuestion) []chipView {
 	for j, doc := range q.Docs {
 		rel := w.docKey(doc.Path)
 		label := "§ " + doc.Section
-		if doc.Section == "" {
+		name := w.docName(rel)
+		title := name + ": " + doc.Quote
+		switch {
+		case doc.StartLine > 0:
+			label = filepath.Base(rel) + ":" + lineLabel(doc.StartLine, doc.EndLine)
+			title = name + ":" + lineLabel(doc.StartLine, doc.EndLine)
+		case doc.Section == "":
 			label = "“" + truncate(doc.Quote, 32) + "”"
 		}
-		if w.Root != nil && rel != w.Root.Primary {
+		if doc.StartLine == 0 && (w.Root == nil || rel != w.Root.Primary) {
 			label = strings.TrimSuffix(filepath.Base(rel), filepath.Ext(rel)) + " " + label
 		}
-		c := chipView{Kind: "doc", Label: label, Title: rel + ": " + doc.Quote, Doc: rel, Ref: markRef(q.ID, j)}
-		switch d.matchDoc(doc.Path, doc.Quote, doc.Section) {
+		c := chipView{Kind: "doc", Label: label, Title: title, Doc: rel, Ref: markRef(q.ID, j)}
+		switch d.matchRef(doc) {
 		case protocol.MatchFuzzy:
 			c.Badge = "≈ fuzzy"
 		case protocol.MatchHeading:
@@ -156,6 +163,13 @@ func isLaterLabel(label string) bool {
 	return false
 }
 
+func lineLabel(start, end int) string {
+	if start == end {
+		return strconv.Itoa(start)
+	}
+	return strconv.Itoa(start) + "-" + strconv.Itoa(end)
+}
+
 func truncate(s string, n int) string {
 	r := []rune(strings.TrimSpace(s))
 	if len(r) <= n {
@@ -199,6 +213,7 @@ func (d *Daemon) stateEvent(w *Workspace) Event {
 		"live": w.Live, "project": w.Project, "cwd": w.Cwd, "claude_pid": w.ClaudePID,
 		"started": w.Started.Format("15:04"), "root": root, "is_dir": w.Root != nil && w.Root.IsDir,
 		"open_questions": w.openQuestions(), "pending": w.Pending != nil, "done": w.Done != nil,
+		"has_spec": w.Root != nil,
 	})
 }
 
@@ -253,6 +268,25 @@ func (d *Daemon) docPayload(w *Workspace, rel string) map[string]any {
 		out["html"] = `<p class="empty">No spec shown yet. The skill calls <code>spec_show</code> when it creates or opens a spec.</p>`
 		return out
 	}
+	out["abs"] = abs
+	out["name"] = w.docName(rel)
+	if !specsrc.IsMarkdown(abs) {
+		// A text document that is not markdown: its source, with the line
+		// range of the current question highlighted.
+		src, err := os.ReadFile(abs)
+		if err != nil {
+			out["html"] = `<p class="empty">` + template.HTMLEscapeString(err.Error()) + `</p>`
+			return out
+		}
+		start, end := w.lineMark(rel)
+		html, err := render.Code(abs, src, start, end)
+		if err != nil {
+			html = `<p class="empty">` + template.HTMLEscapeString(err.Error()) + `</p>`
+		}
+		out["html"] = `<div class="doc-src">` + html + `</div>`
+		out["source"] = true
+		return out
+	}
 	src, err := specsrc.ReadPrepared(abs)
 	if err != nil {
 		out["html"] = `<p class="empty">` + template.HTMLEscapeString(err.Error()) + `</p>`
@@ -264,8 +298,10 @@ func (d *Daemon) docPayload(w *Workspace, rel string) map[string]any {
 		html = `<p class="empty">` + template.HTMLEscapeString(err.Error()) + `</p>`
 	}
 	kind := protocol.KindOther
-	if a := w.Root.Artifact(rel); a != nil {
-		kind = a.Kind
+	if w.Root != nil {
+		if a := w.Root.Artifact(rel); a != nil {
+			kind = a.Kind
+		}
 	}
 	ids := make([]string, 0, len(changed))
 	for id := range changed {
@@ -274,11 +310,12 @@ func (d *Daemon) docPayload(w *Workspace, rel string) map[string]any {
 	sort.Strings(ids)
 	out["html"] = html
 	base := w.defaultBase()
-	out["changes"] = render.Hunks(render.DiffBlocks(w.baseFor(rel, base), src))
+	if w.files[rel] != nil {
+		out["changes"] = render.Hunks(render.DiffBlocks(w.baseFor(rel, base), src))
+	}
 	out["changes_base"] = base
 	out["kind"] = kind
-	out["abs"] = abs
-	out["primary"] = rel == w.Root.Primary
+	out["primary"] = w.Root != nil && rel == w.Root.Primary
 	out["changed"] = ids
 	return out
 }
@@ -342,9 +379,16 @@ func (d *Daemon) askEvent(w *Workspace) Event {
 	if len(qs.Ask.Questions) > 0 {
 		first = qs.Ask.Questions[0].Text
 	}
+	// The document panel shows for the whole set when any question has a
+	// document or a spec is shown, so it does not open and close between
+	// the questions of one set.
+	docPanel := w.Root != nil
+	for _, q := range qs.Ask.Questions {
+		docPanel = docPanel || len(q.Docs) > 0
+	}
 	return newEvent("ask", map[string]any{
 		"qs_id": qs.Ask.QSID, "html": execTemplate("panel", v), "title": qs.Ask.Title,
-		"first": first, "count": len(qs.Ask.Questions), "project": w.Project,
+		"first": first, "count": len(qs.Ask.Questions), "project": w.Project, "doc_panel": docPanel,
 	})
 }
 

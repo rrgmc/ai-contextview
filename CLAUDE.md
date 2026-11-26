@@ -128,5 +128,6 @@ go install ./cmd/ai-specview && ai-specview serve --restart
 - HTTP accepts loopback only, checks the `Host` header, checks `Origin` on
   POSTs and sends no CORS headers. Keep it that way.
 - The environment variables (`AI_SPECVIEW_SOCKET`, `AI_SPECVIEW_ADDR`,
+  `AI_SPECVIEW_ASK_MODE`,
   `AI_SPECVIEW_ASK_WAIT`, `AI_SPECVIEW_OPEN`, `AI_SPECVIEW_DAEMON`) are listed in the
   README.

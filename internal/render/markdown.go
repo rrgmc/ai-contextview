@@ -21,6 +21,9 @@ type Mark struct {
 	Start, End int
 	Ref        string
 	Heading    bool
+	// Lines tints every top-level block that overlaps the range (a line
+	// range of the source).
+	Lines bool
 }
 
 // KindHighlight is the inline node that wraps highlighted text.
@@ -81,6 +84,20 @@ func Markdown(src []byte, marks []Mark, changed map[string]bool) (string, []spec
 	var inline []Mark
 	for _, m := range marks {
 		if m.End <= m.Start {
+			continue
+		}
+		if m.Lines {
+			for n := doc.FirstChild(); n != nil; n = n.NextSibling() {
+				s := specsrc.NodeStart(n)
+				e := len(src)
+				if next := n.NextSibling(); next != nil {
+					e = specsrc.NodeStart(next)
+				}
+				if overlaps(s, e, m.Start, m.End) {
+					addClass(n, "q-section")
+					n.SetAttributeString("data-ref", []byte(m.Ref))
+				}
+			}
 			continue
 		}
 		if m.Heading {

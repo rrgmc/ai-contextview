@@ -259,14 +259,20 @@ async function resolveDocs($: EngineInterface, view: SpecView, label: string, re
   const out: DocRefView[] = []
   for (const d of refs) {
     const given = d.path ?? ''
-    const full = expand(given)
-    const p = !given ? view.specPath : full.startsWith('/') ? clean(full) : clean(view.isDir ? join(view.dir, given) : abs(given))
-    if (!MARKDOWN.test(p)) {
-      errs.push(`${label}: doc ref ${given} is not a markdown file`)
+    if (!given && view.specPath === '') {
+      errs.push(`${label}: a doc ref without path means the primary spec file, and no spec is shown; give path, or call spec_show first`)
       continue
     }
-    if (view.isDir && under(view.dir, p) === p) {
-      errs.push(`${label}: doc ref ${given} is outside the shown folder ${view.dir}`)
+    const full = expand(given)
+    let p = view.specPath
+    if (given) {
+      p = full.startsWith('/') ? clean(full) : abs(given)
+      // A relative path is looked up in the spec folder first, as the bridge does.
+      if (!full.startsWith('/') && view.isDir && (await $.fs.exists(join(view.dir, given)))) p = clean(join(view.dir, given))
+    }
+    const md = MARKDOWN.test(p)
+    if (!md && d.quote) {
+      errs.push(`${label}: doc ref ${given} is not a markdown file; give lines instead of a quote`)
       continue
     }
     if (!(await $.fs.exists(p))) {
@@ -274,8 +280,21 @@ async function resolveDocs($: EngineInterface, view: SpecView, label: string, re
       continue
     }
     const text: string = p === view.specPath ? view.text : await $.fs.read(p)
-    const { how: _how, ...q } = locate(text, d.quote ?? '', d.section ?? '', p, label, errs)
-    if (q.quoteStart >= 0) out.push({ ...q, path: p, shownAt: sectionOf(text, q) })
+    if (d.quote) {
+      const { how: _how, ...q } = locate(text, d.quote, d.section ?? '', p, label, errs)
+      if (q.quoteStart >= 0) out.push({ ...q, path: p, shownAt: sectionOf(text, q), startLine: 0, endLine: 0 })
+      continue
+    }
+    const r = spec.parseLines(d.lines ?? '')
+    const n = spec.lineCount(text)
+    if (!r || r.start > n) {
+      errs.push(`${label}: doc ref ${given} has ${n} lines; lines ${d.lines} are past the end`)
+      continue
+    }
+    const endLine = Math.min(r.end, n)
+    const { start, end } = spec.lineOffsets(text, r.start, endLine)
+    const q: QuoteView = { quote: '', quoteStart: start, quoteEnd: end, quoteSection: d.section ?? '' }
+    out.push({ ...q, path: p, shownAt: md ? sectionOf(text, q) : -1, startLine: r.start, endLine })
   }
   return out
 }
@@ -481,8 +500,13 @@ async function gotoQuestion($: EngineInterface, k: number) {
   if (!a || !q) return
   await update($, askAtom, cur => (cur ? { ...cur, index: k, review: false } : cur))
   const v = await read($, viewAtom)
+  if (q.quoteStart < 0 && q.docs.length === 0) {
+    // No document: keep the one shown, so the pane does not jump.
+    await update($, uiAtom, u => ({ ...u, codeTab: FORM_TAB }))
+    return
+  }
   await update($, uiAtom, () => ({ ...(v ? targetOf(v, q, q.docs) : { file: '', shown: -1 }), codeTab: FORM_TAB }))
-  if (q.quoteStart >= 0 || q.docs.length > 0) scrollToQuote($)
+  scrollToQuote($)
 }
 
 async function editDraft($: EngineInterface, id: string, fn: (d: Draft) => Draft) {
@@ -593,6 +617,11 @@ export const register: Register = on => {
     ctx.home = (await $.env.get('HOME')) ?? (await $.env.get('USERPROFILE')) ?? ''
     await $.command.register({ name: 'specview-pane', description: 'Open the ai-specview pane' })
     for (const t of TOOLS) await $.tool.register(t)
+    // AI_SPECVIEW_ASK_MODE=always turns ask mode on for every session.
+    if ((await $.env.get('AI_SPECVIEW_ASK_MODE')) === 'always' && !(await read($, modeAtom))) {
+      await update($, modeAtom, () => true)
+      if (!(await read($, viewAtom))) await update($, viewAtom, () => noSpecView())
+    }
     if (await read($, viewAtom)) void $.ui.open({ id: PANE, title: 'Spec' })
     return next(e)
   })
@@ -689,15 +718,26 @@ export const register: Register = on => {
     const target = targetOf(view, at, docs)
     const label = (p: string) => (view.isDir ? under(view.dir, p) : rel(p))
 
-    const heads = spec.headings(text)
-    const section = ui.shown >= 0 ? spec.sectionAt(text, ui.shown) : null
+    // A document that is not markdown is shown as source, without sections.
+    const source = shownFile !== '' && !MARKDOWN.test(shownFile)
+    const heads = source ? [] : spec.headings(text)
+    const section = !source && ui.shown >= 0 ? spec.sectionAt(text, ui.shown) : null
     const lo = section?.start ?? 0
     const hi = section?.end ?? text.length
     const shownText = text.slice(lo, hi)
     const parts =
       quoted && quoted.quoteStart >= lo && quoted.quoteEnd <= hi
-        ? spec.splitAround(shownText, quoted.quoteStart - lo, quoted.quoteEnd - lo)
-      : { before: shownText, focus: '', after: '' }
+        ? source
+          ? {
+              before: shownText.slice(0, quoted.quoteStart - lo),
+              focus: shownText.slice(quoted.quoteStart - lo, quoted.quoteEnd - lo),
+              after: shownText.slice(quoted.quoteEnd - lo),
+            }
+          : spec.splitAround(shownText, quoted.quoteStart - lo, quoted.quoteEnd - lo)
+        : { before: shownText, focus: '', after: '' }
+    // First line numbers of the source parts.
+    const focusLine = spec.lineCount(parts.before) + 1
+    const afterLine = focusLine + spec.lineCount(parts.focus)
     const wide = e.props.placement === 'dock' && e.props.bodyColumns >= WIDE
     const formShown = !!asking && (question !== undefined || reviewing)
     // Two columns while questions wait: the side column shows the form or one
@@ -733,14 +773,27 @@ export const register: Register = on => {
 
     // Ask mode with no spec open: no file to show.
     const noSpec = view.specPath === '' && shownFile === ''
-    const specColumn = (
+    // With no spec, the document column shows for a whole question set when
+    // any of its questions has a document, so it does not come and go.
+    const setHasDocs = !!asking && asking.questions.some(q => q.docs.length > 0)
+    const hideDocs = view.specPath === '' && !!asking && !setHasDocs
+    const noDocNote = !!question && view.specPath === '' && setHasDocs && question.docs.length === 0
+    const specColumn = hideDocs ? null : (
       <Box key="spec-col" flexDirection="column" width={wide && (formShown || codes.length > 0) ? '55%' : '100%'} flexShrink={1}>
         {noSpec && (
           <Text key="no-spec" dimColor wrap="wrap">
             Ask mode is on: Claude asks every question of this session here. No spec is open.
           </Text>
         )}
-        {parts.before !== '' && <Markdown key="before" text={parts.before.slice(-MAX_MARKDOWN)} />}
+        {noDocNote && (
+          <Text key="no-doc" dimColor>
+            This question has no document.
+          </Text>
+        )}
+        {source && parts.before !== '' && (
+          <Code key="before-src" source={parts.before.slice(-MAX_CODE)} path={shownFile} startLine={1} />
+        )}
+        {!source && parts.before !== '' && <Markdown key="before" text={parts.before.slice(-MAX_MARKDOWN)} />}
         {parts.focus !== '' && (
           <Box key="quote" flexDirection="column" borderStyle="round" borderColor="yellow" paddingX={1}>
             <Text key="quote-label" color="yellow" size="caption" wrap="truncate-end" maxLines={1}>
@@ -748,10 +801,17 @@ export const register: Register = on => {
                 quoted?.quoteSection && section?.title !== quoted.quoteSection ? ` in ${quoted.quoteSection}` : ''
               }${question ? `: ${oneLine(question.text)}` : ''}`}
             </Text>
-            <Markdown key="quote-text" text={parts.focus} />
+            {source ? (
+              <Code key="quote-src" source={parts.focus} path={shownFile} startLine={focusLine} />
+            ) : (
+              <Markdown key="quote-text" text={parts.focus} />
+            )}
           </Box>
         )}
-        {parts.after !== '' && <Markdown key="after" text={parts.after.slice(0, MAX_MARKDOWN)} />}
+        {source && parts.after !== '' && (
+          <Code key="after-src" source={parts.after.slice(0, MAX_CODE)} path={shownFile} startLine={afterLine} />
+        )}
+        {!source && parts.after !== '' && <Markdown key="after" text={parts.after.slice(0, MAX_MARKDOWN)} />}
       </Box>
     )
 
@@ -956,7 +1016,7 @@ export const register: Register = on => {
     // With side tabs, the tab row comes first and the form takes the code's place.
     const side =
       askPanel || codeBlock ? (
-        <Box key="side-col" flexDirection="column" width={wide ? '45%' : '100%'} flexShrink={1} rowGap={1}>
+        <Box key="side-col" flexDirection="column" width={wide && specColumn ? '45%' : '100%'} flexShrink={1} rowGap={1}>
           {sideTabs ? codeBlock : askPanel}
           {sideTabs ? onForm && askPanel : codeBlock}
         </Box>

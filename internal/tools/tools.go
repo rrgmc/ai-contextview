@@ -3,6 +3,7 @@
 package tools
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -73,6 +74,12 @@ const DefaultReopenDelay = 10 * time.Second
 // Claude desktop app. It is the default; AI_SPECVIEW_OPEN=browser or never
 // turns it off.
 const OpenPane = "pane"
+
+// AskModeFromEnv reports whether AI_SPECVIEW_ASK_MODE=always turns ask mode
+// on for every session.
+func AskModeFromEnv() bool {
+	return os.Getenv("AI_SPECVIEW_ASK_MODE") == "always"
+}
 
 // OpenInFromEnv returns OpenPane unless AI_SPECVIEW_OPEN is set to another
 // value than pane (browser or never).
@@ -219,50 +226,104 @@ func (b *Bridge) resolveDocs(label, specQuote, specSection string, refs []protoc
 		return []protocol.ResolvedDocRef{}
 	}
 	root := b.currentRoot()
-	if root == nil {
-		*errs = append(*errs, label+": no spec is shown yet; call spec_show first")
-		return nil
-	}
 	out := make([]protocol.ResolvedDocRef, 0, len(all))
 	for _, d := range all {
-		abs := root.PrimaryAbs()
-		if d.Path != "" {
-			switch p := expandPath(d.Path); {
-			case filepath.IsAbs(p):
-				abs = filepath.Clean(p)
-			case root.IsDir:
-				abs = filepath.Join(root.Dir, d.Path)
-			default:
-				abs = filepath.Join(b.Cwd, d.Path)
-			}
-		}
-		name := root.Rel(abs)
-		if !specsrc.IsMarkdown(abs) {
-			*errs = append(*errs, fmt.Sprintf("%s: doc ref %s is not a markdown file", label, d.Path))
+		abs, ok := b.docPath(root, d.Path)
+		if !ok {
+			*errs = append(*errs, label+": a doc ref without path means the primary spec file, and no spec is shown; give path, or call spec_show first")
 			continue
 		}
-		if root.IsDir && strings.HasPrefix(name, "../") {
-			*errs = append(*errs, fmt.Sprintf("%s: doc ref %s is outside the shown folder %s", label, d.Path, root.Dir))
+		name := b.docName(root, abs)
+		md := specsrc.IsMarkdown(abs)
+		if !md && d.Quote != "" {
+			*errs = append(*errs, fmt.Sprintf("%s: doc ref %s is not a markdown file; give lines instead of a quote", label, d.Path))
 			continue
 		}
-		src, err := specsrc.ReadPrepared(abs)
+		var src []byte
+		var err error
+		if md {
+			src, err = specsrc.ReadPrepared(abs)
+		} else {
+			src, err = os.ReadFile(abs)
+		}
 		if err != nil {
 			*errs = append(*errs, fmt.Sprintf("%s: doc ref %s does not exist", label, d.Path))
 			continue
 		}
-		if m := specsrc.Match(src, d.Quote, ""); !m.Found() {
-			closest := specsrc.ClosestHeadings(src, d.Quote, 3)
-			*errs = append(*errs, fmt.Sprintf("%s: quote %q not found in %s (copy it verbatim from the file); closest sections: %s",
-				label, d.Quote, name, strings.Join(closest, ", ")))
-			continue
+		ref := protocol.ResolvedDocRef{Path: abs, Quote: d.Quote, Section: d.Section}
+		if d.Quote != "" {
+			if m := specsrc.Match(src, d.Quote, ""); !m.Found() {
+				closest := specsrc.ClosestHeadings(src, d.Quote, 3)
+				*errs = append(*errs, fmt.Sprintf("%s: quote %q not found in %s (copy it verbatim from the file); closest sections: %s",
+					label, d.Quote, name, strings.Join(closest, ", ")))
+				continue
+			}
+		} else {
+			start, end, err := resolve.ParseLines(d.Lines)
+			if err != nil {
+				*errs = append(*errs, fmt.Sprintf("%s: doc ref %s: %v", label, d.Path, err))
+				continue
+			}
+			n := bytes.Count(src, []byte("\n"))
+			if len(src) > 0 && src[len(src)-1] != '\n' {
+				n++
+			}
+			if start > n {
+				*errs = append(*errs, fmt.Sprintf("%s: doc ref %s has %d lines; lines %s are past the end", label, d.Path, n, d.Lines))
+				continue
+			}
+			ref.StartLine, ref.EndLine = start, min(end, n)
 		}
-		kind := specsrc.InferKind(name, "")
-		if a := root.Artifact(name); a != nil {
-			kind = a.Kind
+		ref.Kind = specsrc.InferKind(name, "")
+		if root != nil {
+			if a := root.Artifact(name); a != nil {
+				ref.Kind = a.Kind
+			}
 		}
-		out = append(out, protocol.ResolvedDocRef{Path: abs, Quote: d.Quote, Section: d.Section, Kind: kind})
+		out = append(out, ref)
 	}
 	return out
+}
+
+// docPath turns a doc ref path into an absolute path. An empty path is the
+// primary spec file. A relative path is looked up in the spec folder first,
+// then in the project directory.
+func (b *Bridge) docPath(root *specsrc.Root, p string) (string, bool) {
+	if p == "" {
+		if root == nil {
+			return "", false
+		}
+		return root.PrimaryAbs(), true
+	}
+	p = expandPath(p)
+	if filepath.IsAbs(p) {
+		return filepath.Clean(p), true
+	}
+	if root != nil && root.IsDir {
+		if abs := filepath.Join(root.Dir, p); fileExists(abs) {
+			return abs, true
+		}
+	}
+	return filepath.Join(b.Cwd, p), true
+}
+
+// docName is a doc path for messages: relative to the spec folder, else to
+// the project directory.
+func (b *Bridge) docName(root *specsrc.Root, abs string) string {
+	if root != nil {
+		if rel := root.Rel(abs); !strings.HasPrefix(rel, "../") {
+			return rel
+		}
+	}
+	if rel, err := filepath.Rel(b.Cwd, abs); err == nil && !strings.HasPrefix(rel, "..") {
+		return filepath.ToSlash(rel)
+	}
+	return abs
+}
+
+func fileExists(p string) bool {
+	st, err := os.Stat(p)
+	return err == nil && !st.IsDir()
 }
 
 func (b *Bridge) resolveCode(ctx context.Context, label string, refs []protocol.CodeRef, errs *[]string) []protocol.ResolvedRef {

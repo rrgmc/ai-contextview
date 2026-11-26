@@ -107,6 +107,24 @@ body.ended .layout { filter: grayscale(.8); opacity: .75; }
   grid-template-columns: 200px minmax(0, var(--split)) 5px minmax(0, 1fr);
   grid-template-areas: "art doc sv code" "sh sh sh sh" "panel panel panel panel";
 }
+/* No document in this question set: the questions and the code take the
+   whole page. */
+.layout.no-doc {
+  grid-template-columns: minmax(0, var(--split)) 5px minmax(0, 1fr);
+  grid-template-rows: 1fr;
+  grid-template-areas: "panel sv code";
+}
+.layout.bottom.no-doc {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 1fr 5px var(--panel-h);
+  grid-template-areas: "code" "sh" "panel";
+}
+.layout.no-doc .doc-pane, .layout.no-doc:not(.bottom) .splitter-h, .layout.bottom.no-doc .splitter { display: none; }
+.qdoc-tabs { display: inline-flex; gap: 4px; margin-left: 8px; }
+.qdoc-tabs .tab.active { font-weight: 600; }
+.doc-src { margin: -8px -16px; }
+.doc .chroma .line.hl { background: var(--hl-line); }
+.doc.no-hl .chroma .line.hl { background: none; }
 .artifacts { grid-area: art; overflow: auto; border-right: 1px solid var(--border); padding: 8px; background: var(--bg-soft); }
 .doc-pane { grid-area: doc; }
 .code-pane { grid-area: code; }

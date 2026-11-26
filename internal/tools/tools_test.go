@@ -382,3 +382,63 @@ func TestAskModeMakesRefsOptional(t *testing.T) {
 	_, _, err = e.bridge.Ask(context.Background(), nil, noRefs)
 	require.Error(t, err)
 }
+
+func TestDocRefsWithoutSpecAndByLines(t *testing.T) {
+	e := setup(t, func(_ string, a *protocol.Ask) *protocol.AskResult {
+		return &protocol.AskResult{QSID: a.QSID, Status: protocol.StatusDismissed}
+	})
+	e.fake.SetViewers(1)
+	require.NoError(t, os.WriteFile(filepath.Join(e.cwd, "notes.md"), []byte("# Notes\n\nKeep the cache small.\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(e.cwd, "app.yaml"), []byte("a: 1\nb: 2\nc: 3\n"), 0o644))
+	q := func(refs ...protocol.DocRef) protocol.AskInput {
+		return protocol.AskInput{Questions: []protocol.QuestionInput{{
+			ID: "q1", Text: "Ok?", Options: []protocol.Option{{Label: "Yes"}, {Label: "No"}}, DocRefs: refs,
+		}}}
+	}
+
+	// No spec shown: a doc ref with a path works, by quote or by lines.
+	_, _, err := e.bridge.Ask(context.Background(), nil, q(
+		protocol.DocRef{Path: "notes.md", Quote: "Keep the cache small."},
+		protocol.DocRef{Path: "app.yaml", Lines: "2-9"},
+	))
+	require.NoError(t, err)
+	var ask protocol.Ask
+	for _, m := range e.fake.Received() {
+		if m.Type == protocol.TypeAsk {
+			require.NoError(t, m.Decode(&ask))
+		}
+	}
+	require.Len(t, ask.Questions[0].Docs, 2)
+	yaml := ask.Questions[0].Docs[1]
+	assert.Equal(t, filepath.Join(e.cwd, "app.yaml"), yaml.Path)
+	assert.Equal(t, 2, yaml.StartLine)
+	assert.Equal(t, 3, yaml.EndLine, "the range is cut at the end of the file")
+	assert.Empty(t, yaml.Quote)
+
+	// A doc ref without path needs a spec.
+	_, _, err = e.bridge.Ask(context.Background(), nil, q(protocol.DocRef{Quote: "Keep the cache small."}))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no spec is shown")
+
+	// A file that is not markdown takes lines, not a quote.
+	_, _, err = e.bridge.Ask(context.Background(), nil, q(protocol.DocRef{Path: "app.yaml", Quote: "b: 2 and more"}))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "give lines instead of a quote")
+
+	// Exactly one of quote or lines.
+	_, _, err = e.bridge.Ask(context.Background(), nil, q(protocol.DocRef{Path: "notes.md", Quote: "Keep the cache", Lines: "1"}))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "exactly one of quote or lines")
+
+	// Lines past the end.
+	_, _, err = e.bridge.Ask(context.Background(), nil, q(protocol.DocRef{Path: "app.yaml", Lines: "7"}))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "past the end")
+}
+
+func TestAskModeFromEnv(t *testing.T) {
+	t.Setenv("AI_SPECVIEW_ASK_MODE", "always")
+	assert.True(t, AskModeFromEnv())
+	t.Setenv("AI_SPECVIEW_ASK_MODE", "")
+	assert.False(t, AskModeFromEnv())
+}

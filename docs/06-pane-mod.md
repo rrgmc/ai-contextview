@@ -13,6 +13,14 @@ in its state, blocks `AskUserQuestion` while it is on, accepts questions with
 no refs, and with no spec shown draws the pane as "Ask mode" without a spec
 file or section list. A `spec_quote` still needs a spec.
 
+Doc refs follow the bridge's rules (01): any text file of the project, by
+`quote` (markdown) or `lines`. A file that is not markdown shows as code: the
+lines before the range, the range in the framed box, and the lines after.
+With no spec, the document column shows for a whole question set when any of
+its questions has a document, and is left out otherwise; a question with no
+document keeps the last one and says so. `AI_SPECVIEW_ASK_MODE=always` turns
+ask mode on when the session starts.
+
 The mod is `plugin/hooks/register.tsx`, listed under `modules` in
 `plugin/hooks/hooks.json` beside the `PreToolUse` hook. It does not use the
 bridge or the daemon. Both skills run the same workflow; the user picks one by

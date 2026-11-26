@@ -35,9 +35,11 @@ the pane's tools.
   another question tool. The mod blocks the built-in question tool while ask
   mode is on.
 - Refs are optional. Add `code_refs` when the question is about code (for Go,
-  prefer `symbol`; else `lines`), and `doc_refs` when it is about a markdown
-  document (give its `path` and copy the quote verbatim). Leave both out for
-  a question about neither. `spec_quote` needs a spec shown with
+  prefer `symbol`; else `lines`). Add `doc_refs` when it is about a document:
+  give its `path` (any text file of the project) and either a `quote` copied
+  verbatim from a markdown file or `lines` (`N` or `N-M`), which also works
+  for YAML, JSON and other files. Leave both out for a question about
+  neither. `spec_quote` needs a spec shown with
   `spec_show`.
 - Give 2 to 6 options with short labels and the trade-off in each
   `description`. Mark the option you recommend with `"recommended": true` and

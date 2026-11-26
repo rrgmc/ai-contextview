@@ -109,9 +109,10 @@ section. An existing spec the user names stays where it is.
     other files, or for a few lines inside a big function.
   - If the question is about a gap the spec does not cover yet, quote the
     nearest existing sentence and set `spec_section`.
-  - `doc_refs`: when the question also depends on another markdown document
-    (an ADR, a research note, another spec), add `{path, quote, section}` with
-    the same verbatim rule.
+  - `doc_refs`: when the question also depends on another document (an ADR,
+    a research note, another spec, a config file), add `{path, quote,
+    section}` with the same verbatim rule, or `{path, lines}` (`N` or `N-M`)
+    for a file that is not markdown.
   - Give 2 to 6 options with short labels. Put the trade-off in each option's
     `description`. Set `allow_other` when a free answer makes sense.
   - Mark the option you recommend with `"recommended": true` (at most one per

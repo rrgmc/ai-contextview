@@ -151,8 +151,14 @@ retries:
 - Each quote is 3–300 characters and must pre-match its file's source (normalized
   match, see 02). If it doesn't match, the error names the file and lists its
   closest headings.
-- A doc ref `path` is relative to the `spec_show` folder (or to cwd when a single
-  file is shown); omitted means the primary file. It must be markdown and exist.
+- A doc ref names a document: any text file of the project. Its `path` is
+  relative to the `spec_show` folder when the file is there, else to the
+  project directory, or absolute; omitted means the primary spec file, which
+  needs a spec shown. The file must exist.
+- A doc ref has exactly one of `quote` or `lines` (`N` or `N-M`). A quote
+  needs a markdown file; a file that is not markdown takes `lines`. A range
+  past the end of the file is cut at the last line; a start past the end is an
+  error.
 - Each code ref has `path` and exactly one of `symbol`/`lines`. A symbol that
   can't be resolved is an error that names the candidates found.
 
@@ -239,9 +245,10 @@ CodeRef        = { path: string, symbol?: string, lines?: "N" | "N-M" }
 ResolvedRef    = { path: abs string, start_line: int, end_line: int,
                    symbol?: string, kind?: "func"|"method"|"type"|"var"|"const",
                    source: "symbol"|"lines" }
-DocRef         = { path?: string, quote: string, section?: string }
-ResolvedDocRef = { path: abs string, quote: string, section?: string,
-                   kind: ArtifactKind }
+DocRef         = { path?: string, quote?: string, lines?: "N" | "N-M",
+                   section?: string }   (exactly one of quote or lines)
+ResolvedDocRef = { path: abs string, quote?: string, start_line?: int,
+                   end_line?: int, section?: string, kind: ArtifactKind }
 Artifact       = { path: string (relative to root), kind: ArtifactKind,
                    sections: [string] }
 ArtifactKind   = "spec" | "adr" | "research" | "open_question" | "other"

@@ -1,10 +1,15 @@
 # ai-specview
 
-ai-specview shows **the spec and the code side by side** while Claude elaborates a
-spec. When a spec skill creates or edits the spec, the viewer shows it at once.
-When the skill asks a question, the viewer highlights the spec passage being
-asked about, opens the code at the right lines, and shows the question in a
-docked panel that never blocks the rest of the page.
+ai-specview is a **front end for Claude's questions**. Each question appears
+in a docked panel next to its context: the document passage it is about, with
+the passage highlighted, and the code at the right lines. You answer there,
+with everything in view, instead of in the chat.
+
+- **Ask mode** sends every question of a session to ai-specview. Run
+  `/ai-specview:ask-mode` at the start of a session.
+- **Spec elaboration** builds on it. While Claude writes a spec with you, the
+  viewer shows the spec all the time, follows each edit, and shows what
+  changed since your answers.
 
 The viewer is a local web page served by a Go daemon. The MCP server and the
 daemon are one binary, `ai-specview`. The plan and design are in [docs/](docs/README.md).
@@ -86,9 +91,15 @@ pane again after you close it. See [docs/06-pane-mod.md](docs/06-pane-mod.md).
 
 To send every question of a session to ai-specview, with or without a spec,
 run `/ai-specview:ask-mode` at the start of the session. Claude then asks each
-question in the viewer, with the code it is about when there is any, and the
-hook blocks the built-in question tool. `/ai-specview:ask-mode off` turns it
-off. `/ai-specview:ask-mode-mod` does the same in the pane.
+question in the viewer, with the documents and code it is about, and the hook
+blocks the built-in question tool. `/ai-specview:ask-mode off` turns it off.
+`/ai-specview:ask-mode-mod` does the same in the pane. To turn ask mode on for
+every session, set `AI_SPECVIEW_ASK_MODE=always` (see the settings below).
+
+A question's document can be any text file of the project: a markdown passage
+is highlighted by quote or by lines, and another file (YAML, JSON, SQL) shows
+as source with the lines highlighted. When no question of a set has a
+document, the questions and the code take the whole page.
 
 ### The browser page inside the desktop app
 
@@ -203,6 +214,7 @@ directory within 2 hours takes the old workspace over.
 | Variable | Default | Meaning |
 |---|---|---|
 | `AI_SPECVIEW_ASK_WAIT` | `10m` | How long `ask` blocks before returning `pending`. |
+| `AI_SPECVIEW_ASK_MODE` | | `always` turns ask mode on for every session, in the viewer and in the pane. |
 | `AI_SPECVIEW_OPEN` | `pane` | `pane` asks Claude to open the viewer in the built-in browser of the Claude desktop app; when the user closed it, `ask` returns at once so Claude reopens it; without the pane, the default browser opens 10 seconds after a question arrives with no page open. `browser` always uses the default browser. `never` opens nothing. |
 | `AI_SPECVIEW_SOCKET` | see below | Socket path shared by bridge and daemon. |
 | `AI_SPECVIEW_ADDR` | `127.0.0.1:7878` | Daemon HTTP address. |

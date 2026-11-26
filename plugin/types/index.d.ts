@@ -14,12 +14,15 @@ export type QuoteView = {
   quoteSection: string
 }
 
-/** A quote in another markdown file of the spec, from doc_refs. */
+/** A passage of a document, from doc_refs: a quote, or a line range. */
 export type DocRefView = QuoteView & {
   /** The file, absolute. */
   path: string
   /** Offset of the heading of the quote's section in that file, or -1. */
   shownAt: number
+  /** The line range of a ref given by lines (1-based), or 0 for a quote. */
+  startLine: number
+  endLine: number
 }
 
 /** What the model last showed: the spec, the focused passage and the code. */

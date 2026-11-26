@@ -157,6 +157,11 @@ State is small, so no event log is needed.
   to a layout with the panel docked under both panes; "Questions beside"
   switches back.
 - CSS grid; the artifact sidebar only appears when the root is a folder.
+- **Layout per question set** (07): the doc pane shows while a spec is shown,
+  and for a whole question set when any of its questions has a document.
+  Otherwise (`no-doc`) the question panel and the code pane share the page,
+  side by side, or stacked with "Questions below". The layout changes only
+  when a new question set arrives, so it does not jump between questions.
 - Pane sizes and the layout choice are remembered in `localStorage` (wrapped in
   try/catch, per-browser convenience only).
 - The panel is part of the page, never a modal or a `<dialog>`, so the doc and
@@ -165,6 +170,24 @@ State is small, so no event log is needed.
   same events; e.g. one shows the doc full-height, the other the code.
 
 ## Doc pane
+
+The doc pane shows the document of the current question: the spec, or any
+text file of the project that a doc ref names (07).
+
+- **Documents outside a spec**: a doc ref outside the spec folder, or with no
+  spec shown, is keyed by its absolute path. It is shown, but not watched and
+  without a Changes tab.
+- **Source documents**: a file that is not markdown (YAML, JSON, SQL) is
+  rendered as code with Chroma, with the line range of the current question
+  highlighted.
+- **Line ranges**: a doc ref by `lines` tints the markdown blocks that
+  overlap the range, as a section-only match does.
+- **Document tabs**: when the current question has more than one document,
+  tabs in the pane header switch between them.
+- **A question with no document**, in a set that shows the pane, keeps the
+  last document without its highlight, and the header says "This question
+  has no document."
+- The Changes tab shows only while a spec is shown.
 
 - **Render**: goldmark with GFM (tables, task lists, strikethrough), heading IDs
   from the heading path (`design--retry-policy`), safe HTML only (no raw HTML

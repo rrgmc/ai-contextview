@@ -119,8 +119,18 @@ func runMCP() error {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	if tools.AskModeFromEnv() {
+		// Ask mode for every session: tell the daemon at once, so the hook
+		// blocks the built-in question tool before the first tool call.
+		go func() {
+			if _, _, err := bridge.AskModeTool(ctx, nil, protocol.AskModeInput{}); err != nil {
+				logger.Printf("ask mode: %v", err)
+			}
+		}()
+	}
 	// The MCP server starts at once; the daemon connection is made lazily on
-	// the first tool call. Run returns when stdin closes (Claude exited).
+	// the first tool call (or now, in ask mode). Run returns when stdin
+	// closes (Claude exited).
 	err = server.Run(ctx, &mcp.StdioTransport{})
 	if errors.Is(err, context.Canceled) {
 		err = nil

@@ -22,18 +22,21 @@ const codeRefs = {
 
 const docRefs = {
   type: 'array',
-  description: 'passages of other markdown artifacts',
+  description: 'passages of documents',
   items: {
     type: 'object',
     additionalProperties: false,
-    required: ['quote'],
     properties: {
       path: {
         type: 'string',
         description:
-          'markdown file relative to the spec_show folder (or project dir for a single file); omit for the primary spec file',
+          'document path: relative to the spec_show folder, else to the project dir, or absolute; omit for the primary spec file',
       },
-      quote: { type: 'string', description: 'verbatim passage copied from the file (3-300 characters)' },
+      quote: {
+        type: 'string',
+        description: 'verbatim passage copied from a markdown file (3-300 characters); give quote or lines',
+      },
+      lines: { type: 'string', description: 'line or line range N or N-M; the only choice for a file that is not markdown' },
       section: { type: 'string', description: 'heading of the section containing the quote' },
     },
   },

@@ -1,6 +1,8 @@
 // The input rules of internal/validate, for the tools the pane serves itself.
 // Each returns the list of problems; an empty list means the input is valid.
 
+import { parseLines } from './spec'
+
 export const MAX_QUESTIONS = 6
 export const MIN_OPTIONS = 2
 export const MAX_OPTIONS = 6
@@ -11,7 +13,7 @@ export const MAX_QUOTE = 300
 export const MAX_SUMMARY = 8000
 
 export type OptionArg = { label?: string; description?: string; recommended?: boolean }
-export type DocRefArg = { path?: string; quote?: string; section?: string }
+export type DocRefArg = { path?: string; quote?: string; lines?: string; section?: string }
 export type CodeRefArg = { path?: string; symbol?: string; lines?: string }
 export type QuestionArg = {
   id?: string
@@ -27,6 +29,7 @@ export type QuestionArg = {
 
 const chars = (s: string) => [...s.trim()].length
 
+
 function quote(errs: string[], label: string, q: string) {
   const n = chars(q)
   if (n < MIN_QUOTE || n > MAX_QUOTE) errs.push(`${label}: quote is ${n} characters, want ${MIN_QUOTE}-${MAX_QUOTE}`)
@@ -40,7 +43,12 @@ function refs(errs: string[], label: string, specQuote: string, specSection: str
     quote(errs, `${label} spec_quote`, specQuote)
   }
   if (nDocs > MAX_DOC_REFS) errs.push(`${label}: ${nDocs} doc refs, at most ${MAX_DOC_REFS}`)
-  docs.forEach((d, i) => quote(errs, `${label} doc_refs[${i}]`, d.quote ?? ''))
+  docs.forEach((d, i) => {
+    const l = `${label} doc_refs[${i}]`
+    if (!d.quote === !d.lines) errs.push(`${l}: give exactly one of quote or lines`)
+    else if (d.quote) quote(errs, l, d.quote)
+    else if (!parseLines(d.lines ?? '')) errs.push(`${l}: bad lines "${d.lines}": want N or N-M with N <= M`)
+  })
   if (code.length > MAX_CODE_REFS) errs.push(`${label}: ${code.length} code refs, at most ${MAX_CODE_REFS}`)
   code.forEach((c, i) => {
     const l = `${label} code_refs[${i}]`

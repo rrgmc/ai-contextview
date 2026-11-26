@@ -678,3 +678,36 @@ func TestAskModeWithoutSpec(t *testing.T) {
 	h.d.mu.Unlock()
 	assert.Contains(t, string(doc.Data), "Ask mode is on")
 }
+
+func TestDocsOutsideSpecAndByLines(t *testing.T) {
+	h := newHarness(t)
+	cwd, _ := writeSpec(t)
+	yaml := filepath.Join(cwd, "app.yaml")
+	require.NoError(t, os.WriteFile(yaml, []byte("a: 1\nb: 2\nc: 3\n"), 0o644))
+	notes := filepath.Join(cwd, "notes.md")
+	require.NoError(t, os.WriteFile(notes, []byte("# Notes\n\nOne.\n\nTwo.\n\nThree.\n"), 0o644))
+	b := h.bridge("ws_A", cwd)
+
+	// No spec: documents by quote and by lines are shown.
+	res := b.req(protocol.TypeAsk, &protocol.Ask{QSID: "qs_1", Questions: []protocol.AskQuestion{{
+		ID: "q1", Text: "Ok?", Options: []protocol.Option{{Label: "Yes"}, {Label: "No"}},
+		Docs: []protocol.ResolvedDocRef{
+			{Path: notes, StartLine: 5, EndLine: 5, Kind: protocol.KindOther},
+			{Path: yaml, StartLine: 2, EndLine: 3, Kind: protocol.KindOther},
+		},
+	}}})
+	require.Equal(t, protocol.TypeAskShown, res.Type)
+
+	h.d.mu.Lock()
+	defer h.d.mu.Unlock()
+	w := h.d.workspaces["ws_A"]
+	md := h.d.docPayload(w, notes)
+	assert.Equal(t, "notes.md", md["name"])
+	assert.Contains(t, md["html"], `class="q-section" data-ref="q1-0">Two.`, "the block on line 5 is tinted")
+	assert.NotContains(t, md["html"], `data-ref="q1-0">One.`)
+	src := h.d.docPayload(w, yaml)
+	assert.Equal(t, true, src["source"])
+	assert.Contains(t, src["html"], `class="doc-src"`)
+	ev := h.d.askEvent(w)
+	assert.Contains(t, string(ev.Data), `"doc_panel":true`)
+}

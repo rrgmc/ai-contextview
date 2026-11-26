@@ -253,6 +253,14 @@ func (d *Daemon) specShow(id string, req *protocol.SpecShow) (*protocol.SpecShow
 	return &protocol.SpecShowResult{Primary: root.Primary, Sections: root.Artifact(root.Primary).Sections, Artifacts: root.Artifacts}, nil
 }
 
+// matchRef is matchDoc for a resolved ref; a line range always matches.
+func (d *Daemon) matchRef(r protocol.ResolvedDocRef) protocol.Match {
+	if r.StartLine > 0 {
+		return protocol.MatchExact
+	}
+	return d.matchDoc(r.Path, r.Quote, r.Section)
+}
+
 func (d *Daemon) matchDoc(abs, quote, section string) protocol.Match {
 	src, err := specsrc.ReadPrepared(abs)
 	if err != nil {
@@ -269,16 +277,14 @@ func (d *Daemon) focus(id string, req *protocol.Focus) (*protocol.FocusResult, e
 	if w == nil {
 		return nil, errors.New("unknown workspace")
 	}
-	if len(req.Docs) > 0 && w.Root == nil {
-		return nil, &specsrc.Error{Code: protocol.CodeBadRequest, Message: "no spec shown; call spec_show first"}
-	}
 	res := &protocol.FocusResult{Docs: []protocol.DocMatch{}}
 	w.focus = nil
 	touched := map[string]bool{}
 	for i, doc := range req.Docs {
 		rel := w.docKey(doc.Path)
-		w.focus = append(w.focus, docMark{Rel: rel, Ref: "f-" + itoa(i), Quote: doc.Quote, Section: doc.Section})
-		res.Docs = append(res.Docs, protocol.DocMatch{Path: rel, Match: d.matchDoc(doc.Path, doc.Quote, doc.Section)})
+		w.focus = append(w.focus, docMark{Rel: rel, Ref: "f-" + itoa(i), Quote: doc.Quote, Section: doc.Section,
+			StartLine: doc.StartLine, EndLine: doc.EndLine})
+		res.Docs = append(res.Docs, protocol.DocMatch{Path: rel, Match: d.matchRef(doc)})
 		touched[rel] = true
 	}
 	for _, c := range req.Code {
@@ -310,13 +316,6 @@ func (d *Daemon) ask(id string, req *protocol.Ask) (*protocol.AskShown, error) {
 	if w == nil {
 		return nil, errors.New("unknown workspace")
 	}
-	hasDocs := false
-	for _, q := range req.Questions {
-		hasDocs = hasDocs || len(q.Docs) > 0
-	}
-	if hasDocs && w.Root == nil {
-		return nil, &specsrc.Error{Code: protocol.CodeBadRequest, Message: "no spec shown; call spec_show first"}
-	}
 	if w.Pending != nil && w.Pending.Ask.QSID != req.QSID {
 		old := w.Pending.Ask.QSID
 		d.closePending(w, statusReplace, nil, nil)
@@ -334,7 +333,7 @@ func (d *Daemon) ask(id string, req *protocol.Ask) (*protocol.AskShown, error) {
 			if qi == 0 && j == 0 {
 				w.CurrentDoc = rel
 			}
-			shown.Matches = append(shown.Matches, protocol.QuestionMatch{ID: q.ID, Doc: j, Match: d.matchDoc(doc.Path, doc.Quote, doc.Section)})
+			shown.Matches = append(shown.Matches, protocol.QuestionMatch{ID: q.ID, Doc: j, Match: d.matchRef(doc)})
 		}
 	}
 	// Code tabs are this set's files, in question order, so Q1's come first.
