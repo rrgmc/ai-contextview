@@ -176,7 +176,7 @@ func (s *Server) handle(c *conn) {
 		case protocol.TypeAsk:
 			var b protocol.Ask
 			_ = env.Decode(&b)
-			shown := protocol.AskShown{QSID: b.QSID, Viewers: s.Viewers, Matches: []protocol.QuestionMatch{}}
+			shown := protocol.AskShown{QSID: b.QSID, Viewers: s.viewers(), Matches: []protocol.QuestionMatch{}}
 			for _, q := range b.Questions {
 				for i, d := range q.Docs {
 					shown.Matches = append(shown.Matches, protocol.QuestionMatch{ID: q.ID, Doc: i, Match: match(d)})
@@ -191,6 +191,8 @@ func (s *Server) handle(c *conn) {
 					}
 				}()
 			}
+		case protocol.TypeViewers:
+			s.reply(c, env.ID, protocol.TypeResult, &protocol.ViewersResult{Viewers: s.viewers()})
 		case protocol.TypeAskCancel, protocol.TypePing, protocol.TypeDone:
 			s.reply(c, env.ID, protocol.TypeResult, map[string]any{})
 		case protocol.TypeBye:
@@ -199,6 +201,19 @@ func (s *Server) handle(c *conn) {
 			s.reply(c, env.ID, protocol.TypeError, &protocol.ErrorBody{Code: protocol.CodeBadRequest, Message: "unknown type " + env.Type})
 		}
 	}
+}
+
+// SetViewers changes the number of open pages the server reports.
+func (s *Server) SetViewers(n int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.Viewers = n
+}
+
+func (s *Server) viewers() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.Viewers
 }
 
 func match(d protocol.ResolvedDocRef) protocol.Match {

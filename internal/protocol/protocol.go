@@ -34,6 +34,9 @@ const (
 	TypeError     = "error"
 	TypeAskShown  = "ask_shown"
 	TypeAskResult = "ask_result"
+	// TypeViewers asks how many pages show the workspace; the reply is a
+	// result with ViewersResult.
+	TypeViewers = "viewers"
 	// TypePing and TypeShutdown are daemon-management messages used by
 	// `ai-specview serve` itself (single-instance check and --restart).
 	TypePing     = "ping"
@@ -520,6 +523,24 @@ type ActiveResult struct {
 	Active bool   `json:"active"`
 	WS     string `json:"ws,omitempty"`
 	URL    string `json:"url,omitempty"`
+}
+
+// Viewers asks how many browser pages show the bridge's workspace. Its body
+// is empty.
+type Viewers struct{}
+
+func (v *Viewers) Validate() error { return nil }
+
+// ViewersResult answers viewers.
+type ViewersResult struct {
+	Viewers int `json:"viewers"`
+}
+
+func (r *ViewersResult) Validate() error {
+	if r.Viewers < 0 {
+		return errors.New("viewers result: negative viewers")
+	}
+	return nil
 }
 
 // PingResult answers ping.

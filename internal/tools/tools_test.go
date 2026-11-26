@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -33,7 +34,15 @@ type env struct {
 	fake   *fakeapp.Server
 	client *appconn.Client
 	bridge *Bridge
+
+	mu     sync.Mutex
 	opened []string
+}
+
+func (e *env) openedURLs() []string {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	return append([]string(nil), e.opened...)
 }
 
 // shortSocket returns a socket path short enough for macOS (104 bytes).
@@ -64,7 +73,11 @@ func setup(t *testing.T, onAsk func(string, *protocol.Ask) *protocol.AskResult) 
 	e := &env{cwd: cwd, fake: fake, client: client}
 	e.bridge = &Bridge{
 		Cwd: cwd, Daemon: client, Resolver: resolve.New(), AskWait: 2 * time.Second,
-		Open: func(u string) { e.opened = append(e.opened, u) },
+		Open: func(u string) {
+			e.mu.Lock()
+			defer e.mu.Unlock()
+			e.opened = append(e.opened, u)
+		},
 	}
 	return e
 }
@@ -115,7 +128,7 @@ func TestAskAnswered(t *testing.T) {
 	assert.Equal(t, protocol.StatusAnswered, out.Status)
 	require.Len(t, out.Answers, 1)
 	assert.Equal(t, []string{"No"}, out.Answers[0].Selected)
-	assert.Len(t, e.opened, 1, "viewers 0 opens the page")
+	assert.Len(t, e.openedURLs(), 1, "viewers 0 opens the page")
 
 	// The daemon received resolved refs.
 	var ask protocol.Ask
@@ -274,4 +287,57 @@ func TestDeferredMessage(t *testing.T) {
 	assert.Equal(t, protocol.StatusAnswered, out.Status)
 	assert.Equal(t, []string{"q1"}, out.Deferred)
 	assert.Equal(t, MsgDeferred, out.Message)
+}
+
+func TestAskNoViewerPaneReturnsAtOnce(t *testing.T) {
+	e := setup(t, nil)
+	e.bridge.OpenIn = OpenPane
+	e.bridge.ReopenDelay = 50 * time.Millisecond
+	e.show(t)
+	_, out, err := e.bridge.Ask(context.Background(), nil, question("retries use exponential backoff capped at 30s"))
+	require.NoError(t, err)
+	assert.Equal(t, protocol.StatusPending, out.Status)
+	assert.Equal(t, MsgNoViewer, out.Message)
+	assert.Contains(t, out.URL, "/w/ws_test")
+	require.NotEmpty(t, out.QuestionSetID)
+	assert.Empty(t, e.openedURLs(), "the system browser waits for Claude to reopen the pane")
+
+	// No page connects: the system browser opens after the delay.
+	require.Eventually(t, func() bool { return len(e.openedURLs()) == 1 }, 2*time.Second, 10*time.Millisecond)
+
+	// ask_wait knows the question set.
+	require.NoError(t, e.fake.Answer("ws_test", &protocol.AskResult{QSID: out.QuestionSetID, Status: protocol.StatusDismissed}))
+	_, res, err := e.bridge.AskWaitTool(context.Background(), nil, protocol.AskWaitInput{QuestionSetID: out.QuestionSetID})
+	require.NoError(t, err)
+	assert.Equal(t, protocol.StatusDismissed, res.Status)
+}
+
+func TestAskNoViewerPaneReopened(t *testing.T) {
+	e := setup(t, nil)
+	e.bridge.OpenIn = OpenPane
+	e.bridge.ReopenDelay = 50 * time.Millisecond
+	e.show(t)
+	_, out, err := e.bridge.Ask(context.Background(), nil, question("retries use exponential backoff capped at 30s"))
+	require.NoError(t, err)
+	assert.Equal(t, protocol.StatusPending, out.Status)
+
+	// Claude reopens the pane before the delay ends.
+	e.fake.SetViewers(1)
+	time.Sleep(300 * time.Millisecond)
+	assert.Empty(t, e.openedURLs(), "a page connected, so the system browser stays closed")
+}
+
+func TestAskWithViewerPaneWaits(t *testing.T) {
+	e := setup(t, func(_ string, a *protocol.Ask) *protocol.AskResult {
+		return &protocol.AskResult{QSID: a.QSID, Status: protocol.StatusAnswered,
+			Answers: []protocol.Answer{{ID: "q1", Selected: []string{"Yes"}}}}
+	})
+	e.fake.SetViewers(1)
+	e.bridge.OpenIn = OpenPane
+	e.show(t)
+	_, out, err := e.bridge.Ask(context.Background(), nil, question("retries use exponential backoff capped at 30s"))
+	require.NoError(t, err)
+	assert.Equal(t, protocol.StatusAnswered, out.Status)
+	assert.Empty(t, out.URL)
+	assert.Empty(t, e.openedURLs())
 }

@@ -43,7 +43,10 @@ type Bridge struct {
 	// OpenIn is reported in the spec_show result: OpenPane asks Claude to open
 	// the viewer in the built-in browser pane (see OpenInFromEnv).
 	OpenIn string
-	Logf   func(format string, args ...any)
+	// ReopenDelay is how long ask waits, in pane mode, for a page to connect
+	// before it opens the system browser instead. Zero means DefaultReopenDelay.
+	ReopenDelay time.Duration
+	Logf        func(format string, args ...any)
 
 	mu      sync.Mutex
 	root    *specsrc.Root
@@ -52,12 +55,18 @@ type Bridge struct {
 
 // Messages returned to Claude.
 const (
-	MsgInChat    = "The user will answer in the chat. Wait for their message."
-	MsgPending   = "Still waiting for the user. Call ask_wait with this id to keep waiting."
+	MsgInChat   = "The user will answer in the chat. Wait for their message."
+	MsgPending  = "Still waiting for the user. Call ask_wait with this id to keep waiting."
+	MsgNoViewer = "No viewer page is open, so the user cannot see these questions. " +
+		"If you have the built-in browser tools, open url in the built-in browser pane now (preview_start with url) and tell the user in one line; " +
+		"otherwise the system browser opens shortly. Then call ask_wait with this id."
 	MsgDismissed = "The user skipped these questions. Continue without these decisions; ask in chat only if one is essential."
 	MsgDeferred  = "The user chose to decide some questions later (see deferred). Add each to the spec's open questions with its refs, " +
 		"continue without the decision, and ask them again before finishing."
 )
+
+// DefaultReopenDelay is the ReopenDelay used when it is zero.
+const DefaultReopenDelay = 10 * time.Second
 
 // OpenPane asks Claude to open the viewer in the built-in browser pane of the
 // Claude desktop app. It is the default; AI_SPECVIEW_OPEN=browser or never
@@ -129,7 +138,8 @@ func Register(s *mcp.Server, b *Bridge) {
 			"spec_quote (copied verbatim from the spec, with spec_section), doc_refs into other artifacts, " +
 			"and/or code_refs (Go: symbol like pkg.(*Type).Method; other files: lines N-M). " +
 			"Results: answered (apply the answers), in_chat (wait for the user's chat message), " +
-			"pending (call ask_wait with question_set_id), dismissed (continue without it). " +
+			"pending (call ask_wait with question_set_id; a pending result with url means no viewer page is open: open url in the built-in browser pane first), " +
+			"dismissed (continue without it). " +
 			"An answered result may list deferred questions (the user chose Decide later): record them as open questions and ask again before finishing. " +
 			"Mark the option you recommend with recommended: true.",
 	}, b.Ask)
@@ -341,12 +351,53 @@ func (b *Bridge) Ask(ctx context.Context, _ *mcp.CallToolRequest, in protocol.As
 		}
 		return nil, out, fmt.Errorf("question %s: quote not found", m.ID)
 	}
-	if shown.Viewers == 0 && b.Open != nil {
-		if u := b.Daemon.URL(); u != "" {
+	if u := b.Daemon.URL(); shown.Viewers == 0 && u != "" {
+		if b.OpenIn == OpenPane {
+			// No page shows the questions, for example because the user closed
+			// the pane. Claude can reopen the pane only once ask returns, so
+			// return now and open the system browser only if no page connects.
+			b.mu.Lock()
+			if b.pending == nil {
+				b.pending = map[string]bool{}
+			}
+			b.pending[ask.QSID] = true
+			b.mu.Unlock()
+			if b.Open != nil {
+				go b.openLater(ask.QSID, u)
+			}
+			return nil, protocol.AskOutput{Status: protocol.StatusPending, QuestionSetID: ask.QSID, URL: u, Message: MsgNoViewer}, nil
+		}
+		if b.Open != nil {
 			b.Open(u)
 		}
 	}
 	return b.wait(ctx, ask.QSID)
+}
+
+// openLater opens the system browser for a question set after ReopenDelay,
+// unless a page shows the workspace by then or the set has a result.
+func (b *Bridge) openLater(qs, url string) {
+	d := b.ReopenDelay
+	if d <= 0 {
+		d = DefaultReopenDelay
+	}
+	time.Sleep(d)
+	if b.Daemon.HasResult(qs) {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	reply, err := b.Daemon.Request(ctx, protocol.TypeViewers, &protocol.Viewers{})
+	if err == nil {
+		var res protocol.ViewersResult
+		if err = reply.Decode(&res); err == nil && res.Viewers > 0 {
+			return
+		}
+	}
+	if err != nil {
+		b.logf("viewers %s: %v", qs, err)
+	}
+	b.Open(url)
 }
 
 // SpecDone implements the spec_done tool.

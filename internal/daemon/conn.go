@@ -238,6 +238,8 @@ func (d *Daemon) dispatch(c *Conn, env protocol.Envelope) bool {
 			return true
 		}
 		c.send(protocol.TypeResult, env.ID, map[string]any{})
+	case protocol.TypeViewers:
+		c.send(protocol.TypeResult, env.ID, &protocol.ViewersResult{Viewers: d.hub.Viewers(c.ws)})
 	default:
 		c.sendError(env.ID, &protocol.ErrorBody{Code: protocol.CodeBadRequest, Message: "unknown message type " + env.Type})
 	}

@@ -68,7 +68,7 @@ The result also has `url`, the viewer page of the session, and by default
 `"open": "pane"`: the caller opens `url` in the built-in browser pane of the
 Claude desktop app, when that pane is available. `AI_SPECVIEW_OPEN=browser` or
 `never` leaves `open` out. Without the pane, the bridge opens the default
-browser at the first `ask` (see `ask_shown` with `viewers: 0`).
+browser when an `ask` finds no open page (see `ask_shown` with `viewers: 0`).
 
 `sections` is always the primary file's headings, so single-file callers can
 ignore `artifacts`. Returning headings lets Claude use exact section names
@@ -165,6 +165,9 @@ Result, one of:
 {"status": "pending", "question_set_id": "qs_7f3a",
  "message": "Still waiting for the user. Call ask_wait with this id to keep waiting."}
 
+{"status": "pending", "question_set_id": "qs_7f3a", "url": "http://127.0.0.1:7878/w/ws_A",
+ "message": "No viewer page is open, so the user cannot see these questions. …"}
+
 {"status": "dismissed", "keep_open": ["q1"],
  "message": "The user skipped these questions. Continue without these decisions; ask in chat only if one is essential."}
 ```
@@ -254,6 +257,7 @@ Match          = "exact" | "normalized" | "fuzzy" | "heading" | "none"
 | `ask` | `{qs_id, title?, questions: [ {…, docs: [ResolvedDocRef], code: [ResolvedRef]} ]}` | `ask_shown {matches}` right away, **then later** `ask_result` |
 | `ask_cancel` | `{qs_id, reason}` | `result` |
 | `done` | `{summary?}` | `result {}` |
+| `viewers` | `{}` | `result {viewers: int}` (open browser pages of the workspace) |
 | `bye` | `{}` | (none; the bridge closes) |
 
 In `ask`, `spec_quote`/`spec_section` have already been folded into `docs` by
@@ -283,11 +287,18 @@ Error codes: `bad_request`, `file_not_found`, `not_markdown`, `empty_folder`,
   which returns a tool error to Claude ("quote not found in <file>; closest
   sections: …"). Bridge and daemon use the same matching package, so this only
   happens if the file changed between the pre-check and the show.
-- **`ask_shown` with `viewers: 0`**: the bridge opens the workspace `url` in the
-  default browser (unless `AI_SPECVIEW_OPEN=never`), so a question never waits on a
-  page nobody is looking at. A page open in the desktop app's browser pane
-  counts as a viewer, so by default the default browser opens only when there
-  is no pane.
+- **`ask_shown` with `viewers: 0`**: no page shows the questions, so a question
+  never waits on a page nobody is looking at. What the bridge does depends on
+  `AI_SPECVIEW_OPEN`:
+  - `pane` (the default): `ask` returns at once with `pending`, the
+    `question_set_id` and the workspace `url`, so Claude can reopen the
+    built-in browser pane (for example after the user closed it) and then call
+    `ask_wait`. After 10 seconds the bridge sends `viewers`; if no page is open
+    by then and the set has no result, it opens `url` in the default browser.
+    That is the fallback when there is no pane (the CLI, an IDE).
+  - `browser`: the bridge opens `url` in the default browser at once and
+    waits as usual.
+  - `never`: the bridge opens nothing and waits as usual.
 - **If the daemon restarts,** the bridge reconnects, re-sends `hello` with the
   same `ws`, re-sends the last `spec_show`, any pending `ask`, and the last
   `done` (unless an `ask` came after it).

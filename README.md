@@ -195,7 +195,7 @@ directory within 2 hours takes the old workspace over.
 | Variable | Default | Meaning |
 |---|---|---|
 | `AI_SPECVIEW_ASK_WAIT` | `10m` | How long `ask` blocks before returning `pending`. |
-| `AI_SPECVIEW_OPEN` | `pane` | `pane` asks Claude to open the viewer in the built-in browser of the Claude desktop app; without it, the default browser opens when no page is open. `browser` always uses the default browser. `never` opens nothing. |
+| `AI_SPECVIEW_OPEN` | `pane` | `pane` asks Claude to open the viewer in the built-in browser of the Claude desktop app; when the user closed it, `ask` returns at once so Claude reopens it; without the pane, the default browser opens 10 seconds after a question arrives with no page open. `browser` always uses the default browser. `never` opens nothing. |
 | `AI_SPECVIEW_SOCKET` | see below | Socket path shared by bridge and daemon. |
 | `AI_SPECVIEW_ADDR` | `127.0.0.1:7878` | Daemon HTTP address. |
 | `AI_SPECVIEW_DAEMON` | | Command the bridge runs instead of `ai-specview serve --detach` (for example `ai-specview fakeapp`). |

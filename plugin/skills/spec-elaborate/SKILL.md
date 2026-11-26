@@ -63,10 +63,11 @@ browser and `open` is missing.
   `spec_show` result with `preview_start` (pass `url`). If the user must allow
   the site first, say so in one line.
 - If they are not available (the CLI, an IDE), do nothing. The bridge opens
-  the default browser at the first `ask` when no page is open.
+  the default browser when an `ask` finds no open page.
 - Do not use that browser tab for other work during the session, so the
   viewer stays on screen. Open another tab if you need one.
-- Open it again only if the user asks, for example after closing it.
+- Open it again when the user asks, or when an `ask` result is `pending`
+  with a `url`: that means no page is open.
 
 ## Draft specs
 
@@ -122,7 +123,10 @@ section. An existing spec the user names stays where it is.
   - `answered`: apply the answers to the spec.
   - `in_chat`: stop and wait for the user's message. The questions are already
     on the user's clipboard.
-  - `pending`: call `ask_wait` with the returned `question_set_id`.
+  - `pending`: call `ask_wait` with the returned `question_set_id`. If the
+    result also has `url`, no viewer page is open (the user may have closed
+    it): first reopen `url` in the built-in browser (see **Built-in browser**)
+    and tell the user in one line that new questions are waiting there.
   - `dismissed` (the user clicked Skip): continue without that decision, or
     ask in chat if it is essential.
   - `deferred` (with `answered`): the user chose **Decide later** for these

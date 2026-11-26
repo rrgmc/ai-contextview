@@ -27,6 +27,11 @@ What changed from the plan while building and using it:
   more choice per question. Claude gets the deferred question ids
   (`deferred` in the result) and records them as open items in the spec.
   `keep_open` stays in the protocol for "Back to chat" and "Skip".
+- **A closed viewer is reopened.** When an `ask` finds no open page (the user
+  closed the browser pane), it returns `pending` with the `url` at once, so
+  Claude reopens the pane and then calls `ask_wait`. A new `viewers` message
+  lets the bridge check 10 seconds later and open the default browser if
+  still no page is open.
 - **Recommended options.** An option can carry `recommended: true` (or a
   "(Recommended)" label suffix, which the bridge turns into the flag); the
   panel marks it.
@@ -279,7 +284,7 @@ already answered in the ADRs.
 | Claude paraphrases a quote | Highlights miss | Bridge pre-check with the same matcher returns an error naming the file and nearest headings; skill rule says "verbatim"; fuzzy stage; heading fallback |
 | MCP tool timeout during a long wait | Claude sees an error | `AI_SPECVIEW_ASK_WAIT` < `MCP_TOOL_TIMEOUT`; `pending` + `ask_wait` |
 | Built-in question tool used anyway | Questions bypass the UI | `ai-specview hook` blocks it while a spec is open; skill rule |
-| Question arrives with no page open | User doesn't notice | `viewers: 0` → bridge opens the URL; browser notification |
+| Question arrives with no page open | User doesn't notice | `viewers: 0` → `ask` returns so Claude reopens the pane, else the bridge opens the URL; browser notification |
 | Splitting goldmark text nodes is fiddly (ranges across inline nodes, entities) | Highlight lands wrong | Golden HTML tests from the quote fixtures; fall back to highlighting the containing block when a split isn't clean |
 | Another local web page talks to the daemon | Forged answers | Loopback only; Host check (DNS rebinding); Origin check on POSTs; no CORS |
 | Port 7878 taken | Daemon fails to start | Try the next 9 ports; URL comes back in `hello_ack` |

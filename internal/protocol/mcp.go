@@ -63,7 +63,9 @@ type AskOutput struct {
 	Deferred      []string `json:"deferred,omitempty" jsonschema:"questions the user chose to decide later; record them as open questions and ask again before finishing"`
 	KeepOpen      []string `json:"keep_open,omitempty" jsonschema:"questions the user wants kept as open questions"`
 	QuestionSetID string   `json:"question_set_id,omitempty"`
-	Message       string   `json:"message,omitempty"`
+	// URL is set on a pending result when no page shows the questions.
+	URL     string `json:"url,omitempty" jsonschema:"set when no viewer page is open: open this url in the built-in browser pane, then call ask_wait"`
+	Message string `json:"message,omitempty"`
 }
 
 // SpecDoneInput is the input of spec_done.

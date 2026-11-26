@@ -267,8 +267,9 @@ When an `ask` arrives:
 - the page title gets a `● ` prefix and the favicon a dot, until answered
 - a browser `Notification` (permission asked once from the index page) with the
   project name and the first question; clicking it focuses the tab
-- if no page is open for the workspace (`viewers: 0`), the bridge opens the URL
-  (01)
+- if no page is open for the workspace (`viewers: 0`), `ask` returns at once so
+  Claude can reopen the built-in browser pane; without a pane the bridge opens
+  the URL in the default browser after 10 seconds (01)
 
 The daemon never steals focus beyond that.
 

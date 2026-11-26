@@ -640,3 +640,20 @@ func TestIsLaterLabel(t *testing.T) {
 		assert.False(t, isLaterLabel(l), l)
 	}
 }
+
+func TestViewersMessage(t *testing.T) {
+	h := newHarness(t)
+	cwd, _ := writeSpec(t)
+	b := h.bridge("ws_A", cwd)
+	res := b.req(protocol.TypeViewers, &protocol.Viewers{})
+	require.Equal(t, protocol.TypeResult, res.Type)
+	var v protocol.ViewersResult
+	require.NoError(t, res.Decode(&v))
+	assert.Equal(t, 0, v.Viewers)
+
+	sub := h.d.hub.Subscribe("ws_A")
+	t.Cleanup(func() { h.d.hub.Unsubscribe("ws_A", sub) })
+	res = b.req(protocol.TypeViewers, &protocol.Viewers{})
+	require.NoError(t, res.Decode(&v))
+	assert.Equal(t, 1, v.Viewers)
+}
