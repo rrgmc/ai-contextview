@@ -14,6 +14,21 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.3.3] - 2026-11-26
+
+### Fixed
+
+- In a desktop-app worktree session, the write hook no longer ignores every
+  file: a worktree lives under `.claude/worktrees/`, which the hook took for a
+  dot-folder.
+- In a worktree session, relative paths (doc and code refs, `spec_show`,
+  spec-mode paths) resolve against the worktree instead of the main checkout.
+  The hook now also runs before ai-specview's own tools to report the
+  session's folder; a manual setup updates the `PreToolUse` matcher as the
+  README shows.
+- A document picked from a write now appears on an open viewer page at once,
+  without a reload.
+
 ## [1.3.2] - 2026-11-26
 
 ### Fixed
@@ -207,7 +222,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.3.2...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.3.3...HEAD
+[1.3.3]: https://github.com/rrgmc/ai-specview/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/rrgmc/ai-specview/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/rrgmc/ai-specview/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/rrgmc/ai-specview/compare/v1.2.0...v1.3.0
