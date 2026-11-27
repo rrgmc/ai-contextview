@@ -14,6 +14,14 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.6.0] - 2026-11-27
+
+### Fixed
+
+- On Windows, the plugin's MCP server starts even when `sh` is not on the
+  `PATH`, as in the desktop app. Before, it failed with "Connection closed"
+  and the `ask`, `ask_mode` and `spec_show` tools were missing.
+
 ## [1.5.5] - 2026-11-27
 
 ### Added
@@ -359,7 +367,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-contextview/compare/v1.5.5...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-contextview/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/rrgmc/ai-contextview/compare/v1.5.5...v1.6.0
 [1.5.5]: https://github.com/rrgmc/ai-contextview/compare/v1.5.4...v1.5.5
 [1.5.4]: https://github.com/rrgmc/ai-contextview/compare/v1.5.3...v1.5.4
 [1.5.3]: https://github.com/rrgmc/ai-contextview/compare/v1.5.2...v1.5.3
