@@ -38,8 +38,10 @@ with no visible effect (refactoring, tests, internal docs) needs no entry.
    two release tags in the install section of the repository `README.md` (the
    example tag and the `go install …@vX.Y.Z` command) to `vX.Y.Z`; a
    prerelease such as `X.Y.Z-rc.1` leaves the README alone. `-date` sets another date.
-2. Read the result, commit it and fast-forward `master` to it.
-3. Tag that commit on `master` and push the tag:
+2. Read the result, commit it, push the branch and open a pull request with
+   the `no-changelog` label (it removes fragments and adds none). Merge it with
+   `gh pr merge --merge` once the `CI result` check passes.
+3. Pull `master`, tag the merge commit and push the tag:
 
    ```bash
    git tag vX.Y.Z && git push origin vX.Y.Z
