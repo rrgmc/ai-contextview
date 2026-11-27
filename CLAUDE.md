@@ -38,11 +38,13 @@ For every change, before the first edit:
 2. Work, build and test only in that worktree.
 3. Stage files by name, never `git add -A` or `git add .`: other sessions'
    sample files must not end up in a commit.
-4. Commit, merge and push only when the user asks. To merge, fast-forward
-   `master` in the main checkout (`git merge --ff-only <branch>`); if `master`
-   moved, rebase the branch first.
-5. After the merge, remove the worktree (`git worktree remove`) and delete the
-   branch.
+4. Commit, merge and push only when the user asks. `master` is protected
+   (`.github/personal-rules.yml`, stage `established`): push the branch, open a
+   pull request (`gh pr create`) and merge it with `gh pr merge --merge` once
+   the `CI result` check passes and the branch is up to date with `master`.
+   Never push to `master` directly.
+5. After the merge, pull `master` in the main checkout, remove the worktree
+   (`git worktree remove`) and delete the branch.
 
 Read-only work (reading code, answering questions) needs no worktree.
 
@@ -96,10 +98,13 @@ go test ./...
 The `CI` workflow (`.github/workflows/ci.yml`) runs gofmt, `go vet` and
 `go test -race ./...` on Linux for pushes to `master` and pull
 requests. A push to `master` that only changes markdown files or `docs/` skips
-it. It does not run the `claude plugin` checks.
+it. It does not run the `claude plugin` checks. On pull requests it also
+requires a `changelog.d/` fragment unless the PR has the `no-changelog` label.
+`CI result` sums up every job; it is the check the `master` ruleset requires.
 
 Versions come from git tags (`cmd/ai-contextview/version.go`). To release, run
-`go run ./tools/changelog release X.Y.Z`, commit, then tag `master` with
+`go run ./tools/changelog release X.Y.Z` on a branch, merge it through a pull
+request (label `no-changelog`), then tag the merge commit on `master` with
 `vX.Y.Z` and push the tag. The `Release` workflow checks the changelog, tests,
 builds the binaries and creates the GitHub release
 ([changelog.d/README.md](changelog.d/README.md)). The release command also
