@@ -100,6 +100,52 @@ func TestSpecModeWithPaths(t *testing.T) {
 	assert.True(t, written(h, filepath.Join(cwd, "docs/specs/SW-1.md")).Shown)
 }
 
+func TestSpecModeShowsExistingPath(t *testing.T) {
+	h, b, cwd := workSetup(t)
+	spec := filepath.Join(cwd, "docs/specs/SW-1.md")
+	readme := filepath.Join(cwd, "README.md")
+
+	// A glob does not show an existing file: it waits for a write.
+	env := b.req(protocol.TypeAskMode, &protocol.AskMode{On: true, Spec: true, Paths: []string{filepath.Join(cwd, "docs/specs/*.md")}})
+	var res protocol.AskModeResult
+	require.NoError(t, env.Decode(&res))
+	assert.Empty(t, res.Shown)
+	assert.Empty(t, workingDoc(h))
+
+	// A missing file waits for a write too.
+	env = b.req(protocol.TypeAskMode, &protocol.AskMode{On: true, Spec: true, Paths: []string{filepath.Join(cwd, "docs/specs/SW-2.md")}})
+	res = protocol.AskModeResult{}
+	require.NoError(t, env.Decode(&res))
+	assert.Empty(t, res.Shown)
+	assert.Empty(t, workingDoc(h))
+
+	// A plain path to an existing spec shows it at once, as a pick.
+	env = b.req(protocol.TypeAskMode, &protocol.AskMode{On: true, Spec: true, Paths: []string{spec}})
+	res = protocol.AskModeResult{}
+	require.NoError(t, env.Decode(&res))
+	assert.Equal(t, spec, res.Shown)
+	assert.Equal(t, spec, workingDoc(h))
+	h.d.mu.Lock()
+	assert.True(t, h.d.workspaces["ws_A"].RootAuto)
+	assert.Equal(t, spec, h.d.workspaces["ws_A"].work.doc)
+	h.d.mu.Unlock()
+	// Later writes do not switch it.
+	assert.False(t, written(h, readme).Shown)
+	assert.Equal(t, spec, workingDoc(h))
+
+	// Plain ask mode ignores paths; off clears the pick.
+	b.req(protocol.TypeAskMode, &protocol.AskMode{On: false})
+	assert.Empty(t, workingDoc(h))
+
+	// Claude's own spec_show wins over the path.
+	b.req(protocol.TypeSpecShow, &protocol.SpecShow{RootAbs: readme})
+	env = b.req(protocol.TypeAskMode, &protocol.AskMode{On: true, Spec: true, Paths: []string{spec}})
+	res = protocol.AskModeResult{}
+	require.NoError(t, env.Decode(&res))
+	assert.Empty(t, res.Shown)
+	assert.Equal(t, readme, workingDoc(h))
+}
+
 func TestSpecModeScoring(t *testing.T) {
 	h, b, cwd := workSetup(t)
 	b.req(protocol.TypeAskMode, &protocol.AskMode{On: true, Spec: true})

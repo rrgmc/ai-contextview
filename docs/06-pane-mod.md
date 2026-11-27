@@ -25,7 +25,8 @@ The mod picks the working document from written files as the daemon does (01,
 `ask_mode`; 07): its `tool.call` hook sees `Write`, `Edit` and `MultiEdit`
 after they run, applies the hook's file rules and `AI_CONTEXTVIEW_DOC_PATHS`, and
 shows the picked file as `spec_show` would; a `Skill` call raises the spec-mode
-score. The pick lives in the mod's state (`work`). Instead of a line to Claude,
+score, and a spec-mode path that names an existing markdown file shows at
+once, found in another git worktree as the bridge finds it. The pick lives in the mod's state (`work`). Instead of a line to Claude,
 it shows a toast to the user.
 
 The mod is `plugin/hooks/register.tsx`, listed under `modules` in

@@ -416,12 +416,12 @@ func (d *Daemon) cancel(id string, req *protocol.AskCancel) error {
 // withdrawn: Claude said no more answers are needed. Highlights and code
 // tabs are cleared.
 // askMode turns ask mode on or off for a workspace.
-func (d *Daemon) askMode(id string, req *protocol.AskMode) error {
+func (d *Daemon) askMode(id string, req *protocol.AskMode) (*protocol.AskModeResult, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	w := d.workspaces[id]
 	if w == nil {
-		return errors.New("unknown workspace")
+		return nil, errors.New("unknown workspace")
 	}
 	w.AskMode = req.On
 	w.Released = !req.On
@@ -438,8 +438,12 @@ func (d *Daemon) askMode(id string, req *protocol.AskMode) error {
 			d.clearRoot(w)
 		}
 	}
+	res := &protocol.AskModeResult{}
+	if p := d.showExisting(w); p != "" {
+		res.Shown = p
+	}
 	d.hub.Publish(w.ID, d.docEvent(w, w.CurrentDoc))
-	return nil
+	return res, nil
 }
 
 // clearRoot removes the shown root and its documents; d.mu is held.
