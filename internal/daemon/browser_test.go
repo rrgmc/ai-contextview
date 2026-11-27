@@ -271,3 +271,43 @@ func TestBrowserNoDocument(t *testing.T) {
 	assert.Equal(t, "No document", text(t, ctx, q2Section+` .chip-nodoc`))
 	assert.False(t, eval[bool](t, ctx, `document.getElementById("doc-note").hidden`))
 }
+
+func TestBrowserHidesEmptyCodePane(t *testing.T) {
+	h := newHarness(t)
+	cwd, specPath := writeSpec(t)
+	b := h.bridge("ws_A", cwd)
+	b.req(protocol.TypeSpecShow, &protocol.SpecShow{RootAbs: specPath})
+	ask := askBody(cwd, specPath, "qs_1")
+	ask.Questions = append(ask.Questions, protocol.AskQuestion{
+		ID: "q2", Text: "Ship it?", Options: []protocol.Option{{Label: "Yes"}, {Label: "No"}},
+	})
+	b.req(protocol.TypeAsk, ask)
+	ctx := newBrowser(t)
+	codeShown := `getComputedStyle(document.querySelector(".code-pane")).display !== "none"`
+
+	// The first question has code: the pane shows.
+	run(t, ctx,
+		chromedp.Navigate(h.http.URL+"/w/ws_A"),
+		chromedp.WaitVisible(`.code-pane .line.hl`),
+	)
+	assert.True(t, eval[bool](t, ctx, codeShown))
+
+	// The second has none: with the questions above the code, the pane hides.
+	run(t, ctx,
+		chromedp.Click(`.step[data-step="1"]`),
+		chromedp.WaitVisible(q2Section+` .qtext`),
+	)
+	assert.False(t, eval[bool](t, ctx, codeShown))
+
+	// With the questions below, the code pane sits beside the document and stays.
+	run(t, ctx, chromedp.Click(`#dock-toggle`))
+	assert.True(t, eval[bool](t, ctx, codeShown))
+	run(t, ctx, chromedp.Click(`#dock-toggle`))
+
+	// Back on the first question, the pane shows again.
+	run(t, ctx,
+		chromedp.Click(`.step[data-step="0"]`),
+		chromedp.WaitVisible(`.code-pane .line.hl`),
+	)
+	assert.True(t, eval[bool](t, ctx, codeShown))
+}

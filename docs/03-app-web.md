@@ -163,6 +163,12 @@ State is small, so no event log is needed.
   Otherwise (`no-doc`) the question panel and the code pane share the page,
   side by side, or stacked with "Questions below". The layout changes only
   when a new question set arrives, so it does not jump between questions.
+- **No code to show** (`no-code`): when the current question has no code ref,
+  or no file is shown, the code pane and its splitter hide and the question
+  panel takes the whole right column. This only applies with the questions
+  above the code: there the pane hides below the panel, so nothing moves
+  sideways. In the other layouts the code pane sits beside another pane and
+  stays, with its "no code reference" note.
 - Pane sizes and the layout choice are remembered in `localStorage` (wrapped in
   try/catch, per-browser convenience only).
 - The panel is part of the page, never a modal or a `<dialog>`, so the doc and

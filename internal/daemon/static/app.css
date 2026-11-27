@@ -120,6 +120,11 @@ body.ended .layout { filter: grayscale(.8); opacity: .75; }
   grid-template-areas: "code" "sh" "panel";
 }
 .layout.no-doc .doc-pane, .layout.no-doc:not(.bottom) .splitter-h, .layout.bottom.no-doc .splitter { display: none; }
+/* No file to show, with the questions above the code: the questions take the
+   whole column. The other layouts keep the pane, so nothing moves sideways. */
+.layout.no-code:not(.bottom):not(.no-doc) { grid-template-rows: 1fr 0 0; }
+.layout.no-code:not(.bottom):not(.no-doc) .code-pane,
+.layout.no-code:not(.bottom):not(.no-doc) .splitter-h { display: none; }
 .qdoc-tabs { display: inline-flex; gap: 4px; margin-left: 8px; }
 .qdoc-tabs .tab.active { font-weight: 600; }
 .doc-src { margin: -8px -16px; }

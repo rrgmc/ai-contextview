@@ -216,10 +216,18 @@
 
   // ------------------------------------------------------------ code pane
 
+  // The code pane shows only while it shows a file. With the questions above
+  // the code, the questions then take the whole column; the CSS keeps it in
+  // the layouts where hiding it would move a pane sideways.
+  function setCodeShown(on) {
+    layout.classList.toggle("no-code", !on);
+  }
+
   function renderTabs() {
     const head = $("#code-tabs");
     head.innerHTML = "";
     if (!codeTabs.length) {
+      setCodeShown(false);
       head.innerHTML = '<span class="muted">No code</span>';
       codeEl.innerHTML = pendingQS ? '<p class="empty">These questions have no code references.</p>' : "";
       return;
@@ -247,6 +255,7 @@
     activeCode = t.path;
     noCode = false;
     renderTabs();
+    setCodeShown(true);
     const meta = '<div class="code-meta"><span class="mono">' + escapeHTML(t.rel) + "</span>" +
       (t.start ? "<span>lines " + t.start + "–" + t.end + "</span>" : "") +
       '<span class="grow"></span><a href="#" class="open-editor" data-kind="code" data-path="' + escapeHTML(t.path) +
@@ -261,6 +270,7 @@
     noCode = true;
     activeCode = null;
     renderTabs();
+    setCodeShown(false);
     if (codeTabs.length) codeEl.innerHTML = '<p class="empty">This question has no code reference.</p>';
   }
 
