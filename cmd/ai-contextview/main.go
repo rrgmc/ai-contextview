@@ -11,6 +11,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -58,7 +59,7 @@ func main() {
 	case "serve":
 		err = runServe(os.Args[2:])
 	case "fakeapp":
-		err = runFakeapp()
+		err = runFakeapp(os.Args[2:], protocol.SocketPath(), os.Stdin, os.Stdout, os.Stderr)
 	case "hook":
 		// A Claude Code PreToolUse hook: exit 2 blocks the tool.
 		os.Exit(hook.Run(os.Stdin, os.Stdout, os.Stderr, protocol.SocketPath(), identity.AncestorPIDs(16)))
@@ -383,16 +384,51 @@ loop:
 
 // ------------------------------------------------------------------- fakeapp
 
-func runFakeapp() error {
+// errFakeappLocked means a daemon already serves the socket.
+var errFakeappLocked = errors.New("a daemon already serves the socket; stop it first (ai-contextview serve --stop)")
+
+func runFakeapp(args []string, sock string, stdin io.Reader, stdout, stderr io.Writer) error {
+	fs := flag.NewFlagSet("fakeapp", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	fs.Usage = func() {
+		fmt.Fprintf(stderr, "usage: ai-contextview fakeapp\n\n"+
+			"Runs a terminal stand-in for the daemon on %s.\n"+
+			"It refuses to start while a daemon serves that socket.\n", sock)
+	}
+	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
+		return err
+	}
+	if fs.NArg() > 0 {
+		fs.Usage()
+		return fmt.Errorf("fakeapp takes no arguments: %q", fs.Args())
+	}
+	// Like serve, take the daemon lock before touching the socket: Listen
+	// removes the socket file, which would cut a running daemon off from its
+	// bridges.
+	if err := os.MkdirAll(filepath.Dir(sock), 0o700); err != nil {
+		return err
+	}
+	release, err := daemon.Lock(sock)
+	if errors.Is(err, daemon.ErrLocked) {
+		return errFakeappLocked
+	}
+	if err != nil {
+		return err
+	}
+	defer release()
+
 	s := &fakeapp.Server{
-		Socket: protocol.SocketPath(), BaseURL: "http://fakeapp", Viewers: 1, Out: os.Stdout,
-		OnAsk: fakeapp.TerminalAnswerer(os.Stdin, os.Stdout),
+		Socket: sock, BaseURL: "http://fakeapp", Viewers: 1, Out: stdout,
+		OnAsk: fakeapp.TerminalAnswerer(stdin, stdout),
 	}
 	if err := s.Listen(); err != nil {
 		return err
 	}
 	defer os.Remove(s.Socket)
-	fmt.Println("fakeapp listening on", s.Socket)
+	fmt.Fprintln(stdout, "fakeapp listening on", s.Socket)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	return s.Serve(ctx)
