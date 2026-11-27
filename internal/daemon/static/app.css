@@ -153,6 +153,10 @@ body.ended .layout { filter: grayscale(.8); opacity: .75; }
 .changes .chg-none { color: var(--muted); font-size: 13px; margin: 8px 0; }
 .changes .chg-add { background: var(--add-bg); border-left-color: var(--add-line); }
 .changes .chg-del { background: var(--del-bg); border-left-color: var(--del-line); text-decoration: line-through; text-decoration-color: var(--del-line); opacity: .85; }
+.changes tr.chg-row-add > td { background: var(--add-bg); }
+.changes tr.chg-row-del > td { background: var(--del-bg); text-decoration: line-through; text-decoration-color: var(--del-line); opacity: .85; }
+.changes tr.chg-row-add > td:first-child { box-shadow: inset 4px 0 var(--add-line); }
+.changes tr.chg-row-del > td:first-child { box-shadow: inset 4px 0 var(--del-line); }
 .src-diff { font-size: 12.5px; line-height: 1.5; padding: 8px 0; background: transparent; white-space: pre-wrap; }
 .src-diff span { display: block; padding: 0 8px; min-height: 1.5em; }
 .src-diff .sd-add { background: var(--add-bg); }

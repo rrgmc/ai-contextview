@@ -102,3 +102,81 @@ func TestSourceChanges(t *testing.T) {
 	assert.Contains(t, html, `<span class="sd-add">+ Behind a &lt;flag&gt;.</span>`)
 	assert.Contains(t, html, `<span class="sd-ctx">  # Spec</span>`, "the whole source is shown")
 }
+
+const tableOld = `# Spec
+
+| Interface | Kind |
+|---|---|
+| POST /a | route |
+| PUT /b | route |
+| flag x | flag |
+
+After.
+`
+
+func TestBlocksSplitsTables(t *testing.T) {
+	blocks := Blocks([]byte(tableOld))
+	assert.Equal(t, []string{
+		"# Spec\n\n",
+		"| Interface | Kind |\n|---|---|\n",
+		"| POST /a | route |\n",
+		"| PUT /b | route |\n",
+		"| flag x | flag |\n\n",
+		"After.\n",
+	}, blocks)
+}
+
+func TestDiffTableCellChange(t *testing.T) {
+	newSrc := strings.Replace(tableOld, "| PUT /b | route |", "| PUT /b | HTTP route |", 1)
+	edits := DiffBlocks([]byte(tableOld), []byte(newSrc))
+	assert.Equal(t, 1, Hunks(edits))
+
+	html := ChangesHTML(edits)
+	assert.Equal(t, 1, strings.Count(html, "<table>"), "the table renders once")
+	assert.NotContains(t, html, `class="chg-del"`)
+	assert.NotContains(t, html, `class="chg-add"`)
+	assert.Contains(t, html, "<tr>\n<td>POST /a</td>")
+	assert.Contains(t, html, `<tr class="chg-row-del">`+"\n<td>PUT /b</td>\n<td>route</td>")
+	assert.Contains(t, html, `<tr class="chg-row-add">`+"\n<td>PUT /b</td>\n<td>HTTP route</td>")
+	assert.Contains(t, html, "<tr>\n<td>flag x</td>")
+	assert.Less(t, strings.Index(html, "chg-row-del"), strings.Index(html, "chg-row-add"), "the old row comes first")
+	assert.Contains(t, html, "<p>After.</p>")
+}
+
+func TestDiffTableRowAddedAndRemoved(t *testing.T) {
+	newSrc := strings.Replace(tableOld, "| POST /a | route |\n", "", 1)
+	newSrc = strings.Replace(newSrc, "| flag x | flag |\n", "| flag x | flag |\n| DELETE /c | route |\n", 1)
+	html := ChangesHTML(DiffBlocks([]byte(tableOld), []byte(newSrc)))
+	assert.Equal(t, 1, strings.Count(html, "<table>"))
+	assert.Contains(t, html, `<tr class="chg-row-del">`+"\n<td>POST /a</td>")
+	assert.Contains(t, html, `<tr class="chg-row-add">`+"\n<td>DELETE /c</td>")
+	assert.Equal(t, 2, strings.Count(html, "<tr>\n<td>"), "PUT /b and flag x are unchanged")
+}
+
+func TestDiffTableHeaderChange(t *testing.T) {
+	newSrc := strings.Replace(tableOld, "| Interface | Kind |\n|---|---|\n", "| Interface | Kind | Consumers |\n|---|---|---|\n", 1)
+	newSrc = strings.Replace(newSrc, "| POST /a | route |", "| POST /a | route | portal |", 1)
+	edits := DiffBlocks([]byte(tableOld), []byte(newSrc))
+	html := ChangesHTML(edits)
+	// The rows no longer line up: the old table is removed and the new one
+	// added, each whole.
+	assert.Equal(t, 2, strings.Count(html, "<table>"))
+	assert.Contains(t, html, `<div class="chg-del"><table>`)
+	assert.Contains(t, html, `<div class="chg-add"><table>`)
+	assert.NotContains(t, html, "chg-row-")
+}
+
+func TestDiffTableAdded(t *testing.T) {
+	newSrc := strings.Replace(tableOld, "After.\n", "After.\n\n| A | B |\n|---|---|\n| 1 | 2 |\n", 1)
+	html := ChangesHTML(DiffBlocks([]byte(tableOld), []byte(newSrc)))
+	assert.Contains(t, html, `<div class="chg-add"><table>`)
+	assert.Contains(t, html, "<td>1</td>")
+	assert.Equal(t, 1, Hunks(DiffBlocks([]byte(tableOld), []byte(newSrc))))
+}
+
+func TestDiffTableUnchanged(t *testing.T) {
+	html := ChangesHTML(DiffBlocks([]byte(tableOld), []byte(tableOld)))
+	assert.Contains(t, html, "No changes.")
+	assert.Equal(t, 1, strings.Count(html, "<table>"))
+	assert.NotContains(t, html, "chg-row-")
+}

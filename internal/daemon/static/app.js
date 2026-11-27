@@ -148,7 +148,7 @@
       const key = path + "|" + c.base + "|" + mode;
       const keep = changesEl.scrollTop;
       changesEl.innerHTML = c.html;
-      const first = $(".chg-add, .chg-del, .sd-add, .sd-del", changesEl);
+      const first = $(".chg-add, .chg-del, .chg-row-add, .chg-row-del, .sd-add, .sd-del", changesEl);
       if (key !== loadChanges.last && first) scrollIntoPane(changesEl, first);
       else changesEl.scrollTop = keep;
       loadChanges.last = key;
