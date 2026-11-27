@@ -712,6 +712,27 @@ test('spec mode with paths, and spec_show wins over writes', async ($, on) => {
   await ui.unmount()
 })
 
+test('a provisional document shows until the working document is written', async ($, on) => {
+  engine(on)
+  await $.session.start({ cwd: '/repo', surface: 'desktop', isInteractive: true })
+  // Outside ask mode, provisional is refused.
+  expect(failed(await call($, { tool: SPEC_SHOW, path: 'docs/design.md', provisional: true }))).toBe(true)
+
+  await call($, { tool: ASK_MODE, spec: true, paths: ['docs/spec.md'] })
+  await call($, { tool: SPEC_SHOW, path: 'docs/design.md', provisional: true })
+  let ui = await $.ui.mount(pane('desktop', 140))
+  expect(await ui.find({ type: 'Text', text: /^docs\/design\.md$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^\(provisional/ })).toBeDefined()
+  await ui.unmount()
+  // A write to the notes does not replace them; the spec does.
+  await call($, { tool: 'Write', file_path: 'docs/design.md', content: 'x' })
+  await call($, { tool: 'Write', file_path: 'docs/spec.md', content: 'x' })
+  ui = await $.ui.mount(pane('desktop', 140))
+  expect(await ui.find({ type: 'Text', text: /^docs\/spec\.md$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^\(provisional/ })).toBeUndefined()
+  await ui.unmount()
+})
+
 test('a picked document stops blocking AskUserQuestion when ask mode ends', async ($, on) => {
   engine(on)
   await $.session.start({ cwd: '/repo', surface: 'desktop', isInteractive: true })

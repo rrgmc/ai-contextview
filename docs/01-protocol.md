@@ -47,6 +47,14 @@ or a **folder of markdown artifacts** (a change folder, see 00).
   primary file. Only a hint; the daemon computes changes itself (03).
 - `changed` (optional, folders only): `[{path, sections?}]` for other files the
   caller just created or edited.
+- `provisional` (optional, ask mode or spec mode only): show the file until
+  the working document is written, for example a spec skill's exploration
+  notes before the spec exists. It is shown like a document picked from a
+  write: it does not stop the pick, it clears when ask mode ends, and it does
+  not block the built-in question tool outside ask mode. The first written
+  file that would become the working document replaces it; writes to the
+  provisional file itself do not. Outside ask mode the bridge refuses it.
+  The viewer and the pane label the document as provisional.
 
 For a folder, the daemon includes every `*.md` file up to 3 levels deep, skipping
 dot-files and dot-directories. New files that appear later are picked up by the
@@ -230,7 +238,8 @@ session goes through `ask`, with or without a spec.
 
   After that, later writes do not switch it, but an `ask` whose doc refs name
   another written file does. Claude's own `spec_show` always wins: once it
-  is called, writes are ignored. Turning ask mode off forgets the pick and
+  is called, writes are ignored, unless it was called with `provisional`.
+  Turning ask mode off forgets the pick and
   clears a picked document from the viewer, which goes back to its state
   without a document; the bridge forgets it too, so a reconnect does not show
   it again. A spec shown with `spec_show` stays.
@@ -306,7 +315,7 @@ Match          = "exact" | "normalized" | "fuzzy" | "heading" | "none"
 | type | body | reply |
 |---|---|---|
 | `hello` | `{protocol: 1, ws, cwd, claude_pid, bridge_pid, bridge_version, tty?, project_name}` | `hello_ack {daemon_version, url, adopted_from?}` |
-| `spec_show` | `{root_abs, is_dir, primary?, changed_sections?, changed?: [{path, sections?}], auto?: bool}` (`auto` marks the replay of a working document the daemon picked, which does not count as Claude's own `spec_show`) | `result {primary, sections[], artifacts[]}` or `error` |
+| `spec_show` | `{root_abs, is_dir, primary?, changed_sections?, changed?: [{path, sections?}], auto?: bool, provisional?: bool}` (`auto` marks the replay of a working document the daemon picked, which does not count as Claude's own `spec_show`; `provisional` shows the file until the working document is written, see the `spec_show` tool; the two are exclusive) | `result {primary, sections[], artifacts[]}` or `error` |
 | `focus` | `{docs: [ResolvedDocRef], code: [ResolvedRef]}` | `result {docs: [{path, match}]}` |
 | `ask` | `{qs_id, title?, questions: [ {…, docs: [ResolvedDocRef], code: [ResolvedRef]} ]}` | `ask_shown {matches}` right away, **then later** `ask_result` |
 | `ask_cancel` | `{qs_id, reason}` | `result` |

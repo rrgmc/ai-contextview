@@ -102,6 +102,26 @@ func TestSpecShowOpenIn(t *testing.T) {
 	assert.Equal(t, OpenPane, out.Open)
 }
 
+func TestSpecShowProvisional(t *testing.T) {
+	e := setup(t, nil)
+	ctx := context.Background()
+	in := protocol.SpecShowInput{Path: "docs/spec.md", Provisional: true}
+	_, _, err := e.bridge.SpecShow(ctx, nil, in)
+	require.Error(t, err, "provisional needs ask mode")
+
+	_, _, err = e.bridge.AskModeTool(ctx, nil, protocol.AskModeInput{Spec: true})
+	require.NoError(t, err)
+	_, out, err := e.bridge.SpecShow(ctx, nil, in)
+	require.NoError(t, err)
+	assert.True(t, out.OK)
+	assert.NotNil(t, e.bridge.currentRoot())
+
+	// Ask mode off clears it, like a document the daemon picked.
+	_, _, err = e.bridge.AskModeTool(ctx, nil, protocol.AskModeInput{Off: true})
+	require.NoError(t, err)
+	assert.Nil(t, e.bridge.currentRoot())
+}
+
 func TestOpenInFromEnv(t *testing.T) {
 	for value, want := range map[string]string{"": OpenPane, "pane": OpenPane, "browser": "", "never": ""} {
 		t.Setenv("AI_SPECVIEW_OPEN", value)

@@ -258,12 +258,20 @@ func (b *Bridge) SpecShow(ctx context.Context, _ *mcp.CallToolRequest, in protoc
 		return nil, out, errors.New("changed is only allowed when path is a folder; use changed_sections")
 	}
 	b.mu.Lock()
+	askMode := b.askMode
+	b.mu.Unlock()
+	if in.Provisional && !askMode {
+		return nil, out, errors.New("provisional is only allowed in ask mode or spec mode; without it, call spec_show without provisional")
+	}
+	b.mu.Lock()
 	b.root = root
-	b.rootAuto = false
+	// A provisional document clears with ask mode, like a picked one.
+	b.rootAuto = in.Provisional
 	b.mu.Unlock()
 
 	req := &protocol.SpecShow{
 		RootAbs: abs, IsDir: root.IsDir, ChangedSections: in.ChangedSections, Changed: in.Changed,
+		Provisional: in.Provisional,
 	}
 	if root.IsDir {
 		req.Primary = root.Primary

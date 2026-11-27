@@ -66,6 +66,11 @@ export const TOOLS: readonly ToolDef[] = [
           items: { type: 'string' },
           description: 'headings you just changed in the primary file',
         },
+        provisional: {
+          type: 'boolean',
+          description:
+            'ask mode or spec mode only: show this file (for example exploration notes) until the working document is written; the first written file that would become the working document replaces it',
+        },
         changed: {
           type: 'array',
           description: 'folders only: other files you just created or edited',

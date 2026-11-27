@@ -213,7 +213,7 @@ func (d *Daemon) stateEvent(w *Workspace) Event {
 		"live": w.Live, "project": w.Project, "cwd": w.Cwd, "claude_pid": w.ClaudePID,
 		"started": w.Started.Format("15:04"), "root": root, "is_dir": w.Root != nil && w.Root.IsDir,
 		"open_questions": w.openQuestions(), "pending": w.Pending != nil, "done": w.Done != nil,
-		"has_spec": w.Root != nil,
+		"has_spec": w.Root != nil, "provisional": w.Root != nil && w.work.provisional,
 	})
 }
 

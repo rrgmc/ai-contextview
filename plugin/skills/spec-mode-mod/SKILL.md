@@ -65,6 +65,15 @@ the pane's tools.
   wrong file shows, call `spec_show` with the right one: your own
   `spec_show` always wins. A question whose `doc_refs` quotes another file
   you wrote also switches to that file.
+- **Before the spec exists.** Many spec skills explore the code and keep
+  notes before they write the spec: exploration notes, open questions, a
+  list of requirements. While no working document shows, and you keep such
+  notes in a markdown file, call `spec_show` with that file and
+  `"provisional": true`. The user then reads the notes beside the questions,
+  and `spec_quote` quotes them. A provisional document does not stop the
+  pick: the first spec you write replaces it, with no call from you. Do not
+  call `spec_show` without `provisional` for the notes, because your own
+  `spec_show` stops the pick, and the spec would not replace them.
 - Write the spec with the user's spec skill, or with spec-elaborate-mod if they
   ask for it. Spec mode adds no workflow of its own: follow that skill's
   steps, but ask every question with `ask`, quoting the spec with

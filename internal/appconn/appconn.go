@@ -486,11 +486,12 @@ func (c *Client) HasResult(qs string) bool {
 }
 
 // ClearAutoSpec forgets the last spec_show when it replays a document the
-// daemon picked (doc_shown), so a reconnect does not show it again.
+// daemon picked (doc_shown) or a provisional one, so a reconnect does not
+// show it again.
 func (c *Client) ClearAutoSpec() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if c.lastSpecShow != nil && c.lastSpecShow.Auto {
+	if c.lastSpecShow != nil && (c.lastSpecShow.Auto || c.lastSpecShow.Provisional) {
 		c.lastSpecShow = nil
 	}
 }

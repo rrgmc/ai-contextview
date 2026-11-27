@@ -306,6 +306,10 @@ type SpecShow struct {
 	// Auto marks a replay of a working document the daemon picked from a
 	// write (doc_shown), so it does not count as Claude's own spec_show.
 	Auto bool `json:"auto,omitempty"`
+	// Provisional shows a document, such as exploration notes, only until
+	// the session writes its working document: in ask mode or spec mode,
+	// the first written file that would be picked replaces it.
+	Provisional bool `json:"provisional,omitempty"`
 }
 
 func (s *SpecShow) Validate() error {
@@ -314,6 +318,9 @@ func (s *SpecShow) Validate() error {
 	}
 	if !s.IsDir && (s.Primary != "" || len(s.Changed) > 0) {
 		return errors.New("spec_show: primary and changed are only allowed for folders")
+	}
+	if s.Auto && s.Provisional {
+		return errors.New("spec_show: auto and provisional are exclusive")
 	}
 	return nil
 }

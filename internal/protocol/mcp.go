@@ -9,6 +9,7 @@ type SpecShowInput struct {
 	Primary         string        `json:"primary,omitempty" jsonschema:"folders only: the file shown first and used by refs without a path"`
 	ChangedSections []string      `json:"changed_sections,omitempty" jsonschema:"headings you just changed in the primary file"`
 	Changed         []ChangedFile `json:"changed,omitempty" jsonschema:"folders only: other files you just created or edited"`
+	Provisional     bool          `json:"provisional,omitempty" jsonschema:"ask mode or spec mode only: show this file (for example exploration notes) until the working document is written; the first written file that would become the working document replaces it"`
 }
 
 // SpecShowOutput is the output of the spec_show tool.

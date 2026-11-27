@@ -59,9 +59,10 @@ const noWork = (): WorkDoc => ({
   specSkill: false,
   doc: '',
   autoShown: '',
+  provisional: false,
   edits: {},
 })
-const workAtom = atom({ plugin: 'ai-specview', key: 'work' } as const, noWork(), { shape: 'work-2' })
+const workAtom = atom({ plugin: 'ai-specview', key: 'work' } as const, noWork(), { shape: 'work-3' })
 // The score a written file needs in spec mode without paths, as the daemon's.
 const SCORE_THRESHOLD = 2
 const SPEC_SKILL = /spec|rfc|design/i
@@ -401,7 +402,7 @@ async function askMode($: EngineInterface, args: Args) {
 /** Shows a written file as the working document, as spec_show would. */
 async function showWorking($: EngineInterface, path: string) {
   await showSpec($, { path })
-  await update($, workAtom, w => ({ ...w, doc: path, autoShown: path }))
+  await update($, workAtom, w => ({ ...w, doc: path, autoShown: path, provisional: false }))
   $.ui.toast(`ai-specview shows ${rel(path)} as the working document`)
 }
 
@@ -419,7 +420,8 @@ async function docWritten($: EngineInterface, path: string) {
   const edits = (w.edits[path] ?? 0) + 1
   await update($, workAtom, cur => ({ ...cur, edits: { ...cur.edits, [path]: edits } }))
   w = await read($, workAtom)
-  if (w.doc !== '') return
+  // A provisional document waits for the first file that would be picked.
+  if ((w.doc !== '' && !w.provisional) || path === w.doc) return
   let wants = true
   if (w.spec && w.paths.length > 0) wants = spec.matchAny(w.paths, path)
   else if (w.spec) {
@@ -734,9 +736,20 @@ export const register: Register = on => {
     try {
       let out: unknown
       if (name === 'spec_show') {
+        const provisional = args.provisional === true
+        if (provisional && !(await read($, modeAtom))) {
+          throw new Error(
+            'provisional is only allowed in ask mode or spec mode; without it, call spec_show without provisional',
+          )
+        }
         const { root, file, text } = await showSpec($, args)
-        // Claude's own spec_show wins over the document picked from writes.
-        await update($, workAtom, w => ({ ...w, explicit: true, autoShown: '' }))
+        // Claude's own spec_show wins over the document picked from writes. A
+        // provisional one is shown like a picked one: a later write replaces it.
+        await update($, workAtom, w =>
+          provisional
+            ? { ...w, explicit: false, doc: file, autoShown: file, provisional: true }
+            : { ...w, explicit: true, autoShown: '', provisional: false },
+        )
         const artifacts = []
         for (const f of root.files) {
           const body: string = f === file ? text : await $.fs.read(f)
@@ -774,6 +787,8 @@ export const register: Register = on => {
     const ui = await read($, uiAtom)
     const a = await read($, askAtom)
     if (!view) return <Text dimColor>No spec shown yet.</Text>
+    const work = await read($, workAtom)
+    const provisional = work.provisional && work.doc === view.specPath
 
     const asking = a && !a.result ? a : null
     const reviewing = !!asking?.review
@@ -1123,6 +1138,11 @@ export const register: Register = on => {
         <Box flexDirection="column">
           <Box key="crumbs" flexDirection="row" flexWrap="wrap" columnGap={1}>
             <Text bold>{noSpec ? 'Ask mode' : label(shownFile)}</Text>
+            {!noSpec && provisional && (
+              <Text key="provisional" color="yellow">
+                (provisional, until the working document is written)
+              </Text>
+            )}
             {!noSpec && crumbs.map((c, i) => (
               <Text key={`crumb-${i}`} dimColor>
                 {c}

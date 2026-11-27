@@ -188,6 +188,23 @@ it.
   ends when the user turns it off, starts another spec mode, or the session
   ends.
 
+### Before the spec exists: a provisional document
+
+Many spec skills explore the code and agree on requirements before they
+write the spec, and keep notes while they do. These notes are often in a
+dot-folder, which the write hook ignores, so until the spec is written the
+viewer has no document to show. Only Claude knows which file holds its notes,
+so Claude says so: `spec_show` with `provisional: true` (01). The spec-mode
+skills ask for it while no working document shows.
+
+- A provisional document is shown like a picked one. It does not count as
+  Claude's own `spec_show`, so the pick goes on.
+- The first written file that would become the working document replaces
+  it, by the rules above. Writes to the provisional file itself do not.
+- It clears when ask mode ends, like a picked document.
+- The viewer shows a "provisional" label next to the document name; the pane
+  shows one next to the title.
+
 Spec mode adds no spec workflow (layer 3). It works under any spec skill:
 `spec-elaborate`, a company's, or Claude with no skill.
 
@@ -219,7 +236,8 @@ Each phase can be released on its own.
    viewer and in the pane. Spec mode is `ask_mode` with `spec: true`, not a
    tool of its own. The folder rule (step 4 of "Ask mode") is left out: two
    specs in one folder are often unrelated, so a sibling write stays a
-   candidate. Not built yet: renaming `spec_show` and `spec_done`, and
+   candidate. A provisional `spec_show` shows notes until the spec is
+   written. Not built yet: renaming `spec_show` and `spec_done`, and
    `/ai-specview:doc`; with the write hook, `spec_show` covers it.
 3. **Skills and viewer choice.** One skill per layer, `AI_SPECVIEW_VIEW`
    choosing the viewer, and `spec-elaborate` as the spec workflow on top of

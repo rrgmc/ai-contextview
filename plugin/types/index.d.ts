@@ -128,6 +128,11 @@ export type WorkDoc = {
    * ask mode ends, so that file does not count as a spec Claude opened.
    */
   autoShown: string
+  /**
+   * doc was shown with spec_show provisional: the first written file that would
+   * become the working document replaces it.
+   */
+  provisional: boolean
   /** Writes per candidate file, absolute. */
   edits: Record<string, number>
 }

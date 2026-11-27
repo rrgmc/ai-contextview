@@ -217,9 +217,12 @@ func (d *Daemon) specShow(id string, req *protocol.SpecShow) (*protocol.SpecShow
 	if err == nil {
 		// Claude's own spec_show wins over the working document the daemon
 		// picks from writes; a replay of a picked one does not.
-		w.work.explicit = !req.Auto
-		w.RootAuto = req.Auto
-		if req.Auto {
+		// A provisional document is shown like a picked one: a later write
+		// can replace it, and it clears when ask mode ends.
+		auto := req.Auto || req.Provisional
+		w.work.explicit = !auto
+		w.RootAuto = auto
+		if auto {
 			w.work.doc = req.RootAbs
 		}
 	}
@@ -238,6 +241,7 @@ func (d *Daemon) specShowLocked(w *Workspace, req *protocol.SpecShow) (*protocol
 		w.extraDocs = map[string]bool{}
 	}
 	w.Root = root
+	w.work.provisional = req.Provisional
 	for _, a := range root.Artifacts {
 		if w.files[a.Path] == nil {
 			w.loadFile(a.Path, sameDir && root.IsDir)

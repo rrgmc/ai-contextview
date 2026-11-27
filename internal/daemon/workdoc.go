@@ -27,6 +27,9 @@ type workDoc struct {
 	specSkill bool
 	// doc is the working document the daemon picked, absolute.
 	doc string
+	// provisional is set while doc was shown with spec_show provisional:
+	// the first written file that wants() accepts replaces it.
+	provisional bool
 	// edits counts the writes of each candidate file, by absolute path.
 	edits map[string]int
 }
@@ -77,12 +80,12 @@ func (d *Daemon) docWritten(req *protocol.DocWritten) *protocol.DocWrittenResult
 			wd.edits = map[string]int{}
 		}
 		wd.edits[path]++
-		if wd.doc != "" {
+		if wd.doc != "" && !wd.provisional {
 			// The working document stays until a question asks about
 			// another candidate (switchToAsked) or Claude calls spec_show.
 			continue
 		}
-		if !wd.wants(path) {
+		if path == wd.doc || !wd.wants(path) {
 			continue
 		}
 		if d.showWorking(w, path) {

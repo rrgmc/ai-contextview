@@ -544,6 +544,7 @@
       baseTitle = "ai-specview · " + d.project;
       setPending(d.pending && !!pendingQS);
       $("#done-pill").hidden = !d.done;
+      $("#prov-pill").hidden = !d.provisional;
       document.title = (d.done ? "✓ " : (d.pending && pendingQS ? "● " : "")) + baseTitle;
       // The spec went away (a picked document cleared when ask mode ended):
       // with no question waiting, drop the document panel.

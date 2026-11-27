@@ -234,3 +234,47 @@ func TestCwdWithoutSessionFolder(t *testing.T) {
 	require.NoError(t, env.Decode(&res))
 	assert.Empty(t, res.Cwd)
 }
+
+func TestProvisionalDocReplacedBySpec(t *testing.T) {
+	h, b, cwd := workSetup(t)
+	pids := []int{999, testPID, 1}
+	notes := filepath.Join(cwd, ".notes/exploration.md")
+	require.NoError(t, os.MkdirAll(filepath.Dir(notes), 0o755))
+	require.NoError(t, os.WriteFile(notes, []byte("# Exploration\n\nFound things.\n"), 0o644))
+	readme := filepath.Join(cwd, "README.md")
+	spec := filepath.Join(cwd, "docs/specs/SW-1.md")
+	provisional := func() bool {
+		h.d.mu.Lock()
+		defer h.d.mu.Unlock()
+		return h.d.workspaces["ws_A"].work.provisional
+	}
+
+	b.req(protocol.TypeAskMode, &protocol.AskMode{On: true, Spec: true})
+	b.req(protocol.TypeSpecShow, &protocol.SpecShow{RootAbs: notes, Provisional: true})
+	assert.Equal(t, notes, workingDoc(h))
+	assert.True(t, provisional())
+	// Not an open spec: it serves ask mode only.
+	assert.True(t, h.d.active(pids, "").AskMode)
+
+	// Writes to the notes, or files that are not the spec, do not replace it.
+	assert.False(t, written(h, notes).Shown)
+	assert.False(t, written(h, readme).Shown)
+	assert.Equal(t, notes, workingDoc(h))
+
+	// The spec does, and is then a normal picked document.
+	assert.True(t, written(h, spec).Shown)
+	assert.Equal(t, spec, workingDoc(h))
+	assert.False(t, provisional())
+	assert.False(t, written(h, filepath.Join(cwd, "docs/other.md")).Shown)
+	assert.Equal(t, spec, workingDoc(h))
+}
+
+func TestProvisionalDocClearsWithAskMode(t *testing.T) {
+	h, b, cwd := workSetup(t)
+	other := filepath.Join(cwd, "docs/other.md")
+	b.req(protocol.TypeAskMode, &protocol.AskMode{On: true})
+	b.req(protocol.TypeSpecShow, &protocol.SpecShow{RootAbs: other, Provisional: true})
+	assert.Equal(t, other, workingDoc(h))
+	b.req(protocol.TypeAskMode, &protocol.AskMode{On: false})
+	assert.Empty(t, workingDoc(h))
+}
