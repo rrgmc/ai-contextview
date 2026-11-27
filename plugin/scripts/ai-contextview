@@ -3,8 +3,9 @@
 # does not ship the binary: install it as https://github.com/rrgmc/ai-contextview#install describes.
 # The desktop app often starts Claude Code without the shell's PATH, so the Go
 # install directories are tried as well. AI_CONTEXTVIEW_BIN overrides the search.
-# On Windows, Claude Code runs this script with Git Bash, which finds
-# ai-contextview.exe under the name ai-contextview.
+# On Windows, Claude Code runs this script for the hook with Git Bash, which
+# finds ai-contextview.exe under the name ai-contextview. It starts the MCP
+# server without Git Bash, so there it runs ai-contextview.cmd beside this file.
 
 # first_gopath prints the first entry of a GOPATH list. Windows separates the
 # entries with ";" and its paths start with a drive letter ("C:\..."), so a

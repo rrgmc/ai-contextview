@@ -68,8 +68,9 @@ prompt, then **Add plugins**.
 
 The plugin finds the binary on the `PATH`, in `$GOBIN`, in `$(go env GOPATH)/bin`
 or in `~/go/bin`. Set `AI_CONTEXTVIEW_BIN` to use another path. The plugin's skill is
-named `ai-contextview:spec-elaborate`. On Windows, the plugin runs through Git Bash,
-which Claude Code already needs there.
+named `ai-contextview:spec-elaborate`. On Windows, Claude Code runs the plugin's
+hook through Git Bash and starts its MCP server with `ai-contextview.cmd`, so `sh`
+need not be on the `PATH`.
 
 If you set ai-contextview up by hand before, remove the old pieces so they don't run
 twice: `claude mcp remove ai-contextview`, the `ai-contextview hook` entry in

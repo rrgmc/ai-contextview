@@ -65,7 +65,7 @@ Read-only work (reading code, answering questions) needs no worktree.
 | `internal/identity/` | Workspace id, project name, Claude and ancestor process ids |
 | `internal/e2e/` | End-to-end tests, including the multi-process test |
 | `protocol/` | Golden message fixtures and quote-matching fixtures |
-| `plugin/` | The Claude Code plugin: `.mcp.json`, launcher script, `skills/spec-elaborate/`, `skills/ask-mode/` and `skills/spec-mode/` (browser), `skills/spec-elaborate-mod/`, `skills/ask-mode-mod/` and `skills/spec-mode-mod/` (pane), `hooks/` (the `PreToolUse` hook and the pane mod's TypeScript module), `types/` and `tests/` of the mod |
+| `plugin/` | The Claude Code plugin: `.mcp.json`, launcher scripts (`sh` and Windows `.cmd`), `skills/spec-elaborate/`, `skills/ask-mode/` and `skills/spec-mode/` (browser), `skills/spec-elaborate-mod/`, `skills/ask-mode-mod/` and `skills/spec-mode-mod/` (pane), `hooks/` (the `PreToolUse` hook and the pane mod's TypeScript module), `types/` and `tests/` of the mod |
 | `.claude-plugin/` | `marketplace.json`: the repository is a plugin marketplace |
 | `tools/changelog/` | Release tool: merges `changelog.d/` into `CHANGELOG.md`, checks a tag, prints release notes |
 | `.github/workflows/` | `ci.yml` (tests) and `release.yml` (on `v*` tags) |

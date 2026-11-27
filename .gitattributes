@@ -1,2 +1,4 @@
 # Check out text as LF on every platform: gofmt and the golden fixtures expect it.
 * text=auto eol=lf
+# cmd.exe needs CRLF in batch files.
+*.cmd text eol=crlf
