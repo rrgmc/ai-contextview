@@ -14,6 +14,19 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.5.5] - 2026-11-27
+
+### Added
+
+- When the viewer is open but hidden, for example after you close the
+  browser panel but keep its tab, a new question no longer waits in
+  silence: Claude says in the chat that questions are waiting and shows the
+  panel again. If nobody uses the viewer page within 45 seconds of a
+  question, Claude also says so in the chat and keeps waiting.
+- A zoom button (⤢) in the document pane of the browser viewer shows only
+  the document, using the whole page. Click it again or press Esc to
+  restore the layout. A new question restores it too.
+
 ## [1.5.4] - 2026-11-27
 
 ### Changed
@@ -346,7 +359,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-contextview/compare/v1.5.4...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-contextview/compare/v1.5.5...HEAD
+[1.5.5]: https://github.com/rrgmc/ai-contextview/compare/v1.5.4...v1.5.5
 [1.5.4]: https://github.com/rrgmc/ai-contextview/compare/v1.5.3...v1.5.4
 [1.5.3]: https://github.com/rrgmc/ai-contextview/compare/v1.5.2...v1.5.3
 [1.5.2]: https://github.com/rrgmc/ai-contextview/compare/v1.5.1...v1.5.2
