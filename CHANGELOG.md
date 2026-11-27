@@ -14,6 +14,15 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.5.3] - 2026-11-27
+
+### Changed
+
+- The Changes tab compares tables row by row. A table shows once, with
+  removed rows red and added rows green, instead of the whole table removed
+  and added again for one changed cell. A changed header still replaces the
+  whole table.
+
 ## [1.5.2] - 2026-11-27
 
 ### Added
@@ -326,7 +335,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-contextview/compare/v1.5.2...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-contextview/compare/v1.5.3...HEAD
+[1.5.3]: https://github.com/rrgmc/ai-contextview/compare/v1.5.2...v1.5.3
 [1.5.2]: https://github.com/rrgmc/ai-contextview/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/rrgmc/ai-contextview/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/rrgmc/ai-contextview/compare/v1.4.5...v1.5.0
