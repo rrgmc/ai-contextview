@@ -62,6 +62,7 @@ Read-only work (reading code, answering questions) needs no worktree.
 | `internal/resolve/` | Code refs: line ranges, Go symbols via `go/packages` |
 | `internal/hook/` | The hook: blocking `AskUserQuestion`, reporting written documents and skills |
 | `internal/glob/` | Glob patterns with `**`, for spec-mode paths and `AI_CONTEXTVIEW_DOC_PATHS` |
+| `internal/gitwt/` | Git worktrees of a repository, from its `.git` files, for spec-mode paths |
 | `internal/identity/` | Workspace id, project name, Claude and ancestor process ids |
 | `internal/e2e/` | End-to-end tests, including the multi-process test |
 | `protocol/` | Golden message fixtures and quote-matching fixtures |
