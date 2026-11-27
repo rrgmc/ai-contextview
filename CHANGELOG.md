@@ -14,6 +14,12 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.4.3] - 2026-11-27
+
+### Fixed
+
+- The viewer's start page shows the version as `v1.4.2`, not `vv1.4.2`.
+
 ## [1.4.2] - 2026-11-27
 
 ### Changed
@@ -273,7 +279,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.4.2...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.4.3...HEAD
+[1.4.3]: https://github.com/rrgmc/ai-specview/compare/v1.4.2...v1.4.3
 [1.4.2]: https://github.com/rrgmc/ai-specview/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/rrgmc/ai-specview/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/rrgmc/ai-specview/compare/v1.3.5...v1.4.0
