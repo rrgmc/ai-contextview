@@ -55,6 +55,22 @@ const FILES: Record<string, string> = {
   '/repo/store/store.go': GO,
   // A draft spec in the home folder, outside the project.
   '/home/me/.claude/specs/repo/draft.md': SPEC,
+  // A repository in /mono with three linked worktrees: a and b have the
+  // spec, the session works in s.
+  ...Object.fromEntries(
+    ['a', 'b', 's'].flatMap(n => [
+      [`/mono/.git/worktrees/${n}/gitdir`, `/mono/wt/${n}/.git\n`],
+      [`/mono/.git/worktrees/${n}/commondir`, '../..\n'],
+      [`/mono/wt/${n}/.git`, `gitdir: /mono/.git/worktrees/${n}\n`],
+    ]),
+  ),
+  '/mono/wt/a/docs/specs/SW-1.md': SPEC,
+  '/mono/wt/b/docs/specs/SW-1.md': SPEC,
+}
+// Modification times for fs.stat; the rest are 0.
+const MTIMES: Record<string, number> = {
+  '/mono/wt/a/docs/specs/SW-1.md': 1000,
+  '/mono/wt/b/docs/specs/SW-1.md': 2000,
 }
 const DIRS: Record<string, { name: string; kind: 'file' | 'dir' }[]> = {
   '/repo/docs/change': [
@@ -63,6 +79,12 @@ const DIRS: Record<string, { name: string; kind: 'file' | 'dir' }[]> = {
     { name: '.hidden.md', kind: 'file' },
   ],
   '/repo/docs/change/notes': [{ name: 'cache.md', kind: 'file' }],
+  '/mono/.git': [{ name: 'worktrees', kind: 'dir' }],
+  '/mono/.git/worktrees': ['a', 'b', 's'].map(name => ({ name, kind: 'dir' as const })),
+  '/mono': [],
+  '/mono/wt/a': [],
+  '/mono/wt/b': [],
+  '/mono/wt/s': [],
 }
 
 // The pane as the desktop docks it beside the chat; `columns` sets its width.
@@ -124,7 +146,7 @@ function engine(on: any, other: (e: { tool: string }) => unknown = () => ({ resu
     value: (DIRS[e.path] ?? []).map(f => ({ ...f, size: 1, mtimeMs: 0 })),
   }))
   on('fs.stat', (_: unknown, e: { path: string }) => ({
-    value: { kind: e.path in DIRS ? 'dir' : 'file', size: 1, mtimeMs: 0, isLink: false },
+    value: { kind: e.path in DIRS ? 'dir' : 'file', size: 1, mtimeMs: MTIMES[e.path] ?? 0, isLink: false },
   }))
   on('tool.call', (_: unknown, e: { tool: string }) => other(e))
   return clk
@@ -762,6 +784,19 @@ test('spec mode shows an existing spec given by its path at once', async ($, on)
   // Claude's own spec_show wins over the path.
   await call($, { tool: SPEC_SHOW, path: 'docs/design.md' })
   expect(await result(call($, { tool: ASK_MODE, spec: true, paths: ['docs/spec.md'] }))).toEqual({ on: true, spec: true })
+})
+
+test('spec mode finds a relative spec path in another worktree, newest copy first', async ($, on) => {
+  engine(on)
+  await $.session.start({ cwd: '/mono/wt/s', surface: 'desktop', isInteractive: true })
+  expect(await result(call($, { tool: ASK_MODE, spec: true, paths: ['docs/specs/SW-1.md'] }))).toEqual({
+    on: true,
+    spec: true,
+    shown: '/mono/wt/b/docs/specs/SW-1.md',
+  })
+  // A missing file stays relative to the session's folder and waits.
+  await call($, { tool: ASK_MODE, off: true })
+  expect(await result(call($, { tool: ASK_MODE, spec: true, paths: ['docs/specs/SW-2.md'] }))).toEqual({ on: true, spec: true })
 })
 
 test('a provisional document shows until the working document is written', async ($, on) => {

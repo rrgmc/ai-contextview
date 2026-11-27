@@ -30,7 +30,9 @@ viewer's tools.
   for example `docs/specs/**`). The first file you write that matches becomes
   the working document. A path, not a glob, to a spec that already exists
   shows it at once, for example when you implement a written spec: the
-  result then has `shown`, and `spec_quote` quotes that file. Without
+  result then has `shown`, and `spec_quote` quotes that file. A relative
+  path missing from the current folder is looked up in the repository's
+  other git worktrees, so pass the path as the user gave it. Without
   paths, ai-contextview picks the written file
   that looks most like a spec: its folder, its headings, how often you edit
   it, and whether a spec skill is running.

@@ -83,7 +83,7 @@ type SpecDoneOutput struct {
 type AskModeInput struct {
 	Off   bool     `json:"off,omitempty" jsonschema:"true turns ask mode off and hands the questions back to the chat, even with a spec open; omit to turn it on"`
 	Spec  bool     `json:"spec,omitempty" jsonschema:"spec mode: ask mode that expects a spec and shows it as the working document once it is written"`
-	Paths []string `json:"paths,omitempty" jsonschema:"spec mode: glob patterns of the spec file, relative to the project dir or absolute (** for any folders); the first written file that matches is shown; a plain path to an existing markdown file is shown at once"`
+	Paths []string `json:"paths,omitempty" jsonschema:"spec mode: glob patterns of the spec file, relative to the project dir or absolute (** for any folders); the first written file that matches is shown; a plain path to an existing markdown file is shown at once, looked up in the repository's other git worktrees when it is not in the session's folder"`
 }
 
 // AskModeOutput is the output of ask_mode.

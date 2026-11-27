@@ -199,7 +199,7 @@ export const TOOLS: readonly ToolDef[] = [
           type: 'array',
           items: { type: 'string' },
           description:
-            'spec mode: glob patterns of the spec file, relative to the project dir or absolute (** for any folders); the first written file that matches is shown; a plain path to an existing markdown file is shown at once',
+            'spec mode: glob patterns of the spec file, relative to the project dir or absolute (** for any folders); the first written file that matches is shown; a plain path to an existing markdown file is shown at once, looked up in the other git worktrees of the repository when it is not in the session folder',
         },
       },
     },

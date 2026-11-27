@@ -236,7 +236,12 @@ session goes through `ask`, with or without a spec.
   working document at once, as a pick (see below), unless Claude's own
   `spec_show` is shown: a spec written before spec mode started, as when
   Claude implements it, needs no write to show. The result then has
-  `shown`, its absolute path.
+  `shown`, its absolute path. A relative path with no glob that names no
+  file under the session's folder is looked up in the other git worktrees
+  of the session's repository (and of the folder the bridge started in),
+  found by reading their `.git` files; when several have it, the most
+  recently changed copy is used. With no copy anywhere, the path stays
+  relative to the session's folder.
 - **The working document.** In ask mode, the markdown files Claude writes are
   reported by `ai-contextview hook` (04) and one of them becomes the working
   document, as if `spec_show` had shown it (07, "Finding the working
