@@ -66,7 +66,6 @@ type questionView struct {
 	Text    string
 	Options []protocol.Option
 	Multi   bool
-	Other   bool
 	Chips   []chipView
 	Answer  *protocol.Answer
 	Keep    bool
@@ -191,7 +190,7 @@ func (d *Daemon) questions(w *Workspace, qs *questionSet, answers map[string]pro
 	}
 	var out []questionView
 	for i, q := range qs.Ask.Questions {
-		v := questionView{Index: i, ID: q.ID, Text: q.Text, Options: q.Options, Multi: q.MultiSelect, Other: q.AllowOther,
+		v := questionView{Index: i, ID: q.ID, Text: q.Text, Options: q.Options, Multi: q.MultiSelect,
 			Chips: d.chips(w, q), Keep: keepSet[q.ID], Later: laterSet[q.ID], OwnLater: hasLaterOption(q.Options)}
 		if a, ok := answers[q.ID]; ok {
 			a := a

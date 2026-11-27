@@ -314,3 +314,5 @@ already answered in the ADRs.
   with its context, and a spec is only one kind of working document. The
   README says that the "context" is the question's documents and code, not
   Claude's context window.
+- **Every question offers Other.** The `ask` tool has no `allow_other`, so a
+  free answer is always possible, as in the built-in question tool.

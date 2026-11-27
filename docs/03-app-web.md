@@ -280,8 +280,8 @@ The match quality shows as a small badge on the ref chip (`≈ fuzzy`,
   answered).
 - Per question: text; ref chips (`§ <section>` for doc refs, prefixed with the
   artifact name when it isn't the primary file; `file:lines` for code refs);
-  radio buttons or checkboxes (`multi_select`) with descriptions; "Other" input
-  when `allow_other`; notes textarea.
+  radio buttons or checkboxes (`multi_select`) with descriptions; an "Other"
+  input on every question; notes textarea.
 - **Showing a question auto-focuses its first doc ref and first code ref.**
   Clicking a chip focuses that ref (switch artifact/code tab, scroll to the
   `<mark>` or line range).

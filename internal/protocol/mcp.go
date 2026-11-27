@@ -44,7 +44,6 @@ type QuestionInput struct {
 	Text        string    `json:"text" jsonschema:"the question"`
 	Options     []Option  `json:"options" jsonschema:"2-6 options"`
 	MultiSelect bool      `json:"multi_select,omitempty" jsonschema:"allow several options"`
-	AllowOther  bool      `json:"allow_other,omitempty" jsonschema:"allow a free-text Other answer"`
 	SpecQuote   string    `json:"spec_quote,omitempty" jsonschema:"verbatim passage (3-300 characters) of the primary spec file this question is about"`
 	SpecSection string    `json:"spec_section,omitempty" jsonschema:"heading of the section containing spec_quote"`
 	DocRefs     []DocRef  `json:"doc_refs,omitempty" jsonschema:"up to 4 passages of other markdown artifacts"`

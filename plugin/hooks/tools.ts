@@ -150,7 +150,6 @@ export const TOOLS: readonly ToolDef[] = [
                 },
               },
               multi_select: { type: 'boolean', description: 'allow several options' },
-              allow_other: { type: 'boolean', description: 'allow a free-text Other answer' },
               spec_quote: {
                 type: 'string',
                 description: 'verbatim passage (3-300 characters) of the primary spec file this question is about',

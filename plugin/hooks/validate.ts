@@ -20,7 +20,6 @@ export type QuestionArg = {
   text?: string
   options?: OptionArg[]
   multi_select?: boolean
-  allow_other?: boolean
   spec_quote?: string
   spec_section?: string
   doc_refs?: DocRefArg[]

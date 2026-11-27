@@ -128,7 +128,6 @@ reached.
         {"label": "Configurable"}
       ],
       "multi_select": false,
-      "allow_other": true,
       "spec_quote": "retries use exponential backoff capped at 30s",
       "spec_section": "Retry policy",
       "doc_refs": [

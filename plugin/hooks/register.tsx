@@ -473,7 +473,6 @@ async function ask($: EngineInterface, args: Args, signal: AbortSignal): Promise
       text: q.text ?? '',
       options: (q.options ?? []).map(check.normalizeRecommended),
       multi: !!q.multi_select,
-      allowOther: !!q.allow_other,
       code: await resolveCode($, label, q.code_refs ?? [], errs),
       docs: await resolveDocs($, { ...prev, text }, label, q.doc_refs ?? [], errs),
     })
@@ -557,7 +556,7 @@ function answersOf(a: AskView): { answers: Answer[]; deferred: string[]; missing
     const valid = new Set(q.options.map(o => o.label))
     let selected = d.selected.filter(s => valid.has(s))
     if (!q.multi) selected = selected.slice(0, 1)
-    const other = q.allowOther && d.other.trim() ? d.other.trim() : null
+    const other = d.other.trim() ? d.other.trim() : null
     if (selected.length === 0 && other === null) missing.push(q.id)
     answers.push({ id: q.id, selected, other, notes })
   }
@@ -565,7 +564,7 @@ function answersOf(a: AskView): { answers: Answer[]; deferred: string[]; missing
 }
 
 const isAnswered = (q: QuestionView, d: Draft | undefined) =>
-  !!d && (d.later || d.selected.length > 0 || (q.allowOther && d.other.trim() !== ''))
+  !!d && (d.later || d.selected.length > 0 || d.other.trim() !== '')
 
 async function gotoQuestion($: EngineInterface, k: number) {
   const a = await read($, askAtom)
@@ -635,7 +634,7 @@ async function toggleLater($: EngineInterface, q: QuestionView) {
 function answerText(q: QuestionView, d: Draft): string {
   if (d.later) return 'Decide later'
   const parts = q.options.map(o => o.label).filter(l => d.selected.includes(l))
-  if (q.allowOther && d.other.trim()) parts.push(`Other: ${d.other.trim()}`)
+  if (d.other.trim()) parts.push(`Other: ${d.other.trim()}`)
   return parts.join(', ')
 }
 
@@ -1012,16 +1011,14 @@ export const register: Register = on => {
                 </Button>
               )}
             </Box>
-            {question.allowOther && (
-              <Input
-                key={`other-${question.id}`}
-                label="Other"
-                placeholder="Your own answer"
-                value={d.other}
-                onInput={value => void editDraft($, question.id, cur => ({ ...cur, other: value, later: value.trim() ? false : cur.later }))}
-                onSubmit={value => void editDraft($, question.id, cur => ({ ...cur, other: value }))}
-              />
-            )}
+            <Input
+              key={`other-${question.id}`}
+              label="Other"
+              placeholder="Your own answer"
+              value={d.other}
+              onInput={value => void editDraft($, question.id, cur => ({ ...cur, other: value, later: value.trim() ? false : cur.later }))}
+              onSubmit={value => void editDraft($, question.id, cur => ({ ...cur, other: value }))}
+            />
             <Input
               key={`notes-${question.id}`}
               label="Notes"

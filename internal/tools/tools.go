@@ -475,7 +475,7 @@ func (b *Bridge) Ask(ctx context.Context, _ *mcp.CallToolRequest, in protocol.As
 	for _, q := range in.Questions {
 		label := "question " + q.ID
 		ask.Questions = append(ask.Questions, protocol.AskQuestion{
-			ID: q.ID, Text: q.Text, Options: q.Options, MultiSelect: q.MultiSelect, AllowOther: q.AllowOther,
+			ID: q.ID, Text: q.Text, Options: q.Options, MultiSelect: q.MultiSelect,
 			Docs: b.resolveDocs(label, q.SpecQuote, q.SpecSection, q.DocRefs, &errs),
 			Code: b.resolveCode(ctx, label, q.CodeRefs, &errs),
 		})

@@ -120,7 +120,7 @@ section. An existing spec the user names stays where it is.
     section}` with the same verbatim rule, or `{path, lines}` (`N` or `N-M`)
     for a file that is not markdown.
   - Give 2 to 6 options with short labels. Put the trade-off in each option's
-    `description`. Set `allow_other` when a free answer makes sense.
+    `description`.
   - Mark the option you recommend with `"recommended": true` (at most one per
     question), and say why in its description.
 - If `ask` returns an error, fix exactly what it says (quote not found, unknown

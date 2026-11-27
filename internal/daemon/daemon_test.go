@@ -147,7 +147,7 @@ func (h *harness) do(method, path string, form url.Values, hdr map[string]string
 
 func askBody(cwd, specPath, qs string) *protocol.Ask {
 	return &protocol.Ask{QSID: qs, Title: "T", Questions: []protocol.AskQuestion{{
-		ID: "q1", Text: "Reset?", Options: []protocol.Option{{Label: "Yes", Recommended: true}, {Label: "No"}}, AllowOther: true,
+		ID: "q1", Text: "Reset?", Options: []protocol.Option{{Label: "Yes", Recommended: true}, {Label: "No"}},
 		Docs: []protocol.ResolvedDocRef{{Path: specPath, Quote: "exponential backoff capped at 30s", Section: "Retry policy", Kind: "spec"}},
 		Code: []protocol.ResolvedRef{{Path: filepath.Join(cwd, "code.go"), StartLine: 3, EndLine: 3, Source: "lines"}},
 	}}}
@@ -212,6 +212,32 @@ func TestFullLoop(t *testing.T) {
 	assert.Equal(t, []string{"No"}, ar.Answers[0].Selected)
 	require.NotNil(t, ar.Answers[0].Notes)
 	assert.Equal(t, "cap resets daily", *ar.Answers[0].Notes)
+}
+
+// Every question offers Other, and an Other text alone answers it.
+func TestOtherOnEveryQuestion(t *testing.T) {
+	h := newHarness(t)
+	cwd, specPath := writeSpec(t)
+	b := h.bridge("ws_A", cwd)
+	b.req(protocol.TypeSpecShow, &protocol.SpecShow{RootAbs: specPath})
+	b.req(protocol.TypeAsk, askBody(cwd, specPath, "qs_1"))
+
+	h.d.mu.Lock()
+	ev := h.d.askEvent(h.d.workspaces["ws_A"])
+	h.d.mu.Unlock()
+	assert.Contains(t, string(ev.Data), `name=\"other.q1\"`)
+
+	resp := h.do(http.MethodPost, "/w/ws_A/qs/qs_1/answer", url.Values{"other.q1": {"only after a full day"}}, nil)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+
+	env := b.read()
+	require.Equal(t, protocol.TypeAskResult, env.Type)
+	var ar protocol.AskResult
+	require.NoError(t, env.Decode(&ar))
+	require.Len(t, ar.Answers, 1)
+	assert.Empty(t, ar.Answers[0].Selected)
+	require.NotNil(t, ar.Answers[0].Other)
+	assert.Equal(t, "only after a full day", *ar.Answers[0].Other)
 }
 
 func TestReplaceAndCancel(t *testing.T) {

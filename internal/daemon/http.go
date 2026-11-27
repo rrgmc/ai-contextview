@@ -377,7 +377,7 @@ func (d *Daemon) handleAnswer(w http.ResponseWriter, r *http.Request) {
 		if !q.MultiSelect && len(a.Selected) > 1 {
 			a.Selected = a.Selected[:1]
 		}
-		if other := strings.TrimSpace(r.Form.Get("other." + q.ID)); other != "" && q.AllowOther {
+		if other := strings.TrimSpace(r.Form.Get("other." + q.ID)); other != "" {
 			a.Other = &other
 		}
 		if notes := strings.TrimSpace(r.Form.Get("notes." + q.ID)); notes != "" {

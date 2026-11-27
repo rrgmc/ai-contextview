@@ -56,7 +56,7 @@ viewer's tools.
   `spec_show`.
 - Give 2 to 6 options with short labels and the trade-off in each
   `description`. Mark the option you recommend with `"recommended": true` and
-  say why. Set `allow_other` when a free answer makes sense.
+  say why.
 - Results:
   - `answered`: act on the answers.
   - `in_chat`: stop and wait for the user's message.

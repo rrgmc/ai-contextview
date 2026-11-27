@@ -338,7 +338,6 @@ const QUESTIONS = [
     text: 'Where are widgets kept?',
     options: [{ label: 'Memory' }, { label: 'Disk (Recommended)', description: 'Survives a restart' }],
     spec_quote: 'kept in memory',
-    allow_other: true,
   },
   {
     id: 'q2',
@@ -407,6 +406,8 @@ test('questions are answered in the pane, each showing its own refs', async ($, 
   await ui.press({ key: 'side-form' })
   expect(await ui.find({ key: 'ask' })).toBeDefined()
   await ui.input({ key: 'notes-q2', text: 'keep it small', kind: 'change' })
+  // Other shows on every question; the questions set no flag for it.
+  await ui.input({ key: 'other-q2', text: 'fifty', kind: 'change' })
   await ui.press({ key: 'opt-0' })
   expect((await ui.find({ key: 'send' }))?.props.variant).toBe('primary')
   await ui.press({ key: 'send' })
@@ -416,7 +417,7 @@ test('questions are answered in the pane, each showing its own refs', async ($, 
     status: 'answered',
     answers: [
       { id: 'q1', selected: ['Disk'], other: null, notes: null },
-      { id: 'q2', selected: ['100'], other: null, notes: 'keep it small' },
+      { id: 'q2', selected: ['100'], other: 'fifty', notes: 'keep it small' },
     ],
   })
   expect(await ui.find({ key: 'ask' })).toBeUndefined()

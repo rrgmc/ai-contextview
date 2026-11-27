@@ -61,7 +61,6 @@ export type QuestionView = QuoteView & {
   text: string
   options: OptionView[]
   multi: boolean
-  allowOther: boolean
   code: CodeView[]
   docs: DocRefView[]
 }

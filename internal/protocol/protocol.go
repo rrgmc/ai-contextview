@@ -354,7 +354,6 @@ type AskQuestion struct {
 	Text        string           `json:"text"`
 	Options     []Option         `json:"options"`
 	MultiSelect bool             `json:"multi_select,omitempty"`
-	AllowOther  bool             `json:"allow_other,omitempty"`
 	Docs        []ResolvedDocRef `json:"docs"`
 	Code        []ResolvedRef    `json:"code"`
 }

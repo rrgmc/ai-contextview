@@ -133,9 +133,8 @@ func sampleAsk(specPath, codePath string) *protocol.Ask {
 				{Label: "Yes, per partner", Description: "A partner that recovers gets its backlog quickly.", Recommended: true},
 				{Label: "No, per event", Description: "Each event keeps its own backoff, as Backoff does today."},
 			},
-			AllowOther: true,
-			Docs:       []protocol.ResolvedDocRef{{Path: specPath, Quote: "each later retry doubles the wait, capped at 30s", Section: "Retry policy", Kind: "spec"}},
-			Code:       []protocol.ResolvedRef{{Path: codePath, StartLine: 24, EndLine: 31, Symbol: "RetryPolicy.Backoff", Kind: "method", Source: "symbol"}},
+			Docs: []protocol.ResolvedDocRef{{Path: specPath, Quote: "each later retry doubles the wait, capped at 30s", Section: "Retry policy", Kind: "spec"}},
+			Code: []protocol.ResolvedRef{{Path: codePath, StartLine: 24, EndLine: 31, Symbol: "RetryPolicy.Backoff", Kind: "method", Source: "symbol"}},
 		},
 		{
 			ID:   "q2",
@@ -144,9 +143,8 @@ func sampleAsk(specPath, codePath string) *protocol.Ask {
 				{Label: "Yes, when longer", Description: "Wait for Retry-After when it is longer than the backoff.", Recommended: true},
 				{Label: "No", Description: "Treat 429 like a 5xx status."},
 			},
-			AllowOther: true,
-			Docs:       []protocol.ResolvedDocRef{{Path: specPath, Quote: "endpoint answers with a 5xx status or 429", Section: "Retry policy", Kind: "spec"}},
-			Code:       []protocol.ResolvedRef{{Path: codePath, StartLine: 36, EndLine: 46, Symbol: "classify", Kind: "func", Source: "symbol"}},
+			Docs: []protocol.ResolvedDocRef{{Path: specPath, Quote: "endpoint answers with a 5xx status or 429", Section: "Retry policy", Kind: "spec"}},
+			Code: []protocol.ResolvedRef{{Path: codePath, StartLine: 36, EndLine: 46, Symbol: "classify", Kind: "func", Source: "symbol"}},
 		},
 	}}
 }
