@@ -14,6 +14,13 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.5.2] - 2026-11-27
+
+### Added
+
+- The document pane of the browser viewer shows how many lines the document
+  has, next to its name. It hides when the pane is too narrow for it.
+
 ## [1.5.1] - 2026-11-27
 
 ### Changed
@@ -319,7 +326,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-contextview/compare/v1.5.1...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-contextview/compare/v1.5.2...HEAD
+[1.5.2]: https://github.com/rrgmc/ai-contextview/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/rrgmc/ai-contextview/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/rrgmc/ai-contextview/compare/v1.4.5...v1.5.0
 [1.4.5]: https://github.com/rrgmc/ai-contextview/compare/v1.4.4...v1.4.5
