@@ -93,7 +93,7 @@ go test ./...
   other skill too (docs/06-pane-mod.md).
 
 The `CI` workflow (`.github/workflows/ci.yml`) runs gofmt, `go vet` and
-`go test -race ./...` on Linux and macOS for pushes to `master` and pull
+`go test -race ./...` on Linux for pushes to `master` and pull
 requests. A push to `master` that only changes markdown files or `docs/` skips
 it. It does not run the `claude plugin` checks.
 
