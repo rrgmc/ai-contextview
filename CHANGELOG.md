@@ -14,6 +14,14 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.7.0] - 2026-11-27
+
+### Changed
+
+- When no question of a set has a document, the questions show on the right
+  and the code on the left, so the questions stay on the right in every
+  side-by-side layout.
+
 ## [1.6.0] - 2026-11-27
 
 ### Fixed
@@ -367,7 +375,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-contextview/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-contextview/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/rrgmc/ai-contextview/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/rrgmc/ai-contextview/compare/v1.5.5...v1.6.0
 [1.5.5]: https://github.com/rrgmc/ai-contextview/compare/v1.5.4...v1.5.5
 [1.5.4]: https://github.com/rrgmc/ai-contextview/compare/v1.5.3...v1.5.4
