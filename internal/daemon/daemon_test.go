@@ -730,13 +730,27 @@ func TestDocsOutsideSpecAndByLines(t *testing.T) {
 	w := h.d.workspaces["ws_A"]
 	md := h.d.docPayload(w, notes)
 	assert.Equal(t, "notes.md", md["name"])
+	notesSrc, err := os.ReadFile(notes)
+	require.NoError(t, err)
+	assert.Equal(t, lineCount(notesSrc), md["lines"])
 	assert.Contains(t, md["html"], `class="q-section" data-ref="q1-0">Two.`, "the block on line 5 is tinted")
 	assert.NotContains(t, md["html"], `data-ref="q1-0">One.`)
 	src := h.d.docPayload(w, yaml)
 	assert.Equal(t, true, src["source"])
+	yamlSrc, err := os.ReadFile(yaml)
+	require.NoError(t, err)
+	assert.Equal(t, lineCount(yamlSrc), src["lines"])
 	assert.Contains(t, src["html"], `class="doc-src"`)
 	ev := h.d.askEvent(w)
 	assert.Contains(t, string(ev.Data), `"doc_panel":true`)
+}
+
+func TestLineCount(t *testing.T) {
+	assert.Equal(t, 0, lineCount(nil))
+	assert.Equal(t, 1, lineCount([]byte("one")))
+	assert.Equal(t, 1, lineCount([]byte("one\n")))
+	assert.Equal(t, 2, lineCount([]byte("one\ntwo")))
+	assert.Equal(t, 3, lineCount([]byte("one\n\nthree\n")))
 }
 
 func TestIndexShowsVersionOnce(t *testing.T) {

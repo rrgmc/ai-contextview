@@ -100,8 +100,29 @@
     }
     $$(".artifact").forEach((a) => a.classList.toggle("current", a.dataset.doc === currentDoc));
     $("#chg-count").textContent = p.changes ? " (" + p.changes + ")" : "";
+    docLines = p.lines || 0;
     if (docView === "changes") loadChanges();
     updateJump();
+  }
+
+  // The line count of the document shows only while the header has room for
+  // it: it is the first thing to go when the pane is narrow.
+  let docLines = 0;
+  function fitDocLines() {
+    const el = $("#doc-lines");
+    el.textContent = docLines ? docLines.toLocaleString() + (docLines === 1 ? " line" : " lines") : "";
+    el.hidden = !docLines;
+    const head = el.parentElement;
+    if (!el.hidden && head.scrollWidth > head.clientWidth) el.hidden = true;
+  }
+  {
+    // Refit when the header changes size or its other content changes.
+    const el = $("#doc-lines");
+    const head = el.parentElement;
+    new ResizeObserver(fitDocLines).observe(head);
+    new MutationObserver((recs) => {
+      if (recs.some((r) => r.target !== el && !el.contains(r.target))) fitDocLines();
+    }).observe(head, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["hidden"] });
   }
 
   // ------------------------------------------------------------ changes view
@@ -212,6 +233,7 @@
       show = $$('[data-ref="' + CSS.escape(activeRef.ref) + '"]', docEl).length > 0;
     }
     link.hidden = !show;
+    fitDocLines();
   }
 
   // ------------------------------------------------------------ code pane

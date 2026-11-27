@@ -8,6 +8,7 @@ package daemon
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -310,4 +311,33 @@ func TestBrowserHidesEmptyCodePane(t *testing.T) {
 		chromedp.WaitVisible(`.code-pane .line.hl`),
 	)
 	assert.True(t, eval[bool](t, ctx, codeShown))
+}
+
+// The doc pane header shows the document's line count while it has room.
+func TestBrowserDocLines(t *testing.T) {
+	h, _ := twoQuestions(t)
+	ctx := newBrowser(t)
+	want := fmt.Sprintf("%d lines", lineCount([]byte(spec)))
+
+	run(t, ctx,
+		chromedp.EmulateViewport(1600, 900),
+		chromedp.Navigate(h.http.URL+"/w/ws_A"),
+		chromedp.WaitVisible(`#doc mark.q.active`),
+		chromedp.WaitVisible(`#doc-lines`),
+	)
+	assert.Equal(t, want, text(t, ctx, `#doc-lines`))
+
+	// A phone-width window has no room for it.
+	run(t, ctx,
+		chromedp.EmulateViewport(400, 900),
+		chromedp.Sleep(300*time.Millisecond),
+	)
+	assert.True(t, eval[bool](t, ctx, `document.querySelector('#doc-lines').hidden`))
+
+	// Wide again, it comes back.
+	run(t, ctx,
+		chromedp.EmulateViewport(1600, 900),
+		chromedp.WaitVisible(`#doc-lines`),
+	)
+	assert.Equal(t, want, text(t, ctx, `#doc-lines`))
 }

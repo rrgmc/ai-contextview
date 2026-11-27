@@ -256,6 +256,16 @@ func (d *Daemon) artifactsEvent(w *Workspace) Event {
 }
 
 // docPayload renders one doc with its marks and changed sections.
+// lineCount is the number of lines of a file as an editor counts them: a
+// last line without a newline counts, an empty file has none.
+func lineCount(b []byte) int {
+	n := bytes.Count(b, []byte{'\n'})
+	if len(b) > 0 && b[len(b)-1] != '\n' {
+		n++
+	}
+	return n
+}
+
 func (d *Daemon) docPayload(w *Workspace, rel string) map[string]any {
 	out := map[string]any{"path": rel}
 	abs, ok := w.docAbs(rel)
@@ -277,6 +287,7 @@ func (d *Daemon) docPayload(w *Workspace, rel string) map[string]any {
 			out["html"] = `<p class="empty">` + template.HTMLEscapeString(err.Error()) + `</p>`
 			return out
 		}
+		out["lines"] = lineCount(src)
 		start, end := w.lineMark(rel)
 		html, err := render.Code(abs, src, start, end)
 		if err != nil {
@@ -291,6 +302,8 @@ func (d *Daemon) docPayload(w *Workspace, rel string) map[string]any {
 		out["html"] = `<p class="empty">` + template.HTMLEscapeString(err.Error()) + `</p>`
 		return out
 	}
+	// The frontmatter is blanked, not removed, so the count matches the file.
+	out["lines"] = lineCount(src)
 	changed := w.changedIDs(rel)
 	html, _, err := render.Markdown(src, w.marksFor(rel, src), changed)
 	if err != nil {

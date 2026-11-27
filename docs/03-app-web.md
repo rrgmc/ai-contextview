@@ -220,6 +220,9 @@ text file of the project that a doc ref names (07).
 - **Show current passage**: a link in the doc pane header, shown while a
   passage is highlighted for the current question or a `focus` call. It
   scrolls back to that passage, switching documents first if needed.
+- **Line count**: the doc pane header shows how many lines the document has
+  ("· 214 lines"), from `lines` in the `doc` payload. It hides whenever the
+  header would overflow, so it never pushes out the tabs or links.
 - **Keep scroll position**: before a `doc` swap, `app.js` records the heading
   nearest the top of the pane and its pixel offset; after the swap it scrolls
   back to that heading. Without this, every Claude edit would jump to the top.
