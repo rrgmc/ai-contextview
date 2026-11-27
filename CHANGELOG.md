@@ -14,6 +14,16 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.8.1] - 2026-11-27
+
+### Fixed
+
+- `ai-contextview fakeapp` no longer breaks a running daemon. Before, it
+  started on the daemon's socket, even with `--help`, and deleted the socket
+  file, so bridges, `serve --stop` and `serve --restart` could no longer reach
+  the daemon. Now `--help` prints the usage, other arguments are an error, and
+  `fakeapp` refuses to start while a daemon runs.
+
 ## [1.8.0] - 2026-11-27
 
 ### Changed
@@ -395,7 +405,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-contextview/compare/v1.8.0...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-contextview/compare/v1.8.1...HEAD
+[1.8.1]: https://github.com/rrgmc/ai-contextview/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/rrgmc/ai-contextview/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/rrgmc/ai-contextview/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/rrgmc/ai-contextview/compare/v1.5.5...v1.6.0
