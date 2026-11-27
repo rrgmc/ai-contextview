@@ -1,0 +1,7 @@
+version: 0.5.1        # personal-rules version last applied
+stage: established    # early | established
+language: go
+features: [ci, release, changelog]
+release-environment: ''
+custom: [ci, release] # hand-written workflows; release.yml calls ci.yml
+ci-check: CI result

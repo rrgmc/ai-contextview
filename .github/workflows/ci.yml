@@ -1,5 +1,11 @@
 name: CI
 
+# Pull request runs are titled "PR #<number>: <title>"; an empty run-name keeps GitHub's default.
+run-name: >-
+  ${{ github.event_name == 'pull_request'
+  && format('PR #{0}: {1}', github.event.pull_request.number, github.event.pull_request.title)
+  || '' }}
+
 on:
   push:
     branches: [master]
@@ -9,7 +15,9 @@ on:
     paths-ignore:
       - '**.md'
       - 'docs/**'
+  # labeled/unlabeled: adding the no-changelog label re-runs the changelog check.
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   workflow_call:
 
 permissions:
@@ -49,3 +57,47 @@ jobs:
       # internal/daemon/browser_test.go run here too.
       - name: go test
         run: go test -race ./...
+
+  # A pull request adds a fragment to changelog.d/ (see changelog.d/README.md),
+  # unless it carries the no-changelog label.
+  changelog:
+    name: Changelog
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Check for a changelog fragment
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          NO_CHANGELOG: ${{ contains(github.event.pull_request.labels.*.name, 'no-changelog') }}
+        run: |
+          if [ "$NO_CHANGELOG" = true ]; then
+            echo "Label no-changelog: no fragment needed."
+            exit 0
+          fi
+          fragments=$(git diff --name-only --diff-filter=AM "$BASE"...HEAD -- 'changelog.d/*.md' ':!changelog.d/README.md')
+          if [ -z "$fragments" ]; then
+            echo "Add a file to changelog.d/ (see changelog.d/README.md), or label the pull request no-changelog."
+            exit 1
+          fi
+          echo "Fragments: $fragments"
+
+  # The only check branch protection requires. Skipped jobs pass, so jobs can
+  # be added without touching the protection: list every other job in needs.
+  ci-result:
+    name: CI result
+    needs: [test, changelog]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          for result in $RESULTS; do
+            case "$result" in success | skipped) ;; *) exit 1 ;; esac
+          done
