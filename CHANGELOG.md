@@ -14,6 +14,14 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.5.1] - 2026-11-27
+
+### Changed
+
+- Every question has an "Other" field for your own answer, in the browser
+  viewer and in the pane. Claude no longer decides per question whether to
+  offer it, and the `ask` tool no longer takes `allow_other`.
+
 ## [1.5.0] - 2026-11-27
 
 ### Changed
@@ -311,7 +319,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-contextview/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-contextview/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/rrgmc/ai-contextview/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/rrgmc/ai-contextview/compare/v1.4.5...v1.5.0
 [1.4.5]: https://github.com/rrgmc/ai-contextview/compare/v1.4.4...v1.4.5
 [1.4.4]: https://github.com/rrgmc/ai-contextview/compare/v1.4.3...v1.4.4
