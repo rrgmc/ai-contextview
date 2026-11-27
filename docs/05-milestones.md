@@ -84,9 +84,12 @@ What changed from the plan while building and using it:
   Unix sockets since Windows 10 1803. Platform code sits behind build tags:
   the instance lock (`flock` / `LockFileEx`), detached daemons (`setsid` /
   `DETACHED_PROCESS`) and the process tree (`ps` / a Toolhelp snapshot). The
-  plugin's `sh` launcher runs there too: Claude Code starts it with Git Bash,
-  which finds `ai-contextview.exe` as `ai-contextview`, and it reads a `;`-separated
-  Windows `GOPATH`. Releases include Windows binaries (amd64 and arm64, as
+  plugin's `sh` launcher runs the hook there too: Claude Code starts hooks
+  with Git Bash, which finds `ai-contextview.exe` as `ai-contextview`, and the
+  launcher reads a `;`-separated Windows `GOPATH`. The MCP server starts
+  without Git Bash, and `sh` is often not on the Windows `PATH`, so Claude Code
+  runs `scripts/ai-contextview.cmd` there instead: a batch twin of the `sh`
+  launcher with the same search. Releases include Windows binaries (amd64 and arm64, as
   `.zip`); CI does not test on Windows yet.
 - **Front end.** Plain JavaScript instead of htmx; the web server lives in
   `internal/daemon`. Browser tests in `internal/daemon/browser_test.go` drive
