@@ -14,6 +14,16 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.4.5] - 2026-11-27
+
+### Changed
+
+- The `ask` tool description, the hook's message when it blocks the
+  built-in question tool, and the skills tell Claude to ask for approval of
+  an action that needs your permission in plain chat, not in the viewer. An
+  answer in the viewer reaches Claude as a tool result, which Claude Code's
+  permission checks do not take as your approval.
+
 ## [1.4.4] - 2026-11-27
 
 ### Changed
@@ -291,7 +301,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.4.4...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.4.5...HEAD
+[1.4.5]: https://github.com/rrgmc/ai-specview/compare/v1.4.4...v1.4.5
 [1.4.4]: https://github.com/rrgmc/ai-specview/compare/v1.4.3...v1.4.4
 [1.4.3]: https://github.com/rrgmc/ai-specview/compare/v1.4.2...v1.4.3
 [1.4.2]: https://github.com/rrgmc/ai-specview/compare/v1.4.1...v1.4.2
