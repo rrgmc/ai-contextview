@@ -14,6 +14,17 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.5.4] - 2026-11-27
+
+### Changed
+
+- `/ai-contextview:ask-mode off` and `/ai-contextview:spec-mode off` (and
+  their `-mod` versions) now hand the questions back to the chat for the rest
+  of the session, even while a spec from `spec-elaborate` is open. The spec
+  stays in the viewer. Before, an open spec kept blocking the built-in
+  question tool until it was finished. Turning ask mode on again, or showing
+  another spec, ends this.
+
 ## [1.5.3] - 2026-11-27
 
 ### Changed
@@ -335,7 +346,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-contextview/compare/v1.5.3...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-contextview/compare/v1.5.4...HEAD
+[1.5.4]: https://github.com/rrgmc/ai-contextview/compare/v1.5.3...v1.5.4
 [1.5.3]: https://github.com/rrgmc/ai-contextview/compare/v1.5.2...v1.5.3
 [1.5.2]: https://github.com/rrgmc/ai-contextview/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/rrgmc/ai-contextview/compare/v1.5.0...v1.5.1
