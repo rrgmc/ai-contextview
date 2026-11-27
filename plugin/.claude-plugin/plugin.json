@@ -1,6 +1,6 @@
 {
   "name": "ai-specview",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "A front end for Claude's questions: each question shows next to the document passage and the code it is about. Ask mode (the ask-mode skill) sends every question of a session there; the spec-elaborate skill writes a spec with you on top of it. In a browser page, or in a pane beside the chat (the -mod skills). Needs the ai-specview binary for the browser page; see https://github.com/rrgmc/ai-specview#install",
   "author": {
     "name": "Rangel Reale"

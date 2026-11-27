@@ -14,6 +14,14 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.4.1] - 2026-11-27
+
+### Changed
+
+- The install instructions name the exact release version instead of
+  `@latest`. When the binary is missing, the plugin's error message links to
+  the install section of the README.
+
 ## [1.4.0] - 2026-11-27
 
 ### Added
@@ -250,7 +258,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/rrgmc/ai-specview/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/rrgmc/ai-specview/compare/v1.3.5...v1.4.0
 [1.3.5]: https://github.com/rrgmc/ai-specview/compare/v1.3.4...v1.3.5
 [1.3.4]: https://github.com/rrgmc/ai-specview/compare/v1.3.3...v1.3.4
