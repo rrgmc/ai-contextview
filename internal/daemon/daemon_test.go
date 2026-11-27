@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -710,4 +711,15 @@ func TestDocsOutsideSpecAndByLines(t *testing.T) {
 	assert.Contains(t, src["html"], `class="doc-src"`)
 	ev := h.d.askEvent(w)
 	assert.Contains(t, string(ev.Data), `"doc_panel":true`)
+}
+
+func TestIndexShowsVersionOnce(t *testing.T) {
+	h := newHarness(t)
+	h.d.Version = "v1.2.3"
+	resp := h.do(http.MethodGet, "/", nil, nil)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Contains(t, string(body), ">v1.2.3<")
+	assert.NotContains(t, string(body), "vv1.2.3")
 }
