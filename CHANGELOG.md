@@ -18,16 +18,11 @@ See [changelog.d/](changelog.d/).
 
 ### Changed
 
-- The project is renamed from ai-specview to ai-contextview. The binary,
-  the Go module (`github.com/rrgmc/ai-contextview`), the Claude Code plugin
-  and marketplace, the MCP tool names, the `/contextview-pane` command and the
-  socket and cache folders all use the new name. The environment variables
-  are now `AI_CONTEXTVIEW_*`; the old `AI_SPECVIEW_*` names are no longer
-  read.
-- To upgrade, stop the old daemon (`ai-specview serve --stop`), uninstall the
-  `ai-specview` plugin and marketplace, then install the binary and the
-  plugin under the new name as the README describes. Rename any
-  `AI_SPECVIEW_*` variables in your settings.
+- The project is now called ai-contextview. The binary, the Go module
+  (`github.com/rrgmc/ai-contextview`), the Claude Code plugin and
+  marketplace, the MCP tool names, the environment variables
+  (`AI_CONTEXTVIEW_*`), the `/contextview-pane` command and the socket and
+  cache folders use this name.
 
 ## [1.4.5] - 2026-11-27
 
@@ -103,7 +98,7 @@ See [changelog.d/](changelog.d/).
 
 ### Fixed
 
-- In a desktop-app worktree session, relative paths in the first ai-specview
+- In a desktop-app worktree session, relative paths in the first ai-contextview
   call (for example `/spec-mode docs/specs/**`) resolve against the worktree,
   not the main checkout. Before, the spec-mode glob matched nothing until
   ask mode was turned on a second time.
@@ -117,7 +112,7 @@ See [changelog.d/](changelog.d/).
   dot-folder.
 - In a worktree session, relative paths (doc and code refs, `spec_show`,
   spec-mode paths) resolve against the worktree instead of the main checkout.
-  The hook now also runs before ai-specview's own tools to report the
+  The hook now also runs before ai-contextview's own tools to report the
   session's folder; a manual setup updates the `PreToolUse` matcher as the
   README shows.
 - A document picked from a write now appears on an open viewer page at once,
@@ -144,25 +139,25 @@ See [changelog.d/](changelog.d/).
 
 ### Added
 
-- Ask mode: run `/ai-specview:ask-mode` at the start of a session to send
-  every question Claude asks to the ai-specview viewer, with or without a
+- Ask mode: run `/ai-contextview:ask-mode` at the start of a session to send
+  every question Claude asks to the ai-contextview viewer, with or without a
   spec. Questions point at code only when they are about it, and the
   built-in question tool is blocked while ask mode is on.
-  `/ai-specview:ask-mode off` turns it off, and `/ai-specview:ask-mode-mod`
+  `/ai-contextview:ask-mode off` turns it off, and `/ai-contextview:ask-mode-mod`
   does the same in the pane.
 - A question can point at any document of the project, not only the spec:
   a markdown passage by quote or by lines, or another text file (YAML, JSON,
   SQL) by lines, shown as source with the lines highlighted. When a question
   has several documents, tabs switch between them.
-- `AI_SPECVIEW_ASK_MODE=always` turns ask mode on for every session.
+- `AI_CONTEXTVIEW_ASK_MODE=always` turns ask mode on for every session.
 - In ask mode, the first markdown document Claude writes (a spec, a plan, a
   design note) shows beside the questions as the working document, with
   change marks and the Changes tab, whichever skill writes it. Bookkeeping
-  files never count, and `AI_SPECVIEW_DOC_PATHS` limits which files do.
-- Spec mode: `/ai-specview:spec-mode [path or glob]` is ask mode that expects
+  files never count, and `AI_CONTEXTVIEW_DOC_PATHS` limits which files do.
+- Spec mode: `/ai-contextview:spec-mode [path or glob]` is ask mode that expects
   a spec, for use with your own or your company's spec skill. With a path or
   glob, the first matching file shows; without one, the written file that
-  looks most like a spec. `/ai-specview:spec-mode-mod` does the same in the
+  looks most like a spec. `/ai-contextview:spec-mode-mod` does the same in the
   pane.
 
 ### Changed
@@ -170,9 +165,9 @@ See [changelog.d/](changelog.d/).
 - When no question of a set has a document and no spec is shown, the
   questions and the code take the whole page. The layout changes only when a
   new question set arrives.
-- The README and the plugin description present ai-specview as a front end
+- The README and the plugin description present ai-contextview as a front end
   for Claude's questions, with spec elaboration built on it.
-- `ai-specview hook` also runs after `Write`, `Edit` and `MultiEdit` and
+- `ai-contextview hook` also runs after `Write`, `Edit` and `MultiEdit` and
   before `Skill`. The plugin sets this up; a manual setup adds the two hook
   entries shown in the README.
 
@@ -208,13 +203,13 @@ See [changelog.d/](changelog.d/).
 ### Added
 
 - Releases include Windows binaries for amd64 and arm64, as `.zip` archives
-  holding `ai-specview.exe`.
+  holding `ai-contextview.exe`.
 
 ### Fixed
 
 - On Windows, the bridge opens the viewer in the default browser when no page
   is open, as it does on Linux and macOS.
-- `ai-specview` builds and runs on Windows 10 and later: `go install` no
+- `ai-contextview` builds and runs on Windows 10 and later: `go install` no
   longer fails there, and the daemon, the MCP bridge and the hook work with
   Windows processes and paths.
 - The plugin finds the binary on Windows when it is installed under a
@@ -225,7 +220,7 @@ See [changelog.d/](changelog.d/).
 ### Changed
 
 - In the Claude desktop app, the browser viewer opens in the app's built-in
-  browser instead of the default browser. `AI_SPECVIEW_OPEN=browser`, or
+  browser instead of the default browser. `AI_CONTEXTVIEW_OPEN=browser`, or
   asking for it in the prompt, keeps the default browser. In the CLI and IDEs
   the default browser opens as before.
 - The pane's answer review sets the answers apart from the questions: the
@@ -236,7 +231,7 @@ See [changelog.d/](changelog.d/).
 
 ### Changed
 
-- The ai-specview pane gives the spec the whole width when there is no
+- The ai-contextview pane gives the spec the whole width when there is no
   question or code to show beside it.
 - In two columns, the question form and the code share the side column
   through tabs, so the form no longer pushes the code out of view.
@@ -258,7 +253,7 @@ See [changelog.d/](changelog.d/).
 
 ### Changed
 
-- The `ai-specview` plugin now has the same version as the release, starting
+- The `ai-contextview` plugin now has the same version as the release, starting
   with this one. Plugin changes reach installed copies at each release.
 
 ### Fixed
@@ -274,12 +269,12 @@ See [changelog.d/](changelog.d/).
 
 ### Added
 
-- Each GitHub release has prebuilt `ai-specview` binaries for Linux and macOS
+- Each GitHub release has prebuilt `ai-contextview` binaries for Linux and macOS
   (amd64 and arm64).
 - `CHANGELOG.md`, with unreleased changes kept as one file per change in
   `changelog.d/`.
 - The README explains how to install a release by its version tag.
-- The `ai-specview:spec-elaborate-mod` skill: the spec workflow with the spec,
+- The `ai-contextview:spec-elaborate-mod` skill: the spec workflow with the spec,
   the code and the questions in a pane beside the chat instead of the browser
   page. It needs neither the binary nor the daemon.
 - The pane asks the questions itself: options, "Decide later", Other, notes,
@@ -291,25 +286,25 @@ See [changelog.d/](changelog.d/).
 
 ### Changed
 
-- The pane is part of the `ai-specview` plugin, with tools of its own, instead
-  of a separate `ai-specview-pane` plugin that hooked the browser viewer's
+- The pane is part of the `ai-contextview` plugin, with tools of its own, instead
+  of a separate `ai-contextview-pane` plugin that hooked the browser viewer's
   tools.
 
 ### Removed
 
-- The `ai-specview-pane` plugin, its `mode` option and `/specview-mode`: pick
+- The `ai-contextview-pane` plugin, its `mode` option and `/contextview-mode`: pick
   the pane or the browser by skill. Uninstall it with
-  `claude plugin uninstall ai-specview-pane@ai-specview`.
+  `claude plugin uninstall ai-contextview-pane@ai-contextview`.
 
 ## [0.5.0] - 2026-11-24
 
 ### Added
 
-- The `ai-specview` binary, imported from the specview proof of concept: the
+- The `ai-contextview` binary, imported from the proof of concept: the
   `mcp` bridge, the `serve` viewer daemon, the `hook` subcommand and the
   `fakeapp` test stand-in.
-- The `ai-specview-pane` mod, which shows the viewer in a Claude Code pane.
-- The version comes from git tags. `ai-specview version` prints the tag, a Go
+- The `ai-contextview-pane` mod, which shows the viewer in a Claude Code pane.
+- The version comes from git tags. `ai-contextview version` prints the tag, a Go
   pseudo-version between tags, or `devel`.
 
 ### Fixed

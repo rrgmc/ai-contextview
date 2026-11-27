@@ -8,8 +8,6 @@ with everything in view, instead of in the chat.
 The "context" in the name is the context of each question: the documents
 and code it is about. ai-contextview does not show Claude's context window.
 
-ai-contextview was called ai-specview up to v1.4.5.
-
 - **Ask mode** sends every question of a session to ai-contextview. Run
   `/ai-contextview:ask-mode` at the start of a session.
 - **Spec elaboration** builds on it. While Claude writes a spec with you, the

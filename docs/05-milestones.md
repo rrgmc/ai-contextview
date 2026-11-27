@@ -310,7 +310,7 @@ already answered in the ADRs.
   or the session start.
 - **The built-in question tool is blocked per session by a hook**, never by a
   global deny rule.
-- **The project is called ai-contextview** (renamed from ai-specview after
-  v1.4.5). It shows each question with its context, and a spec is only one
-  kind of working document. The README says that the "context" is the
-  question's documents and code, not Claude's context window.
+- **The project is called ai-contextview** (v1.5.0). It shows each question
+  with its context, and a spec is only one kind of working document. The
+  README says that the "context" is the question's documents and code, not
+  Claude's context window.
