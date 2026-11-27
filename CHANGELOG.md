@@ -14,6 +14,21 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.4.2] - 2026-11-27
+
+### Changed
+
+- The `ask` tool description and the ask-mode and spec-mode skills tell
+  Claude to give a question about the whole document, such as a spec
+  sign-off, no refs, so the viewer no longer highlights an unrelated passage.
+
+### Fixed
+
+- "Open in editor" works in the Claude desktop app's browser pane: the
+  daemon now starts the editor, instead of the page following a link to the
+  editor's URL scheme. The GoLand setting now opens the file in GoLand; an
+  editor that fails to start shows an error.
+
 ## [1.4.1] - 2026-11-27
 
 ### Changed
@@ -258,7 +273,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.4.2...HEAD
+[1.4.2]: https://github.com/rrgmc/ai-specview/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/rrgmc/ai-specview/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/rrgmc/ai-specview/compare/v1.3.5...v1.4.0
 [1.3.5]: https://github.com/rrgmc/ai-specview/compare/v1.3.4...v1.3.5
