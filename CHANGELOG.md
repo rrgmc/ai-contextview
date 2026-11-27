@@ -14,6 +14,16 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.4.0] - 2026-11-27
+
+### Added
+
+- `spec_show` takes `provisional: true` in ask mode and spec mode. It shows a
+  document, such as exploration notes, until the working document is
+  written; the first written file that would become the working document
+  replaces it. The viewer and the pane mark it as provisional. The spec-mode
+  skills use it to show a spec skill's notes before the spec exists.
+
 ## [1.3.5] - 2026-11-26
 
 ### Fixed
@@ -240,7 +250,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.3.5...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/rrgmc/ai-specview/compare/v1.3.5...v1.4.0
 [1.3.5]: https://github.com/rrgmc/ai-specview/compare/v1.3.4...v1.3.5
 [1.3.4]: https://github.com/rrgmc/ai-specview/compare/v1.3.3...v1.3.4
 [1.3.3]: https://github.com/rrgmc/ai-specview/compare/v1.3.2...v1.3.3
