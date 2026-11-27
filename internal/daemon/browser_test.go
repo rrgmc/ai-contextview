@@ -244,3 +244,30 @@ func TestBrowserDone(t *testing.T) {
 	assert.Equal(t, 0, eval[int](t, ctx, `document.querySelectorAll('#doc mark.q.active').length`), "no passage stays highlighted")
 	assert.Equal(t, 0, eval[int](t, ctx, `document.querySelectorAll('#code-tabs button').length`), "the code pane is cleared")
 }
+
+func TestBrowserNoDocument(t *testing.T) {
+	h := newHarness(t)
+	cwd, specPath := writeSpec(t)
+	b := h.bridge("ws_A", cwd)
+	b.req(protocol.TypeSpecShow, &protocol.SpecShow{RootAbs: specPath})
+	ask := askBody(cwd, specPath, "qs_1")
+	ask.Questions = append(ask.Questions, protocol.AskQuestion{
+		ID: "q2", Text: "Ship it?", Options: []protocol.Option{{Label: "Yes"}, {Label: "No"}},
+	})
+	b.req(protocol.TypeAsk, ask)
+	ctx := newBrowser(t)
+
+	run(t, ctx,
+		chromedp.Navigate(h.http.URL+"/w/ws_A"),
+		chromedp.WaitVisible(q1Section+` .qtext`),
+	)
+	// The first question has a document: no pill, no note.
+	assert.False(t, eval[bool](t, ctx, `!!document.querySelector('`+q1Section+` .chip-nodoc')`))
+	assert.True(t, eval[bool](t, ctx, `document.getElementById("doc-note").hidden`))
+	run(t, ctx,
+		chromedp.Click(`.step[data-step="1"]`),
+		chromedp.WaitVisible(q2Section+` .chip-nodoc`),
+	)
+	assert.Equal(t, "No document", text(t, ctx, q2Section+` .chip-nodoc`))
+	assert.False(t, eval[bool](t, ctx, `document.getElementById("doc-note").hidden`))
+}

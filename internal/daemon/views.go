@@ -48,7 +48,7 @@ func execTemplate(name string, data any) string {
 // ------------------------------------------------------------ view models
 
 type chipView struct {
-	Kind  string // doc | code
+	Kind  string // doc | code | nodoc
 	Label string
 	Title string
 	Badge string
@@ -385,6 +385,17 @@ func (d *Daemon) askEvent(w *Workspace) Event {
 	docPanel := w.Root != nil
 	for _, q := range qs.Ask.Questions {
 		docPanel = docPanel || len(q.Docs) > 0
+	}
+	if docPanel {
+		// With the document panel shown, a question with no document says
+		// so under its text, where the user reads it.
+		for i, q := range qs.Ask.Questions {
+			if len(q.Docs) == 0 {
+				v.Questions[i].Chips = append([]chipView{{Kind: "nodoc", Label: "No document",
+					Title: "This question is not about a passage of a document; the panel keeps the last document, without a highlight"}},
+					v.Questions[i].Chips...)
+			}
+		}
 	}
 	return newEvent("ask", map[string]any{
 		"qs_id": qs.Ask.QSID, "html": execTemplate("panel", v), "title": qs.Ask.Title,

@@ -67,8 +67,8 @@ current question, with the passage highlighted.
 
 - **Which document.** The first `doc_refs` entry of the current question. A
   question with no document keeps the document shown before, so the panel
-  does not jump, and says that the question has no document. This holds in a
-  spec session too.
+  does not jump, and says that the question has no document, both above the
+  document and under the question. This holds in a spec session too.
 - **More than one document.** The question's other documents open as tabs in
   the document panel.
 - **Highlighting.** A quoted passage is highlighted as today. A doc ref may

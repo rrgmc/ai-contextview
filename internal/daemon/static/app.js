@@ -675,7 +675,7 @@
 
   document.addEventListener("click", (e) => {
     const chip = e.target.closest(".chip");
-    if (!chip) return;
+    if (!chip || chip.classList.contains("chip-nodoc")) return;
     if (chip.classList.contains("chip-doc")) focusDoc(chip.dataset.doc, chip.dataset.ref);
     else focusCode(chip.dataset.path, +chip.dataset.start, +chip.dataset.end);
   });

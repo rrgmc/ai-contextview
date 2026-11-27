@@ -886,8 +886,8 @@ export const register: Register = on => {
           </Text>
         )}
         {noDocNote && (
-          <Text key="no-doc" dimColor>
-            This question has no document.
+          <Text key="no-doc" color="yellow" bold>
+            This question has no document
           </Text>
         )}
         {source && parts.before !== '' && (
@@ -957,6 +957,11 @@ export const register: Register = on => {
         body = (
           <Box key={`question-${question.id}`} flexDirection="column" rowGap={1}>
             <Markdown key="q-text" text={question.text} />
+            {noDocNote && (
+              <Text key="q-nodoc" color="yellow">
+                No document
+              </Text>
+            )}
             {!wide && question.quote !== '' && (
               // One column puts the spec under the form: repeat the quote here.
               <Box key="q-quote" paddingLeft={2}>

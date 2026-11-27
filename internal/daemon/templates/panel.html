@@ -1,4 +1,4 @@
-{{define "chips"}}<div class="chips">{{range .}}{{if eq .Kind "doc"}}<button type="button" class="chip chip-doc{{if .Bad}} bad{{end}}" data-doc="{{.Doc}}" data-ref="{{.Ref}}" title="{{.Title}}">{{.Label}}{{if .Badge}} <span class="badge">{{.Badge}}</span>{{end}}</button>{{else}}<button type="button" class="chip chip-code" data-path="{{.Path}}" data-start="{{.Start}}" data-end="{{.End}}" title="{{.Title}}">{{.Label}}</button>{{end}}{{end}}</div>{{end}}
+{{define "chips"}}<div class="chips">{{range .}}{{if eq .Kind "nodoc"}}<span class="chip chip-nodoc" title="{{.Title}}">{{.Label}}</span>{{else if eq .Kind "doc"}}<button type="button" class="chip chip-doc{{if .Bad}} bad{{end}}" data-doc="{{.Doc}}" data-ref="{{.Ref}}" title="{{.Title}}">{{.Label}}{{if .Badge}} <span class="badge">{{.Badge}}</span>{{end}}</button>{{else}}<button type="button" class="chip chip-code" data-path="{{.Path}}" data-start="{{.Start}}" data-end="{{.End}}" title="{{.Title}}">{{.Label}}</button>{{end}}{{end}}</div>{{end}}
 
 {{define "panel"}}<form class="qs" id="qs-form" data-qs="{{.ID}}" data-ws="{{.WS}}" data-count="{{.Count}}" data-title="{{.Title}}">
  <div class="qs-inner">

@@ -186,8 +186,10 @@ text file of the project that a doc ref names (07).
 - **Document tabs**: when the current question has more than one document,
   tabs in the pane header switch between them.
 - **A question with no document**, in a set that shows the pane, keeps the
-  last document without its highlight, and the header says "This question
-  has no document."
+  last document without its highlight. The header says "This question has
+  no document" in a warning-coloured badge, and a dashed "No document" pill
+  sits under the question text, where the chips of the other questions are.
+  The pane mod shows the same two notes.
 - The Changes tab shows only while a spec is shown.
 
 - **Render**: goldmark with GFM (tables, task lists, strikethrough), heading IDs

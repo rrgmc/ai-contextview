@@ -723,3 +723,39 @@ func TestIndexShowsVersionOnce(t *testing.T) {
 	assert.Contains(t, string(body), ">v1.2.3<")
 	assert.NotContains(t, string(body), "vv1.2.3")
 }
+
+func TestNoDocumentPill(t *testing.T) {
+	h := newHarness(t)
+	cwd, specPath := writeSpec(t)
+	b := h.bridge("ws_A", cwd)
+	b.req(protocol.TypeSpecShow, &protocol.SpecShow{RootAbs: specPath})
+	ask := askBody(cwd, specPath, "qs_1")
+	ask.Questions = append(ask.Questions, protocol.AskQuestion{
+		ID: "q2", Text: "Ship?", Options: []protocol.Option{{Label: "Yes"}, {Label: "No"}},
+		Code: []protocol.ResolvedRef{{Path: filepath.Join(cwd, "code.go"), StartLine: 1, EndLine: 1, Source: "lines"}},
+	})
+	b.req(protocol.TypeAsk, ask)
+
+	h.d.mu.Lock()
+	ev := string(h.d.askEvent(h.d.workspaces["ws_A"]).Data)
+	h.d.mu.Unlock()
+	// Only the question with no document gets the pill.
+	assert.Equal(t, 1, strings.Count(ev, `chip-nodoc`))
+	assert.Contains(t, ev, `No document`)
+}
+
+func TestNoDocumentPillNeedsDocPanel(t *testing.T) {
+	h := newHarness(t)
+	cwd, _ := writeSpec(t)
+	b := h.bridge("ws_A", cwd)
+	b.req(protocol.TypeAskMode, &protocol.AskMode{On: true})
+	b.req(protocol.TypeAsk, &protocol.Ask{QSID: "qs_1", Questions: []protocol.AskQuestion{{
+		ID: "q1", Text: "Ship?", Options: []protocol.Option{{Label: "Yes"}, {Label: "No"}},
+	}}})
+
+	h.d.mu.Lock()
+	ev := string(h.d.askEvent(h.d.workspaces["ws_A"]).Data)
+	h.d.mu.Unlock()
+	// No document panel: nothing to say.
+	assert.NotContains(t, ev, `chip-nodoc`)
+}
