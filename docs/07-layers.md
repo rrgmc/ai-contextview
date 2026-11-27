@@ -88,7 +88,9 @@ would jump. The layout is therefore chosen once per question set.
 - If any question in the set has a document, or a working document is shown,
   the document panel is shown for the whole set.
 - If no question in the set has a document and there is no working document,
-  the set uses the full width: the questions and the code take the whole page.
+  the set uses the full width: the code on the left and the questions on the
+  right take the whole page. The questions stay on the right, as when a
+  document shows.
 - A question with no document, in a set that shows the panel, keeps the last
   document shown, without a highlight. A short line says that the question has
   no document.

@@ -118,7 +118,8 @@ way. `AI_CONTEXTVIEW_DOC_PATHS` limits which files count.
 A question's document can be any text file of the project: a markdown passage
 is highlighted by quote or by lines, and another file (YAML, JSON, SQL) shows
 as source with the lines highlighted. When no question of a set has a
-document, the questions and the code take the whole page.
+document, the code and the questions take the whole page, with the
+questions on the right.
 
 ### The browser page inside the desktop app
 

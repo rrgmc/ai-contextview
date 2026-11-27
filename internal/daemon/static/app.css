@@ -107,12 +107,13 @@ body.ended .layout { filter: grayscale(.8); opacity: .75; }
   grid-template-columns: 200px minmax(0, var(--split)) 5px minmax(0, 1fr);
   grid-template-areas: "art doc sv code" "sh sh sh sh" "panel panel panel panel";
 }
-/* No document in this question set: the questions and the code take the
-   whole page. */
+/* No document in this question set: the code and the questions take the
+   whole page. The questions stay in the right column, where they are when a
+   document shows. */
 .layout.no-doc {
   grid-template-columns: minmax(0, var(--split)) 5px minmax(0, 1fr);
   grid-template-rows: 1fr;
-  grid-template-areas: "panel sv code";
+  grid-template-areas: "code sv panel";
 }
 .layout.bottom.no-doc {
   grid-template-columns: minmax(0, 1fr);
