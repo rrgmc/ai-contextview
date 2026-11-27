@@ -105,6 +105,7 @@ entries (refcounted), which only read.
 | `POST /w/{ws}/qs/{qs}/in-chat` | → `ask_result{in_chat}` |
 | `POST /w/{ws}/qs/{qs}/dismiss` | → `ask_result{dismissed}` |
 | `POST /w/{ws}/close` | Close an archived workspace |
+| `POST /w/{ws}/open` | Form: `kind` (`doc` with a document key, or `code` with a code tab's absolute path), `line`, `editor` → opens the file in the editor; other files are refused |
 | `GET /static/…` | Embedded assets |
 
 The first answer POST for a `qs` wins. Later POSTs (another tab) get `409` and
@@ -254,8 +255,15 @@ The match quality shows as a small badge on the ref chip (`≈ fuzzy`,
 - Files are watched. On change, re-render and re-apply the current range. If the
   line count changed, show a "may be out of date" badge; the next `ask`/`focus`
   sends fresh ranges anyway.
-- **Open in editor**: each tab has a link to `vscode://file/<abs>:<line>`; the
-  scheme (`vscode`, `goland`, `zed`, `cursor`) is a setting on the index page.
+- **Open in editor**: the document panel and each code tab have a link that
+  asks the daemon (`POST /w/{ws}/open`) to open the file at the line. A plain
+  link to an editor's URL scheme does nothing in a browser that does not
+  hand such links to the system, such as the Claude desktop app's browser
+  pane. The editor is a setting on the index page, stored in the browser:
+  VS Code, Cursor and Zed open through their URL schemes with the platform's
+  URL opener (`open`, `xdg-open`, `rundll32`); GoLand, which has no scheme
+  for a file path, starts with `--line N <path>` (`open -na GoLand --args`
+  on macOS, the `goland` launcher elsewhere). An error shows as a toast.
 
 ## Question panel
 

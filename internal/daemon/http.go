@@ -52,6 +52,7 @@ func (d *Daemon) Handler() http.Handler {
 	mux.HandleFunc("GET /w/{ws}/changes", d.handleChanges)
 	mux.HandleFunc("POST /w/{ws}/qs/{qs}/{action}", d.handleAnswer)
 	mux.HandleFunc("POST /w/{ws}/close", d.handleClose)
+	mux.HandleFunc("POST /w/{ws}/open", d.handleOpen)
 	mux.HandleFunc("GET /static/chroma.css", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/css; charset=utf-8")
 		_, _ = w.Write([]byte(chromaCSS))

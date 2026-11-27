@@ -38,6 +38,8 @@ type Daemon struct {
 	lastActive time.Time
 	shutdown   chan struct{}
 	shutOnce   sync.Once
+	// openEditor runs an editor command; nil runs it (tests replace it).
+	openEditor func(args []string) error
 }
 
 // New creates a daemon. BaseURL is set once the HTTP listener is up.

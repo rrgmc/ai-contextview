@@ -47,10 +47,25 @@
     toast.timer = setTimeout(() => { t.hidden = true; }, 2600);
   }
 
-  function editorURL(abs, line) {
-    const scheme = store.get("editor", "vscode");
-    return scheme + "://file" + (abs.startsWith("/") ? "" : "/") + abs + (line ? ":" + line : "");
+  // "Open in editor" asks the daemon to start the editor: a link to the
+  // editor's URL scheme does nothing in a browser that does not hand such
+  // links to the system, such as the desktop app's browser pane.
+  async function openInEditor(kind, path, line) {
+    const body = new URLSearchParams({ kind, path, line: String(line || 0), editor: store.get("editor", "vscode") });
+    try {
+      const r = await fetch(base + "/open", {
+        method: "POST", body, headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      });
+      if (!r.ok) toast("Cannot open the editor: " + (await r.text()).trim());
+    } catch (e) { toast("Cannot open the editor"); }
   }
+
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest("a.open-editor");
+    if (!a) return;
+    e.preventDefault();
+    openInEditor(a.dataset.kind, a.dataset.path, Number(a.dataset.line) || 0);
+  });
 
   async function getJSON(url) {
     const r = await fetch(url, { headers: { Accept: "application/json" } });
@@ -78,7 +93,7 @@
     $("#docname").textContent = p.name || p.path || "";
     const link = $("#doc-editor");
     link.hidden = !currentAbs;
-    if (currentAbs) link.href = editorURL(currentAbs, 1);
+    link.dataset.path = currentDoc || "";
     if (anchor) {
       const h = anchor.id && document.getElementById(anchor.id);
       docEl.scrollTop = h ? h.offsetTop + anchor.off : anchor.off;
@@ -234,7 +249,8 @@
     renderTabs();
     const meta = '<div class="code-meta"><span class="mono">' + escapeHTML(t.rel) + "</span>" +
       (t.start ? "<span>lines " + t.start + "–" + t.end + "</span>" : "") +
-      '<span class="grow"></span><a href="' + escapeHTML(editorURL(t.path, t.start)) + '">open in editor</a></div>';
+      '<span class="grow"></span><a href="#" class="open-editor" data-kind="code" data-path="' + escapeHTML(t.path) +
+      '" data-line="' + (t.start || 0) + '">open in editor</a></div>';
     codeEl.innerHTML = meta + (t.html || "");
     if (scroll) centerHL();
   }
