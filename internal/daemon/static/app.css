@@ -133,6 +133,12 @@ body.ended .layout { filter: grayscale(.8); opacity: .75; }
 .artifacts { grid-area: art; overflow: auto; border-right: 1px solid var(--border); padding: 8px; background: var(--bg-soft); }
 .doc-pane { grid-area: doc; }
 .code-pane { grid-area: code; }
+/* Zoom: the document pane takes the whole page. The id outranks every
+   layout variant, including the narrow-screen one. */
+#layout.zoom-doc { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); grid-template-areas: "doc"; }
+#layout.zoom-doc > :not(.doc-pane) { display: none; }
+#layout.zoom-doc > .doc-pane { display: flex; }
+.zoom-btn { padding: 0 6px; font-size: 15px; line-height: 1.4; }
 .splitter { grid-area: sv; cursor: col-resize; background: var(--border); }
 .splitter-h { grid-area: sh; cursor: row-resize; background: var(--border); }
 .panel { grid-area: panel; display: flex; flex-direction: column; min-height: 0; background: var(--bg-soft); }

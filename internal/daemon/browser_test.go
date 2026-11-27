@@ -9,6 +9,8 @@ package daemon
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -357,4 +359,48 @@ func TestBrowserReportsUse(t *testing.T) {
 
 	run(t, ctx, chromedp.Click(q1Section+` .qtext`))
 	assert.Eventually(t, func() bool { return h.d.viewers("ws_A").Seen }, 3*time.Second, 50*time.Millisecond)
+}
+
+// The zoom button shows only the document; clicking again or Esc restores,
+// and a new question set restores it too.
+func TestBrowserZoomDoc(t *testing.T) {
+	h := newHarness(t)
+	cwd, specPath := writeSpec(t)
+	b := h.bridge("ws_A", cwd)
+	b.req(protocol.TypeSpecShow, &protocol.SpecShow{RootAbs: specPath})
+	b.req(protocol.TypeAsk, askBody(cwd, specPath, "qs_1"))
+	ctx := newBrowser(t)
+	panelShown := func() bool {
+		return eval[bool](t, ctx, `getComputedStyle(document.querySelector('#panel')).display !== 'none'`)
+	}
+	docWidth := func() float64 {
+		return eval[float64](t, ctx, `document.querySelector('.doc-pane').getBoundingClientRect().width`)
+	}
+	run(t, ctx,
+		chromedp.EmulateViewport(1400, 900),
+		chromedp.Navigate(h.http.URL+"/w/ws_A"),
+		chromedp.WaitVisible(q1Section+` .qtext`),
+	)
+	require.True(t, panelShown())
+	assert.Less(t, docWidth(), 1000.0)
+
+	run(t, ctx, chromedp.Click(`#doc-zoom`))
+	assert.False(t, panelShown(), "zoomed: the questions are hidden")
+	assert.Greater(t, docWidth(), 1350.0, "the document takes the whole width")
+	assert.Equal(t, "true", eval[string](t, ctx, `document.querySelector('#doc-zoom').getAttribute('aria-pressed')`))
+
+	run(t, ctx, chromedp.Click(`#doc-zoom`))
+	assert.True(t, panelShown(), "clicking again restores")
+
+	run(t, ctx, chromedp.Click(`#doc-zoom`), chromedp.KeyEvent("\x1b"))
+	assert.True(t, panelShown(), "Esc restores")
+
+	// A new question set restores the layout.
+	run(t, ctx, chromedp.Click(`#doc-zoom`))
+	require.False(t, panelShown())
+	resp := h.do(http.MethodPost, "/w/ws_A/qs/qs_1/answer", url.Values{"sel.q1": {"No"}}, nil)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+	b.read()
+	b.req(protocol.TypeAsk, askBody(cwd, specPath, "qs_2"))
+	assert.Eventually(t, panelShown, 3*time.Second, 50*time.Millisecond)
 }

@@ -200,6 +200,7 @@
   // The document panel shows for a whole question set, or always with a spec.
   function setDocPanel(on) {
     layout.classList.toggle("no-doc", !on);
+    if (!on) setZoom(false);
     $("#docname").hidden = !on;
   }
 
@@ -652,6 +653,8 @@
         if (isNew) {
           setDocPanel(hasSpec || !!d.doc_panel);
           pendingQS = d.qs_id;
+          // A new question must not hide behind a zoomed document.
+          setZoom(false);
           q.innerHTML = d.html;
           $("#panel-summary").textContent = "";
           selectPtab("question");
@@ -756,6 +759,25 @@
   $("#doc-jump").addEventListener("click", (e) => {
     e.preventDefault();
     if (activeRef) focusDoc(activeRef.path, activeRef.ref);
+  });
+
+  // ------------------------------------------------------------ zoom
+
+  // The zoom button shows only the document pane; clicking it again, or
+  // Esc, restores the layout.
+  function setZoom(on) {
+    layout.classList.toggle("zoom-doc", on);
+    const b = $("#doc-zoom");
+    b.textContent = on ? "⤡" : "⤢";
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+    b.title = on ? "Restore the layout (Esc)" : "Show only the document (Esc restores)";
+  }
+  $("#doc-zoom").addEventListener("click", () => setZoom(!layout.classList.contains("zoom-doc")));
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && layout.classList.contains("zoom-doc")) {
+      e.preventDefault();
+      setZoom(false);
+    }
   });
 
   document.addEventListener("keydown", (e) => {

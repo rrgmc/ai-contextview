@@ -220,6 +220,10 @@ text file of the project that a doc ref names (07).
   only the newest one fills the pane.
   The daemon keeps these versions in memory, so no git is needed. The
   "Spec finished" banner links to all changes in the session.
+- **Zoom**: a ⤢ button at the right of the doc pane header shows only the
+  document, using the whole page. Clicking it again (⤡) or Esc restores the
+  layout. A new question set restores it too, so a question never hides
+  behind a zoomed document.
 - **Show current passage**: a link in the doc pane header, shown while a
   passage is highlighted for the current question or a `focus` call. It
   scrolls back to that passage, switching documents first if needed.
