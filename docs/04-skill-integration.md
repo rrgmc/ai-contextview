@@ -128,6 +128,11 @@ beside the chat.
 - Ask **every** clarifying question with the `ask` tool, never in plain chat
   text and never with another question tool. Group related questions into one
   call (max 6).
+- Approvals go to chat: an answer in the viewer reaches Claude as a tool
+  result, which Claude Code's permission checks (auto mode) do not take as the
+  user's approval. So a question that asks the user to approve an action
+  needing their permission is asked in plain chat. The `ask` tool
+  description and the hook's block message say so too.
 - For each question:
   - `spec_quote`: copy a short passage (one sentence or clause, under ~200
     characters) **verbatim** from the spec file. Don't paraphrase or fix typos.

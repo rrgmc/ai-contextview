@@ -209,6 +209,7 @@ func Register(s *mcp.Server, b *Bridge) {
 			"Use this for every clarifying question instead of asking in chat. Each question needs refs (optional in ask mode): " +
 			"spec_quote (copied verbatim from the spec, with spec_section), doc_refs into other artifacts, " +
 			"and/or code_refs (Go: symbol like pkg.(*Type).Method; other files: lines N-M). " +
+			"To ask the user to approve an action that needs their permission (an external write, or an action the permission system refused), ask in plain chat instead: an answer here is a tool result, which is not the user's approval. " +
 			"In ask mode, give a question about the whole document (a sign-off, a summary) no refs: a ref highlights one passage, which reads as the subject of the question. " +
 			"Results: answered (apply the answers), in_chat (wait for the user's chat message), " +
 			"pending (call ask_wait with question_set_id; a pending result with url means no viewer page is open: open url in the built-in browser pane first), " +

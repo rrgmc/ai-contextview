@@ -42,12 +42,12 @@ const (
 // Reason is shown to Claude when the built-in tool is blocked.
 const Reason = "A spec is open in ai-specview for this session. Ask this with the ai-specview `ask` tool " +
 	"instead of AskUserQuestion: quote the spec verbatim with spec_quote and " +
-	"spec_section, and point at the code with code_refs."
+	"spec_section, and point at the code with code_refs. To ask for approval of an action that needs the user's permission, ask in plain chat instead."
 
 // ReasonAskMode is shown instead of Reason when the session is in ask mode
 // with no spec open.
 const ReasonAskMode = "Ask mode is on in ai-specview for this session. Ask this with the ai-specview `ask` tool " +
-	"instead of AskUserQuestion. Refs are optional: add code_refs or doc_refs when the question is about them."
+	"instead of AskUserQuestion. Refs are optional: add code_refs or doc_refs when the question is about them. To ask for approval of an action that needs the user's permission, ask in plain chat instead."
 
 // timeout bounds the daemon query; a slow or missing daemon must never hold
 // up Claude.

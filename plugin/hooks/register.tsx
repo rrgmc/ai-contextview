@@ -80,11 +80,13 @@ const MSG_DEFERRED =
 const BLOCK_REASON =
   'A spec is open in ai-specview for this session. Ask this with the ai-specview `ask` tool ' +
   'instead of AskUserQuestion: quote the spec verbatim with spec_quote and ' +
-  'spec_section, and point at the code with code_refs.'
+  'spec_section, and point at the code with code_refs.' +
+  " To ask for approval of an action that needs the user's permission, ask in plain chat instead."
 // As internal/hook's ReasonAskMode.
 const BLOCK_REASON_ASK_MODE =
   'Ask mode is on in ai-specview for this session. Ask this with the ai-specview `ask` tool ' +
-  'instead of AskUserQuestion. Refs are optional: add code_refs or doc_refs when the question is about them.'
+  'instead of AskUserQuestion. Refs are optional: add code_refs or doc_refs when the question is about them.' +
+  " To ask for approval of an action that needs the user's permission, ask in plain chat instead."
 
 type Args = Record<string, unknown>
 

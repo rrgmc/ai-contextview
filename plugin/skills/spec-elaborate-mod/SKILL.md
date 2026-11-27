@@ -93,6 +93,12 @@ section. An existing spec the user names stays where it is.
 
 - Ask **every** clarifying question with the `ask` tool, never in plain chat
   text and never with another question tool.
+- **Approvals go to chat.** To ask the user to approve an action that needs
+  their permission (an external write such as a Jira or Slack change, or an
+  action the permission system refused), ask in plain chat and wait for
+  their reply. Never ask it with `ask`: the answer comes back as a tool
+  result, which the permission system does not take as the user's approval,
+  so a retry is refused again.
 - For each question:
   - `spec_quote`: copy a short passage (one sentence or clause, under about 200
     characters) **verbatim** from the spec file. Do not paraphrase or fix typos.

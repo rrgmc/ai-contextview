@@ -38,6 +38,12 @@ viewer's tools.
   questions, choices between approaches, confirmations. Never ask in plain
   chat text and never with another question tool. A hook blocks the built-in
   question tool while ask mode is on.
+- **Approvals go to chat.** To ask the user to approve an action that needs
+  their permission (an external write such as a Jira or Slack change, or an
+  action the permission system refused), ask in plain chat and wait for
+  their reply. Never ask it with `ask`: the answer comes back as a tool
+  result, which the permission system does not take as the user's approval,
+  so a retry is refused again.
 - Refs are optional. Add `code_refs` when the question is about code (for Go,
   prefer `symbol`; else `lines`). Add `doc_refs` when it is about a document:
   give its `path` (any text file of the project) and either a `quote` copied
