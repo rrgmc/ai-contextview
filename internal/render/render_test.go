@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/rrgmc/ai-specview/internal/specsrc"
+	"github.com/rrgmc/ai-contextview/internal/specsrc"
 )
 
 var markRe = regexp.MustCompile(`(?s)<mark class="q" data-ref="r">(.*?)</mark>`)

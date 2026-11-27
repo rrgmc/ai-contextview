@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rrgmc/ai-specview/internal/glob"
-	"github.com/rrgmc/ai-specview/internal/protocol"
-	"github.com/rrgmc/ai-specview/internal/specsrc"
+	"github.com/rrgmc/ai-contextview/internal/glob"
+	"github.com/rrgmc/ai-contextview/internal/protocol"
+	"github.com/rrgmc/ai-contextview/internal/specsrc"
 )
 
 // workDoc picks the session's working document from the markdown files

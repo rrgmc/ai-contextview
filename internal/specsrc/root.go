@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/rrgmc/ai-specview/internal/protocol"
+	"github.com/rrgmc/ai-contextview/internal/protocol"
 )
 
 // Error is an error with a protocol error code.

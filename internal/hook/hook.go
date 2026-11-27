@@ -1,8 +1,8 @@
-// Package hook is `ai-specview hook`, a Claude Code hook for three events:
+// Package hook is `ai-contextview hook`, a Claude Code hook for three events:
 //
 //   - PreToolUse on AskUserQuestion: it blocks the built-in question tool
-//     only while this Claude session has a spec open in ai-specview or is in
-//     ask mode, and tells Claude to use ai-specview's ask tool instead. In
+//     only while this Claude session has a spec open in ai-contextview or is in
+//     ask mode, and tells Claude to use ai-contextview's ask tool instead. In
 //     every other case it allows the tool, so other sessions and spec-free
 //     work keep the built-in question tool.
 //   - PostToolUse on Write, Edit and MultiEdit: it reports a markdown file
@@ -24,9 +24,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rrgmc/ai-specview/internal/glob"
-	"github.com/rrgmc/ai-specview/internal/protocol"
-	"github.com/rrgmc/ai-specview/internal/specsrc"
+	"github.com/rrgmc/ai-contextview/internal/glob"
+	"github.com/rrgmc/ai-contextview/internal/protocol"
+	"github.com/rrgmc/ai-contextview/internal/specsrc"
 )
 
 // BuiltinAskTool is the built-in question tool's name.
@@ -40,13 +40,13 @@ const (
 )
 
 // Reason is shown to Claude when the built-in tool is blocked.
-const Reason = "A spec is open in ai-specview for this session. Ask this with the ai-specview `ask` tool " +
+const Reason = "A spec is open in ai-contextview for this session. Ask this with the ai-contextview `ask` tool " +
 	"instead of AskUserQuestion: quote the spec verbatim with spec_quote and " +
 	"spec_section, and point at the code with code_refs. To ask for approval of an action that needs the user's permission, ask in plain chat instead."
 
 // ReasonAskMode is shown instead of Reason when the session is in ask mode
 // with no spec open.
-const ReasonAskMode = "Ask mode is on in ai-specview for this session. Ask this with the ai-specview `ask` tool " +
+const ReasonAskMode = "Ask mode is on in ai-contextview for this session. Ask this with the ai-contextview `ask` tool " +
 	"instead of AskUserQuestion. Refs are optional: add code_refs or doc_refs when the question is about them. To ask for approval of an action that needs the user's permission, ask in plain chat instead."
 
 // timeout bounds the daemon query; a slow or missing daemon must never hold
@@ -89,7 +89,7 @@ func Run(in io.Reader, out, errOut io.Writer, socket string, pids []int) int {
 		}
 		return ExitAllow
 	case strings.HasPrefix(ev.ToolName, "mcp__"):
-		// One of ai-specview's own tools is about to run: tell the daemon
+		// One of ai-contextview's own tools is about to run: tell the daemon
 		// the session's folder first, so the bridge resolves relative paths
 		// against it (a desktop-app worktree, not the main checkout).
 		if filepath.IsAbs(ev.Cwd) {
@@ -123,7 +123,7 @@ func written(out io.Writer, socket string, pids []int, ev *input) {
 		path = filepath.Join(ev.Cwd, path)
 	}
 	home, _ := os.UserHomeDir()
-	if !Counts(path, home, ev.Cwd, docPaths(ev.Cwd, os.Getenv("AI_SPECVIEW_DOC_PATHS"))) {
+	if !Counts(path, home, ev.Cwd, docPaths(ev.Cwd, os.Getenv("AI_CONTEXTVIEW_DOC_PATHS"))) {
 		return
 	}
 	var res protocol.DocWrittenResult
@@ -132,12 +132,12 @@ func written(out io.Writer, socket string, pids []int, ev *input) {
 	}
 	var o postOutput
 	o.HookSpecificOutput.HookEventName = "PostToolUse"
-	o.HookSpecificOutput.AdditionalContext = fmt.Sprintf("ai-specview now shows %s as the working document: "+
+	o.HookSpecificOutput.AdditionalContext = fmt.Sprintf("ai-contextview now shows %s as the working document: "+
 		"the user sees it beside the questions, and spec_quote quotes it. Call spec_show to show another file instead.", path)
 	_ = json.NewEncoder(out).Encode(&o)
 }
 
-// docPaths turns AI_SPECVIEW_DOC_PATHS (comma-separated globs, relative to
+// docPaths turns AI_CONTEXTVIEW_DOC_PATHS (comma-separated globs, relative to
 // cwd or absolute) into absolute patterns.
 func docPaths(cwd, env string) []string {
 	var out []string

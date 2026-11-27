@@ -27,7 +27,7 @@ A local viewer that, during a spec-elaboration session:
 
 ## Non-goals (first version)
 
-- No editing of spec or code inside ai-specview. It only views.
+- No editing of spec or code inside ai-contextview. It only views.
 - No support for clients other than Claude Code. Any MCP client should work,
   but only Claude Code is tested.
 - No language-aware symbol resolution beyond Go. Other languages use `path:line`
@@ -41,15 +41,15 @@ A local viewer that, during a spec-elaboration session:
 
 ```
 ┌──────────────┐ stdio  ┌──────────────────┐
-│ Claude Code A│◀──────▶│ ai-specview mcp     │──┐
+│ Claude Code A│◀──────▶│ ai-contextview mcp     │──┐
 └──────────────┘  MCP   │ workspace W1     │  │
                         └──────────────────┘  │  Unix socket
 ┌──────────────┐ stdio  ┌──────────────────┐  │  (NDJSON, 01-protocol.md)
-│ Claude Code B│◀──────▶│ ai-specview mcp     │──┤
+│ Claude Code B│◀──────▶│ ai-contextview mcp     │──┤
 └──────────────┘  MCP   │ workspace W2     │  │
                         └──────────────────┘  ▼
                               ┌─────────────────────────────────┐
-                              │ ai-specview serve (Go daemon)      │
+                              │ ai-contextview serve (Go daemon)      │
                               │  workspaces W1, W2              │
                               │  markdown, quotes, highlighting │
                               │  HTTP on 127.0.0.1 + SSE        │
@@ -61,11 +61,11 @@ A local viewer that, during a spec-elaboration session:
                                    └──────────────────────┘
 ```
 
-Both processes are the **same Go binary**, `ai-specview`, with two subcommands.
+Both processes are the **same Go binary**, `ai-contextview`, with two subcommands.
 
 ### Components
 
-**`ai-specview mcp`** (the bridge): Claude Code launches it as a stdio MCP server.
+**`ai-contextview mcp`** (the bridge): Claude Code launches it as a stdio MCP server.
 There is one per Claude instance.
 - Implements the MCP tools: `spec_show`, `focus`, `ask`, `ask_wait`.
 - Gives its instance an identity (workspace ID, cwd, parent PID).
@@ -75,7 +75,7 @@ There is one per Claude instance.
   waiting for answers.
 - Starts the daemon if it isn't running, and reconnects if it restarts.
 
-**`ai-specview serve`** (the viewer daemon): long-lived, one per user.
+**`ai-contextview serve`** (the viewer daemon): long-lived, one per user.
 - Holds one workspace per connected bridge.
 - Renders markdown (goldmark) and code (chroma) to HTML on the server, matches
   quotes, computes section changes, watches files.
@@ -116,11 +116,11 @@ The first version works with one spec file. The longer-term workflow is:
    ├── research/            # findings, links, benchmarks
    └── open-questions/      # questions not answered yet (one file each)
    ```
-2. The spec skill elaborates the change with ai-specview. An **answered** question
+2. The spec skill elaborates the change with ai-contextview. An **answered** question
    that settles a design choice becomes an ADR; a **dismissed** or **in-chat**
    question becomes an entry in `open-questions/` when the user ticks "keep as
    open question".
-3. ai-specview shows the whole folder. Questions can point at any artifact
+3. ai-contextview shows the whole folder. Questions can point at any artifact
    (`doc_refs`), so "this conflicts with ADR-002" highlights ADR-002 next to the
    proposal and the code.
 4. The branch goes up as an MR **whose diff is the plan**, not code. Review

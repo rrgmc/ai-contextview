@@ -15,10 +15,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/rrgmc/ai-specview/internal/daemon"
-	"github.com/rrgmc/ai-specview/internal/identity"
-	"github.com/rrgmc/ai-specview/internal/protocol"
-	"github.com/rrgmc/ai-specview/internal/testenv"
+	"github.com/rrgmc/ai-contextview/internal/daemon"
+	"github.com/rrgmc/ai-contextview/internal/identity"
+	"github.com/rrgmc/ai-contextview/internal/protocol"
+	"github.com/rrgmc/ai-contextview/internal/testenv"
 )
 
 const askEvent = `{"session_id":"s","cwd":"/x","hook_event_name":"PreToolUse","tool_name":"AskUserQuestion","tool_input":{}}`
@@ -98,7 +98,7 @@ func TestBlocksOnlyWhileSpecOpen(t *testing.T) {
 	e.req(protocol.TypeSpecShow, &protocol.SpecShow{RootAbs: spec})
 	code, msg := run(e.sock, askEvent, ancestors)
 	assert.Equal(t, ExitBlock, code)
-	assert.Contains(t, msg, "ai-specview `ask` tool")
+	assert.Contains(t, msg, "ai-contextview `ask` tool")
 
 	// Another Claude session (different ancestors): allow.
 	code, _ = run(e.sock, askEvent, []int{2222, 3333})
@@ -115,10 +115,10 @@ func TestBlocksOnlyWhileSpecOpen(t *testing.T) {
 }
 
 func TestAllowsWithoutDaemonOrInput(t *testing.T) {
-	code, msg := run("/tmp/does-not-exist-specview.sock", askEvent, []int{claudePID})
+	code, msg := run("/tmp/does-not-exist-contextview.sock", askEvent, []int{claudePID})
 	assert.Equal(t, ExitAllow, code)
 	assert.Empty(t, msg)
-	code, _ = run("/tmp/does-not-exist-specview.sock", "not json", nil)
+	code, _ = run("/tmp/does-not-exist-contextview.sock", "not json", nil)
 	assert.Equal(t, ExitAllow, code)
 }
 
@@ -250,7 +250,7 @@ func TestOwnToolReportsSessionCwd(t *testing.T) {
 	cwd := t.TempDir()
 	e.bridge(cwd)
 	wt := filepath.Join(cwd, ".claude", "worktrees", "x")
-	ev, _ := json.Marshal(map[string]any{"hook_event_name": "PreToolUse", "tool_name": "mcp__plugin_ai-specview_ai-specview__ask", "cwd": wt})
+	ev, _ := json.Marshal(map[string]any{"hook_event_name": "PreToolUse", "tool_name": "mcp__plugin_ai-contextview_ai-contextview__ask", "cwd": wt})
 	code := Run(bytes.NewReader(ev), io.Discard, io.Discard, e.sock, []int{1111, claudePID, 1})
 	assert.Equal(t, ExitAllow, code)
 

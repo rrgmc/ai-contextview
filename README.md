@@ -1,18 +1,23 @@
-# ai-specview
+# ai-contextview
 
-ai-specview is a **front end for Claude's questions**. Each question appears
+ai-contextview is a **front end for Claude's questions**. Each question appears
 in a docked panel next to its context: the document passage it is about, with
 the passage highlighted, and the code at the right lines. You answer there,
 with everything in view, instead of in the chat.
 
-- **Ask mode** sends every question of a session to ai-specview. Run
-  `/ai-specview:ask-mode` at the start of a session.
+The "context" in the name is the context of each question: the documents
+and code it is about. ai-contextview does not show Claude's context window.
+
+ai-contextview was called ai-specview up to v1.4.5.
+
+- **Ask mode** sends every question of a session to ai-contextview. Run
+  `/ai-contextview:ask-mode` at the start of a session.
 - **Spec elaboration** builds on it. While Claude writes a spec with you, the
   viewer shows the spec all the time, follows each edit, and shows what
   changed since your answers.
 
 The viewer is a local web page served by a Go daemon. The MCP server and the
-daemon are one binary, `ai-specview`. The plan and design are in [docs/](docs/README.md).
+daemon are one binary, `ai-contextview`. The plan and design are in [docs/](docs/README.md).
 
 ![A question about the retry policy: the spec passage is highlighted on the left, the question panel and the code it is about are on the right](docs/images/question.png)
 
@@ -29,81 +34,81 @@ The screenshots show the browser viewer with sample data.
 
 ## Install
 
-ai-specview runs on Linux, macOS and Windows 10 or later. Install the binary
+ai-contextview runs on Linux, macOS and Windows 10 or later. Install the binary
 from the latest release:
 
 ```bash
-go install github.com/rrgmc/ai-specview/cmd/ai-specview@v1.4.5
+go install github.com/rrgmc/ai-contextview/cmd/ai-contextview@v1.4.5
 ```
 
 Releases are git tags such as `v1.4.5` (see the
-[tags](https://github.com/rrgmc/ai-specview/tags)). To install another release,
+[tags](https://github.com/rrgmc/ai-contextview/tags)). To install another release,
 put its tag after the `@`.
 
 Each release on the
-[releases page](https://github.com/rrgmc/ai-specview/releases) also has
+[releases page](https://github.com/rrgmc/ai-contextview/releases) also has
 prebuilt binaries for Linux, macOS and Windows.
 `@master` installs the newest commit
-instead. `ai-specview version` prints the
-installed version. After an upgrade, run `ai-specview serve --restart` so a
+instead. `ai-contextview version` prints the
+installed version. After an upgrade, run `ai-contextview serve --restart` so a
 running daemon switches to the new binary.
 
 Then install the Claude Code plugin. It registers the MCP server, the
-`spec-elaborate` skill and the `ai-specview hook` (below) in one step:
+`spec-elaborate` skill and the `ai-contextview hook` (below) in one step:
 
 ```bash
-claude plugin marketplace add rrgmc/ai-specview
+claude plugin marketplace add rrgmc/ai-contextview
 ```
 
 ```bash
-claude plugin install ai-specview@ai-specview
+claude plugin install ai-contextview@ai-contextview
 ```
 
 In a session the same works with `/plugin marketplace add …` and
-`/plugin install ai-specview@ai-specview`. In the desktop app, use **+** next to the
+`/plugin install ai-contextview@ai-contextview`. In the desktop app, use **+** next to the
 prompt, then **Add plugins**.
 
 The plugin finds the binary on the `PATH`, in `$GOBIN`, in `$(go env GOPATH)/bin`
-or in `~/go/bin`. Set `AI_SPECVIEW_BIN` to use another path. The plugin's skill is
-named `ai-specview:spec-elaborate`. On Windows, the plugin runs through Git Bash,
+or in `~/go/bin`. Set `AI_CONTEXTVIEW_BIN` to use another path. The plugin's skill is
+named `ai-contextview:spec-elaborate`. On Windows, the plugin runs through Git Bash,
 which Claude Code already needs there.
 
-If you set ai-specview up by hand before, remove the old pieces so they don't run
-twice: `claude mcp remove ai-specview`, the `ai-specview hook` entry in
+If you set ai-contextview up by hand before, remove the old pieces so they don't run
+twice: `claude mcp remove ai-contextview`, the `ai-contextview hook` entry in
 `~/.claude/settings.json`, and `~/.claude/skills/spec-elaborate`.
 
 Also raise the MCP tool timeout (see below); a plugin can't set it.
 
 ### The pane instead of the browser
 
-The plugin has a second skill, `ai-specview:spec-elaborate-mod`. It runs the
+The plugin has a second skill, `ai-contextview:spec-elaborate-mod`. It runs the
 same workflow, but shows the spec, the code and the questions in a pane beside
 the chat instead of the browser page. The pane is a Claude Code mod in the
 plugin; it needs neither the binary nor the daemon. Ask for the pane (for
-example "spec this in the pane") or name the skill. `/specview-pane` opens the
+example "spec this in the pane") or name the skill. `/contextview-pane` opens the
 pane again after you close it. See [docs/06-pane-mod.md](docs/06-pane-mod.md).
 
-### Ask mode: every question through ai-specview
+### Ask mode: every question through ai-contextview
 
-To send every question of a session to ai-specview, with or without a spec,
-run `/ai-specview:ask-mode` at the start of the session. Claude then asks each
+To send every question of a session to ai-contextview, with or without a spec,
+run `/ai-contextview:ask-mode` at the start of the session. Claude then asks each
 question in the viewer, with the documents and code it is about, and the hook
-blocks the built-in question tool. `/ai-specview:ask-mode off` turns it off.
-`/ai-specview:ask-mode-mod` does the same in the pane. To turn ask mode on for
-every session, set `AI_SPECVIEW_ASK_MODE=always` (see the settings below).
+blocks the built-in question tool. `/ai-contextview:ask-mode off` turns it off.
+`/ai-contextview:ask-mode-mod` does the same in the pane. To turn ask mode on for
+every session, set `AI_CONTEXTVIEW_ASK_MODE=always` (see the settings below).
 
 ### Spec mode: a spec from any skill
 
-`/ai-specview:spec-mode` is ask mode that expects a spec. Run it before your
-own spec skill, a company's, or plain Claude: ai-specview shows the spec as
+`/ai-contextview:spec-mode` is ask mode that expects a spec. Run it before your
+own spec skill, a company's, or plain Claude: ai-contextview shows the spec as
 soon as it is written, follows each edit, and marks what changed, as in a
 `spec-elaborate` session. Give the spec's path or a glob, for example
-`/ai-specview:spec-mode docs/specs/**`, to say which file it is; without one,
-ai-specview picks the written file that looks most like a spec.
-`/ai-specview:spec-mode-mod` does the same in the pane.
+`/ai-contextview:spec-mode docs/specs/**`, to say which file it is; without one,
+ai-contextview picks the written file that looks most like a spec.
+`/ai-contextview:spec-mode-mod` does the same in the pane.
 
 In plain ask mode, the first markdown document Claude writes shows the same
-way. `AI_SPECVIEW_DOC_PATHS` limits which files count.
+way. `AI_CONTEXTVIEW_DOC_PATHS` limits which files count.
 
 A question's document can be any text file of the project: a markdown passage
 is highlighted by quote or by lines, and another file (YAML, JSON, SQL) shows
@@ -118,13 +123,13 @@ built-in browser after the first `spec_show`. The app may ask you to allow
 IDE), your default browser opens at the first question.
 
 To use your default browser in the desktop app too, set
-`AI_SPECVIEW_OPEN=browser` in the `env` block of your Claude Code settings,
+`AI_CONTEXTVIEW_OPEN=browser` in the `env` block of your Claude Code settings,
 or ask for it in the prompt:
 
 ```json
 {
   "env": {
-    "AI_SPECVIEW_OPEN": "browser"
+    "AI_CONTEXTVIEW_OPEN": "browser"
   }
 }
 ```
@@ -136,7 +141,7 @@ Without the plugin, the binary must be on the `PATH` that Claude Code sees.
 Register the MCP server for every project:
 
 ```bash
-claude mcp add --scope user ai-specview -- ai-specview mcp
+claude mcp add --scope user ai-contextview -- ai-contextview mcp
 ```
 
 Or per project, in `.mcp.json` (see [examples/mcp.example.json](examples/mcp.example.json)):
@@ -144,10 +149,10 @@ Or per project, in `.mcp.json` (see [examples/mcp.example.json](examples/mcp.exa
 ```json
 {
   "mcpServers": {
-    "ai-specview": {
-      "command": "ai-specview",
+    "ai-contextview": {
+      "command": "ai-contextview",
       "args": ["mcp"],
-      "env": { "AI_SPECVIEW_ASK_WAIT": "600s" }
+      "env": { "AI_CONTEXTVIEW_ASK_WAIT": "600s" }
     }
   }
 }
@@ -160,15 +165,15 @@ shell profile or in Claude Code's settings `env`:
 { "env": { "MCP_TOOL_TIMEOUT": "1800000" } }
 ```
 
-`AI_SPECVIEW_ASK_WAIT` must stay **below** `MCP_TOOL_TIMEOUT`. Then a long wait
+`AI_CONTEXTVIEW_ASK_WAIT` must stay **below** `MCP_TOOL_TIMEOUT`. Then a long wait
 ends with a `pending` result that Claude continues with `ask_wait`, instead of a
 timeout error.
 
 To keep Claude from falling back to its built-in question tool while a spec
 is open, and to show the documents Claude writes in ask mode, add the
-`ai-specview hook` hooks to `~/.claude/settings.json`
+`ai-contextview hook` hooks to `~/.claude/settings.json`
 (see [examples/settings.example.json](examples/settings.example.json)). It blocks
-`AskUserQuestion` only in the Claude session that has a spec open in ai-specview
+`AskUserQuestion` only in the Claude session that has a spec open in ai-contextview
 or is in ask mode, so other sessions are not affected. Don't deny
 `AskUserQuestion` globally.
 
@@ -177,14 +182,14 @@ or is in ask mode, so other sessions are not affected. Don't deny
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "^(AskUserQuestion|Skill|mcp__.*ai-specview.*__.+)$",
-        "hooks": [{ "type": "command", "command": "ai-specview hook" }]
+        "matcher": "^(AskUserQuestion|Skill|mcp__.*ai-contextview.*__.+)$",
+        "hooks": [{ "type": "command", "command": "ai-contextview hook" }]
       }
     ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit",
-        "hooks": [{ "type": "command", "command": "ai-specview hook" }]
+        "hooks": [{ "type": "command", "command": "ai-contextview hook" }]
       }
     ]
   }
@@ -220,30 +225,30 @@ directory within 2 hours takes the old workspace over.
 
 | Command | What it does |
 |---|---|
-| `ai-specview mcp` | The stdio MCP server. Claude Code starts one per instance. |
-| `ai-specview serve` | The viewer daemon. `--detach` starts it in the background, `--restart` replaces a running one (or starts one) in the background, `--stop` stops it, `--addr` sets the address (default `127.0.0.1:7878`, the next 9 ports are tried), `--idle-exit 30m` exits when unused. |
-| `ai-specview fakeapp` | A terminal stand-in for the daemon, for testing the MCP path. |
-| `ai-specview hook` | Claude Code hook: blocks the built-in question tool only while this session has a spec open or is in ask mode; reports the markdown files Claude writes and the skills it starts, to pick the working document. |
-| `ai-specview version` | Prints the version: the git tag (`v1.2.3`), a Go pseudo-version for a build between tags, with `+dirty` for uncommitted changes, or `devel` when the build has no version information. |
+| `ai-contextview mcp` | The stdio MCP server. Claude Code starts one per instance. |
+| `ai-contextview serve` | The viewer daemon. `--detach` starts it in the background, `--restart` replaces a running one (or starts one) in the background, `--stop` stops it, `--addr` sets the address (default `127.0.0.1:7878`, the next 9 ports are tried), `--idle-exit 30m` exits when unused. |
+| `ai-contextview fakeapp` | A terminal stand-in for the daemon, for testing the MCP path. |
+| `ai-contextview hook` | Claude Code hook: blocks the built-in question tool only while this session has a spec open or is in ask mode; reports the markdown files Claude writes and the skills it starts, to pick the working document. |
+| `ai-contextview version` | Prints the version: the git tag (`v1.2.3`), a Go pseudo-version for a build between tags, with `+dirty` for uncommitted changes, or `devel` when the build has no version information. |
 
 ## Environment
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `AI_SPECVIEW_ASK_WAIT` | `10m` | How long `ask` blocks before returning `pending`. |
-| `AI_SPECVIEW_ASK_MODE` | | `always` turns ask mode on for every session, in the viewer and in the pane. |
-| `AI_SPECVIEW_DOC_PATHS` | | Comma-separated globs (relative to the project or absolute; `**` for any folders). When set, only matching files Claude writes can become the working document in ask mode. |
-| `AI_SPECVIEW_OPEN` | `pane` | `pane` asks Claude to open the viewer in the built-in browser of the Claude desktop app; when the user closed it, `ask` returns at once so Claude reopens it; without the pane, the default browser opens 10 seconds after a question arrives with no page open. `browser` always uses the default browser. `never` opens nothing. |
-| `AI_SPECVIEW_SOCKET` | see below | Socket path shared by bridge and daemon. |
-| `AI_SPECVIEW_ADDR` | `127.0.0.1:7878` | Daemon HTTP address. |
-| `AI_SPECVIEW_DAEMON` | | Command the bridge runs instead of `ai-specview serve --detach` (for example `ai-specview fakeapp`). |
+| `AI_CONTEXTVIEW_ASK_WAIT` | `10m` | How long `ask` blocks before returning `pending`. |
+| `AI_CONTEXTVIEW_ASK_MODE` | | `always` turns ask mode on for every session, in the viewer and in the pane. |
+| `AI_CONTEXTVIEW_DOC_PATHS` | | Comma-separated globs (relative to the project or absolute; `**` for any folders). When set, only matching files Claude writes can become the working document in ask mode. |
+| `AI_CONTEXTVIEW_OPEN` | `pane` | `pane` asks Claude to open the viewer in the built-in browser of the Claude desktop app; when the user closed it, `ask` returns at once so Claude reopens it; without the pane, the default browser opens 10 seconds after a question arrives with no page open. `browser` always uses the default browser. `never` opens nothing. |
+| `AI_CONTEXTVIEW_SOCKET` | see below | Socket path shared by bridge and daemon. |
+| `AI_CONTEXTVIEW_ADDR` | `127.0.0.1:7878` | Daemon HTTP address. |
+| `AI_CONTEXTVIEW_DAEMON` | | Command the bridge runs instead of `ai-contextview serve --detach` (for example `ai-contextview fakeapp`). |
 
-The socket is `$XDG_RUNTIME_DIR/ai-specview.sock` or, on macOS,
-`~/Library/Caches/ai-specview/ai-specview.sock`, or, on Windows,
-`%LOCALAPPDATA%\ai-specview\ai-specview.sock`. The detached daemon logs to
-`ai-specview.log` in the same cache directory.
+The socket is `$XDG_RUNTIME_DIR/ai-contextview.sock` or, on macOS,
+`~/Library/Caches/ai-contextview/ai-contextview.sock`, or, on Windows,
+`%LOCALAPPDATA%\ai-contextview\ai-contextview.sock`. The detached daemon logs to
+`ai-contextview.log` in the same cache directory.
 
-After upgrading, run `ai-specview serve --restart` so the running daemon matches
+After upgrading, run `ai-contextview serve --restart` so the running daemon matches
 the new bridge.
 
 ## MCP tools
@@ -276,7 +281,7 @@ the sample spec and code in `internal/daemon/testdata/screenshots/`. After a
 change to the page, render them again:
 
 ```bash
-AI_SPECVIEW_SCREENSHOTS=docs/images go test -run TestScreenshots ./internal/daemon/
+AI_CONTEXTVIEW_SCREENSHOTS=docs/images go test -run TestScreenshots ./internal/daemon/
 ```
 
 Check the plugin with `claude plugin validate ./plugin` and the marketplace
@@ -295,7 +300,7 @@ implemented. Differences from the plan:
 - The daemon also answers `ping` and `shutdown` messages, used by
   `serve` for its single-instance check and `--restart`.
 
-The pane (`ai-specview:spec-elaborate-mod`,
+The pane (`ai-contextview:spec-elaborate-mod`,
 [docs/06-pane-mod.md](docs/06-pane-mod.md)) is a prototype: its quote matching
 has no fuzzy stage, Go symbols are found by a regular expression, and its
 question form has no review step.

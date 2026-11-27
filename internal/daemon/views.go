@@ -13,9 +13,9 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/rrgmc/ai-specview/internal/protocol"
-	"github.com/rrgmc/ai-specview/internal/render"
-	"github.com/rrgmc/ai-specview/internal/specsrc"
+	"github.com/rrgmc/ai-contextview/internal/protocol"
+	"github.com/rrgmc/ai-contextview/internal/render"
+	"github.com/rrgmc/ai-contextview/internal/specsrc"
 )
 
 //go:embed templates/*.html

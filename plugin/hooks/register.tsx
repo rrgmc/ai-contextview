@@ -1,4 +1,4 @@
-// The pane mode of ai-specview: a Claude Code mod that draws the spec, the
+// The pane mode of ai-contextview: a Claude Code mod that draws the spec, the
 // code and the questions in a pane beside the chat.
 //
 // It registers its own tools (spec_show, focus, ask, ask_wait, ask_mode, spec_done),
@@ -27,11 +27,11 @@ import * as spec from './spec'
 import { TOOLS } from './tools'
 import * as check from './validate'
 
-const PANE = 'ai-specview'
+const PANE = 'ai-contextview'
 const TOOL_NAMES = new Set(TOOLS.map(t => t.name))
 
 // How long ask and ask_wait wait before answering pending, as the bridge's
-// AI_SPECVIEW_ASK_WAIT default. A tool.call hook may run 20 minutes.
+// AI_CONTEXTVIEW_ASK_WAIT default. A tool.call hook may run 20 minutes.
 const ASK_WAIT_MS = 10 * 60_000
 
 // A hook's own time is capped at 10 seconds and a $.clock wait counts toward
@@ -41,17 +41,17 @@ const ASK_WAIT_MS = 10 * 60_000
 const PAUSE = ['/bin/sleep', '1'] as const
 
 // Change a tag when the stored shape changes: it declines an older value.
-const viewAtom = atom({ plugin: 'ai-specview', key: 'view' } as const, null as SpecView | null, {
+const viewAtom = atom({ plugin: 'ai-contextview', key: 'view' } as const, null as SpecView | null, {
   shape: 'view-4',
 })
-const uiAtom = atom({ plugin: 'ai-specview', key: 'ui' } as const, { file: '', shown: -1, codeTab: 0 } as PaneUi, {
+const uiAtom = atom({ plugin: 'ai-contextview', key: 'ui' } as const, { file: '', shown: -1, codeTab: 0 } as PaneUi, {
   shape: 'ui-2',
 })
-const askAtom = atom({ plugin: 'ai-specview', key: 'ask' } as const, null as AskView | null, {
+const askAtom = atom({ plugin: 'ai-contextview', key: 'ask' } as const, null as AskView | null, {
   shape: 'ask-3',
 })
 // Ask mode: every question of the session goes through the pane, with or without a spec.
-const modeAtom = atom({ plugin: 'ai-specview', key: 'mode' } as const, false, { shape: 'mode-1' })
+const modeAtom = atom({ plugin: 'ai-contextview', key: 'mode' } as const, false, { shape: 'mode-1' })
 const noWork = (): WorkDoc => ({
   explicit: false,
   spec: false,
@@ -62,7 +62,7 @@ const noWork = (): WorkDoc => ({
   provisional: false,
   edits: {},
 })
-const workAtom = atom({ plugin: 'ai-specview', key: 'work' } as const, noWork(), { shape: 'work-3' })
+const workAtom = atom({ plugin: 'ai-contextview', key: 'work' } as const, noWork(), { shape: 'work-3' })
 // The score a written file needs in spec mode without paths, as the daemon's.
 const SCORE_THRESHOLD = 2
 const SPEC_SKILL = /spec|rfc|design/i
@@ -78,13 +78,13 @@ const MSG_DEFERRED =
   'continue without the decision, and ask them again before finishing.'
 // As internal/hook's Reason.
 const BLOCK_REASON =
-  'A spec is open in ai-specview for this session. Ask this with the ai-specview `ask` tool ' +
+  'A spec is open in ai-contextview for this session. Ask this with the ai-contextview `ask` tool ' +
   'instead of AskUserQuestion: quote the spec verbatim with spec_quote and ' +
   'spec_section, and point at the code with code_refs.' +
   " To ask for approval of an action that needs the user's permission, ask in plain chat instead."
 // As internal/hook's ReasonAskMode.
 const BLOCK_REASON_ASK_MODE =
-  'Ask mode is on in ai-specview for this session. Ask this with the ai-specview `ask` tool ' +
+  'Ask mode is on in ai-contextview for this session. Ask this with the ai-contextview `ask` tool ' +
   'instead of AskUserQuestion. Refs are optional: add code_refs or doc_refs when the question is about them.' +
   " To ask for approval of an action that needs the user's permission, ask in plain chat instead."
 
@@ -405,13 +405,13 @@ async function askMode($: EngineInterface, args: Args) {
 async function showWorking($: EngineInterface, path: string) {
   await showSpec($, { path })
   await update($, workAtom, w => ({ ...w, doc: path, autoShown: path, provisional: false }))
-  $.ui.toast(`ai-specview shows ${rel(path)} as the working document`)
+  $.ui.toast(`ai-contextview shows ${rel(path)} as the working document`)
 }
 
 /** A markdown file Claude wrote, in ask mode: maybe the working document (07). */
 async function docWritten($: EngineInterface, path: string) {
   if (!(await read($, modeAtom))) return
-  const patterns = ((await $.env.get('AI_SPECVIEW_DOC_PATHS')) ?? '')
+  const patterns = ((await $.env.get('AI_CONTEXTVIEW_DOC_PATHS')) ?? '')
     .split(',')
     .map(p => p.trim())
     .filter(p => p !== '')
@@ -497,7 +497,7 @@ async function ask($: EngineInterface, args: Args, signal: AbortSignal): Promise
   await update($, viewAtom, v => (v ? { ...v, text, isDone: false } : v))
   await update($, uiAtom, () => ({ ...(first ? targetOf(opened, first, first.docs) : { file: '', shown: -1 }), codeTab: FORM_TAB }))
   void $.ui.open({ id: PANE, title: 'Spec' })
-  $.ui.toast(`Claude asks ${questions.length === 1 ? 'a question' : `${questions.length} questions`} in the ai-specview pane`)
+  $.ui.toast(`Claude asks ${questions.length === 1 ? 'a question' : `${questions.length} questions`} in the ai-contextview pane`)
   if (first && (first.quoteStart >= 0 || first.docs.length > 0)) scrollToQuote($)
   return waitFor($, qsId, signal)
 }
@@ -688,10 +688,10 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     ctx.cwd = e.cwd
     ctx.home = (await $.env.get('HOME')) ?? (await $.env.get('USERPROFILE')) ?? ''
-    await $.command.register({ name: 'specview-pane', description: 'Open the ai-specview pane' })
+    await $.command.register({ name: 'contextview-pane', description: 'Open the ai-contextview pane' })
     for (const t of TOOLS) await $.tool.register(t)
-    // AI_SPECVIEW_ASK_MODE=always turns ask mode on for every session.
-    if ((await $.env.get('AI_SPECVIEW_ASK_MODE')) === 'always' && !(await read($, modeAtom))) {
+    // AI_CONTEXTVIEW_ASK_MODE=always turns ask mode on for every session.
+    if ((await $.env.get('AI_CONTEXTVIEW_ASK_MODE')) === 'always' && !(await read($, modeAtom))) {
       await update($, modeAtom, () => true)
       if (!(await read($, viewAtom))) await update($, viewAtom, () => noSpecView())
     }
@@ -699,13 +699,13 @@ export const register: Register = on => {
     return next(e)
   })
 
-  on('command.run', { command: 'specview-pane' }, async $ => {
+  on('command.run', { command: 'contextview-pane' }, async $ => {
     await $.ui.open({ id: PANE, title: 'Spec' })
-    return { text: 'ai-specview pane opened.' }
+    return { text: 'ai-contextview pane opened.' }
   })
 
   on('tool.call', async ($, e, next) => {
-    // ai-specview's hook asks the daemon, which the pane does not use, so the
+    // ai-contextview's hook asks the daemon, which the pane does not use, so the
     // mod blocks the built-in question tool itself while a spec is open here.
     if (e.tool === 'AskUserQuestion') {
       const v = await read($, viewAtom)
@@ -777,9 +777,9 @@ export const register: Register = on => {
     if (next.called) return next(e)
     // A call of the mod's own tools has nothing beneath to go to.
     if (e.tool.startsWith(`mcp__${$.plugin.name}__`)) {
-      return { deny: 'ai-specview pane: the call was interrupted or failed. Call it again.' }
+      return { deny: 'ai-contextview pane: the call was interrupted or failed. Call it again.' }
     }
-    $.ui.status('ai-specview pane: a hook failed; the call went on without it')
+    $.ui.status('ai-contextview pane: a hook failed; the call went on without it')
     return next(e)
   })
 

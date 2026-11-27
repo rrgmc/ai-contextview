@@ -18,7 +18,7 @@ same headings as [CHANGELOG.md](../CHANGELOG.md):
 ```
 
 The headings are `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed` and
-`Security`. Write for users of `ai-specview`, not for its developers. A change
+`Security`. Write for users of `ai-contextview`, not for its developers. A change
 with no visible effect (refactoring, tests, internal docs) needs no entry.
 
 ## Releasing
@@ -50,7 +50,7 @@ unless the tag is on `master` and `go run ./tools/changelog check vX.Y.Z`
 passes, which needs the `[X.Y.Z]` section and links, no change files left and
 the plugin version `X.Y.Z` and, for a stable release, the README install tag
 `vX.Y.Z`.
-It runs the tests, builds `ai-specview` for Linux, macOS and Windows (amd64 and arm64),
+It runs the tests, builds `ai-contextview` for Linux, macOS and Windows (amd64 and arm64),
 and creates the GitHub release with the archives and the `[X.Y.Z]` section as
 its notes. A tag with a suffix such as `v1.2.3-rc.1` is marked as a
 prerelease.

@@ -48,7 +48,7 @@ export const TOOLS: readonly ToolDef[] = [
   {
     name: 'spec_show',
     description:
-      'Show a spec in the ai-specview pane beside the chat. ' +
+      'Show a spec in the ai-contextview pane beside the chat. ' +
       'Call it as soon as the spec path is known and again after every edit, with the headings you changed. ' +
       'The path is a markdown file or a folder of markdown artifacts. Returns the section names.',
     inputSchema: {
@@ -90,7 +90,7 @@ export const TOOLS: readonly ToolDef[] = [
   {
     name: 'focus',
     description:
-      'Highlight a spec passage and open code in the ai-specview pane, without asking anything. ' +
+      'Highlight a spec passage and open code in the ai-contextview pane, without asking anything. ' +
       'Quotes must be copied verbatim from the file.',
     inputSchema: {
       type: 'object',
@@ -106,7 +106,7 @@ export const TOOLS: readonly ToolDef[] = [
   {
     name: 'ask',
     description:
-      'Ask the user 1-6 clarifying questions in the ai-specview pane and wait for the answers. ' +
+      'Ask the user 1-6 clarifying questions in the ai-contextview pane and wait for the answers. ' +
       'Use this for every clarifying question instead of asking in chat. Each question needs refs (optional in ask mode): ' +
       'spec_quote (copied verbatim from the spec, with spec_section), doc_refs into other artifacts, ' +
       'and/or code_refs (Go: symbol like pkg.(*Type).Method; other files: lines N-M). ' +
@@ -203,7 +203,7 @@ export const TOOLS: readonly ToolDef[] = [
   {
     name: 'spec_done',
     description:
-      'Tell the ai-specview pane the spec is finished and no more questions are coming. ' +
+      'Tell the ai-contextview pane the spec is finished and no more questions are coming. ' +
       'Call it once at the end of a spec session, with a summary as markdown with a **Decided** heading and a **Still open** heading, ' +
       'each followed by a bullet list with one item per decision or open point (never a run-on paragraph). ' +
       'The pane shows it as a finished banner. Asking again later reopens the session.',

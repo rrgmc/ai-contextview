@@ -2,8 +2,8 @@
 
 There are three interfaces:
 
-1. **MCP tools**: what Claude sees (Claude ↔ `ai-specview mcp`).
-2. **Socket protocol**: bridge ↔ daemon (`ai-specview mcp` ↔ `ai-specview serve`).
+1. **MCP tools**: what Claude sees (Claude ↔ `ai-contextview mcp`).
+2. **Socket protocol**: bridge ↔ daemon (`ai-contextview mcp` ↔ `ai-contextview serve`).
 3. **HTTP/SSE**: daemon ↔ browser. Internal to the daemon and its embedded UI,
    so it is described in 03, not versioned here.
 
@@ -74,7 +74,7 @@ Result:
 
 The result also has `url`, the viewer page of the session, and by default
 `"open": "pane"`: the caller opens `url` in the built-in browser pane of the
-Claude desktop app, when that pane is available. `AI_SPECVIEW_OPEN=browser` or
+Claude desktop app, when that pane is available. `AI_CONTEXTVIEW_OPEN=browser` or
 `never` leaves `open` out. Without the pane, the bridge opens the default
 browser when an `ask` finds no open page (see `ask_shown` with `viewers: 0`).
 
@@ -226,7 +226,7 @@ session goes through `ask`, with or without a spec.
   the project directory or absolute; `*` and `?` match within a folder, `**`
   any folders. The bridge makes them absolute.
 - **The working document.** In ask mode, the markdown files Claude writes are
-  reported by `ai-specview hook` (04) and one of them becomes the working
+  reported by `ai-contextview hook` (04) and one of them becomes the working
   document, as if `spec_show` had shown it (07, "Finding the working
   document"):
   - ask mode: the first written file;
@@ -244,7 +244,7 @@ session goes through `ask`, with or without a spec.
   without a document; the bridge forgets it too, so a reconnect does not show
   it again. A spec shown with `spec_show` stays.
 - While it is on, `ask` accepts questions with no refs, the daemon counts the
-  session as active, so `ai-specview hook` blocks the built-in question tool
+  session as active, so `ai-contextview hook` blocks the built-in question tool
   even with no spec open (04), and the spec pane of an empty viewer says that
   ask mode is on.
 - `spec_done` does not end ask mode.
@@ -293,9 +293,9 @@ Match          = "exact" | "normalized" | "fuzzy" | "heading" | "none"
 
 ### Transport
 
-- Unix socket at a fixed path: `$XDG_RUNTIME_DIR/ai-specview.sock`, or on macOS
-  `~/Library/Caches/ai-specview/ai-specview.sock`, or on Windows
-  `%LOCALAPPDATA%\ai-specview\ai-specview.sock`. Override with `$AI_SPECVIEW_SOCKET`;
+- Unix socket at a fixed path: `$XDG_RUNTIME_DIR/ai-contextview.sock`, or on macOS
+  `~/Library/Caches/ai-contextview/ai-contextview.sock`, or on Windows
+  `%LOCALAPPDATA%\ai-contextview\ai-contextview.sock`. Override with `$AI_CONTEXTVIEW_SOCKET`;
   keep the path under about 100 bytes, the Unix socket limit.
   The daemon creates it with mode `0600`.
 - Framing: **NDJSON**: one JSON object per line, UTF-8, `\n` terminated. Maximum
@@ -330,7 +330,7 @@ the bridge, so the daemon only sees `docs`.
 
 ### Messages: hook → daemon
 
-`ai-specview hook` opens its own short connection, sends no `hello`, and finds
+`ai-contextview hook` opens its own short connection, sends no `hello`, and finds
 its session by its ancestor processes, as `active` does.
 
 | type | body | reply |
@@ -338,7 +338,7 @@ its session by its ancestor processes, as `active` does.
 | `active` | `{pids: [int], cwd?}` | `result {active, ws?, url?, ask_mode?}` |
 | `doc_written` | `{pids: [int], path: abs, cwd?}` (a markdown file the hook's file rules let through) | `result {shown: bool, path?}` (`shown` when it just became the working document) |
 | `skill_started` | `{pids: [int], name, cwd?}` | `result {}` |
-| `session_cwd` | `{pids: [int], cwd}`, sent before each of ai-specview's own MCP tools runs | `result {}` |
+| `session_cwd` | `{pids: [int], cwd}`, sent before each of ai-contextview's own MCP tools runs | `result {}` |
 
 `cwd` is the session's working folder from the hook's input. In a desktop-app
 worktree session it is the worktree, while the bridge was started in the main
@@ -349,7 +349,7 @@ a written file by the folders below `cwd`, so the worktree's own
 `.claude/worktrees/…` folder does not count as a dot-folder.
 
 The hook reports the folder just before the tool runs, which can be before
-the session's bridge connected (its first ai-specview call). The daemon then
+the session's bridge connected (its first ai-contextview call). The daemon then
 keeps the folder by the hook's ancestor processes for up to ten minutes and
 gives it to the workspace whose `claude_pid` or `bridge_ppid` matches at
 `hello`. The unasked `session_cwd` can also reach the bridge after the tool
@@ -384,7 +384,7 @@ Error codes: `bad_request`, `file_not_found`, `not_markdown`, `empty_folder`,
   happens if the file changed between the pre-check and the show.
 - **`ask_shown` with `viewers: 0`**: no page shows the questions, so a question
   never waits on a page nobody is looking at. What the bridge does depends on
-  `AI_SPECVIEW_OPEN`:
+  `AI_CONTEXTVIEW_OPEN`:
   - `pane` (the default): `ask` returns at once with `pending`, the
     `question_set_id` and the workspace `url`, so Claude can reopen the
     built-in browser pane (for example after the user closed it) and then call
@@ -418,7 +418,7 @@ Error codes: `bad_request`, `file_not_found`, `not_markdown`, `empty_folder`,
   version. The daemon rejects a `hello` with an unknown major version, and the
   bridge then returns a tool error telling the user to update. Since bridge and
   daemon ship in one binary this only happens when an old daemon is still
-  running; the error says to run `ai-specview serve --restart`.
+  running; the error says to run `ai-contextview serve --restart`.
 - Adding new optional fields is allowed without a version bump. Both sides
   ignore fields they don't know. (`doc_refs`, folder `spec_show`, `viewers` and
   `url` were added this way before any release, so protocol stays at 1.)

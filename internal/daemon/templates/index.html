@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ai-specview</title>
+<title>ai-contextview</title>
 <link rel="icon" href="/static/favicon.svg">
 <link rel="stylesheet" href="/static/app.css">
 </head>
 <body class="index">
-<header class="top"><span class="brand">ai-specview</span><span class="sep">·</span><span class="muted">{{.Version}}</span></header>
+<header class="top"><span class="brand">ai-contextview</span><span class="sep">·</span><span class="muted">{{.Version}}</span></header>
 <main class="index-main">
   <h1>Sessions</h1>
-  {{if not .Items}}<p class="empty">No Claude sessions yet. Start Claude Code with the ai-specview MCP server and call <code>spec_show</code>.</p>{{end}}
+  {{if not .Items}}<p class="empty">No Claude sessions yet. Start Claude Code with the ai-contextview MCP server and call <code>spec_show</code>.</p>{{end}}
   <ul class="wslist">
   {{range .Items}}<li class="ws{{if not .Live}} archived{{end}}">
     <a href="/w/{{.ID}}"><b>{{.Project}}</b>{{if .Root}} · {{.Root}}{{end}}</a>

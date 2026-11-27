@@ -1,4 +1,4 @@
-// Package daemon is `ai-specview serve`: the socket server for bridges, the
+// Package daemon is `ai-contextview serve`: the socket server for bridges, the
 // workspaces, file watching, and the web viewer.
 package daemon
 
@@ -13,9 +13,9 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 
-	"github.com/rrgmc/ai-specview/internal/protocol"
-	"github.com/rrgmc/ai-specview/internal/render"
-	"github.com/rrgmc/ai-specview/internal/specsrc"
+	"github.com/rrgmc/ai-contextview/internal/protocol"
+	"github.com/rrgmc/ai-contextview/internal/render"
+	"github.com/rrgmc/ai-contextview/internal/specsrc"
 )
 
 // Daemon holds every workspace.
@@ -92,7 +92,7 @@ func (d *Daemon) lookup(id string) (*Workspace, string) {
 // hello opens (or revives, or adopts into) a workspace for a connection.
 func (d *Daemon) hello(c *Conn, h *protocol.Hello) (*protocol.HelloAck, error) {
 	if h.Protocol != protocol.Protocol {
-		return nil, fmt.Errorf("protocol %d is not supported by daemon %s; run `ai-specview serve --restart`", h.Protocol, d.Version)
+		return nil, fmt.Errorf("protocol %d is not supported by daemon %s; run `ai-contextview serve --restart`", h.Protocol, d.Version)
 	}
 	d.mu.Lock()
 	defer d.mu.Unlock()

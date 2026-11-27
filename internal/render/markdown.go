@@ -13,7 +13,7 @@ import (
 	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
 
-	"github.com/rrgmc/ai-specview/internal/specsrc"
+	"github.com/rrgmc/ai-contextview/internal/specsrc"
 )
 
 // Mark is a source range to highlight. Heading marks tint whole blocks.

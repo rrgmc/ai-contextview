@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rrgmc/ai-specview/internal/resolve"
+	"github.com/rrgmc/ai-contextview/internal/resolve"
 )
 
 // Identity describes one Claude instance.

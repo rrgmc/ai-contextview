@@ -1,6 +1,6 @@
 # 04 — Claude Code integration
 
-How a spec-elaboration skill uses ai-specview.
+How a spec-elaboration skill uses ai-contextview.
 
 ## 1. Register the MCP server
 
@@ -11,16 +11,16 @@ describes the manual setup.
 
 Install the binary as the [README](../README.md#install) describes
 (it must be on the `PATH` Claude Code sees), then register it per project in
-`.mcp.json`, or user-wide with `claude mcp add --scope user ai-specview -- ai-specview mcp`:
+`.mcp.json`, or user-wide with `claude mcp add --scope user ai-contextview -- ai-contextview mcp`:
 
 ```json
 {
   "mcpServers": {
-    "ai-specview": {
-      "command": "ai-specview",
+    "ai-contextview": {
+      "command": "ai-contextview",
       "args": ["mcp"],
       "env": {
-        "AI_SPECVIEW_ASK_WAIT": "600s"
+        "AI_CONTEXTVIEW_ASK_WAIT": "600s"
       }
     }
   }
@@ -33,15 +33,15 @@ Set the tool timeout in the shell profile or in Claude Code settings `env`:
 { "env": { "MCP_TOOL_TIMEOUT": "1800000" } }
 ```
 
-`AI_SPECVIEW_ASK_WAIT` must be **lower** than `MCP_TOOL_TIMEOUT`, so a long wait
+`AI_CONTEXTVIEW_ASK_WAIT` must be **lower** than `MCP_TOOL_TIMEOUT`, so a long wait
 ends with a clean `pending` result instead of a timeout error.
 
-## 2. Route all questions through ai-specview
+## 2. Route all questions through ai-contextview
 
 The skill and the `ask` tool description already tell Claude to ask every
-question with `ask`. As a safety net, `ai-specview hook` blocks the built-in
+question with `ask`. As a safety net, `ai-contextview hook` blocks the built-in
 question tool (`AskUserQuestion`) **only while this Claude session has a spec
-open in ai-specview** (shown with `spec_show` and not finished with `spec_done`)
+open in ai-contextview** (shown with `spec_show` and not finished with `spec_done`)
 **or is in ask mode**, and tells Claude to use `ask` instead. Other sessions,
 and spec-free work in the same session, keep the built-in tool.
 
@@ -49,28 +49,28 @@ The same command also handles two more events. After Claude writes or edits a
 markdown file (`PostToolUse` on `Write`, `Edit` and `MultiEdit`), it reports
 the file, so that in ask mode the daemon can make it the working document. It
 skips bookkeeping: `CLAUDE.md` and `AGENTS.md`, changelogs, Claude's memory,
-and files in dot-folders other than `.claude/specs`. `AI_SPECVIEW_DOC_PATHS`
+and files in dot-folders other than `.claude/specs`. `AI_CONTEXTVIEW_DOC_PATHS`
 (comma-separated globs) replaces these rules. When the file becomes the
 working document, the hook tells Claude in one line (`additionalContext`).
 When Claude starts a skill (`PreToolUse` on `Skill`), it reports the name, a
-signal for spec mode. Before each of ai-specview's own MCP tools, it reports
+signal for spec mode. Before each of ai-contextview's own MCP tools, it reports
 the session's folder, so a session in a desktop-app worktree resolves
 relative paths against the worktree, not the main checkout (01). None of these
 ever blocks.
 
-**Spec mode** (`/ai-specview:spec-mode [path or glob]`, the `spec-mode` skill)
+**Spec mode** (`/ai-contextview:spec-mode [path or glob]`, the `spec-mode` skill)
 is ask mode that expects a spec, for a spec written by any skill: the user's
 own, a company's, or `spec-elaborate`. With a path or glob, the first written
 file that matches becomes the working document; without one, the written
 file that looks most like a spec (01, `ask_mode`; 07). The `spec-mode-mod`
 skill does the same in the pane.
 
-Ask mode routes every question of a session through ai-specview without a
+Ask mode routes every question of a session through ai-contextview without a
 spec. The user turns it on at the start of a session with the `ask-mode`
-skill (`/ai-specview:ask-mode`), which calls the `ask_mode` tool (01); the
+skill (`/ai-contextview:ask-mode`), which calls the `ask_mode` tool (01); the
 `ask-mode-mod` skill does the same in the pane (06). In ask mode refs are
 optional, so Claude can ask about anything, and the hook's message to Claude
-says so. `/ai-specview:ask-mode off` turns it off.
+says so. `/ai-contextview:ask-mode off` turns it off.
 
 Add it to the user settings (`~/.claude/settings.json`) once:
 
@@ -79,23 +79,23 @@ Add it to the user settings (`~/.claude/settings.json`) once:
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "^(AskUserQuestion|Skill|mcp__.*ai-specview.*__.+)$",
-        "hooks": [{ "type": "command", "command": "ai-specview hook" }]
+        "matcher": "^(AskUserQuestion|Skill|mcp__.*ai-contextview.*__.+)$",
+        "hooks": [{ "type": "command", "command": "ai-contextview hook" }]
       }
     ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit",
-        "hooks": [{ "type": "command", "command": "ai-specview hook" }]
+        "hooks": [{ "type": "command", "command": "ai-contextview hook" }]
       }
     ]
   }
 }
 ```
 
-Use the absolute path of the binary (e.g. `/Users/me/go/bin/ai-specview hook`,
-or `C:/Users/me/go/bin/ai-specview.exe hook` on Windows, where Claude Code runs
-hooks with Git Bash) if `ai-specview` is not on the PATH the desktop app sees.
+Use the absolute path of the binary (e.g. `/Users/me/go/bin/ai-contextview hook`,
+or `C:/Users/me/go/bin/ai-contextview.exe hook` on Windows, where Claude Code runs
+hooks with Git Bash) if `ai-contextview` is not on the PATH the desktop app sees.
 
 How it matches: the bridge sends the daemon its parent process, which is the
 Claude Code process of that session. The hook sends its own ancestor
@@ -104,7 +104,7 @@ affected. When the daemon is not running, is an older version, or anything
 fails, the hook allows the tool. It answers within a second.
 
 Do **not** deny `AskUserQuestion` globally in the settings: that also removes
-it from every session that has nothing to do with ai-specview.
+it from every session that has nothing to do with ai-contextview.
 
 ## 3. Skill rules
 
@@ -112,9 +112,9 @@ Add a section like this to the spec-elaboration skill's `SKILL.md`. A complete
 example skill lives in `plugin/skills/spec-elaborate/SKILL.md`.
 
 ```markdown
-## Using ai-specview
+## Using ai-contextview
 
-ai-specview is a local viewer (a browser page) that shows the spec and code
+ai-contextview is a local viewer (a browser page) that shows the spec and code
 beside the chat.
 
 - At the start, as soon as the spec file path is known (created or existing),
@@ -158,7 +158,7 @@ beside the chat.
   - `keep_open` (with `in_chat` or `dismissed`): in a change folder, write one
     `open-questions/<slug>.md` per listed question (the question, its options,
     and the doc and code refs). Remove the file once it is resolved later.
-- If a tool says the ai-specview viewer is not reachable, continue normally and
+- If a tool says the ai-contextview viewer is not reachable, continue normally and
   ask in chat.
 - Use `focus` to point the user at a spec part and code without asking anything,
   e.g. when summarizing a change.
@@ -170,11 +170,11 @@ beside the chat.
 
 ## 4. Optional hooks
 
-Besides `ai-specview hook` (section 2), these aren't needed, because the daemon
+Besides `ai-contextview hook` (section 2), these aren't needed, because the daemon
 watches files, but they're useful later:
 
 - **`SessionStart`** hook: send `{session_id, cwd}` to the daemon (via a tiny
-  `ai-specview notify` subcommand) so the tab can show Claude's own session ID
+  `ai-contextview notify` subcommand) so the tab can show Claude's own session ID
   and link to the transcript. The workspace is matched by `cwd` + `claude_pid`.
 - **`PostToolUse`** on `Write|Edit`: if the edited path is the current spec,
   notify the daemon with the tool's input, which gives exact edited ranges for
@@ -190,5 +190,5 @@ watches files, but they're useful later:
   API, Data, Errors, Rollout, Open questions, Decisions).
 - The workflow records decisions: each `answered` result is appended under
   **Decisions** in the spec, which also marks that section as changed in
-  ai-specview. (In M8 this changes: decisions become ADR files and unanswered
+  ai-contextview. (In M8 this changes: decisions become ADR files and unanswered
   questions become open-question files in a change folder; see 00 "Future".)

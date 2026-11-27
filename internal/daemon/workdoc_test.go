@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/rrgmc/ai-specview/internal/protocol"
+	"github.com/rrgmc/ai-contextview/internal/protocol"
 )
 
 const testPID = 515151

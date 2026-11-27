@@ -1,18 +1,19 @@
-# ai-specview
+# ai-contextview
 
-ai-specview shows the spec and the code side by side while Claude elaborates a
-spec. It is one Go binary, `ai-specview`:
+ai-contextview shows each of Claude's questions together with its context: the
+document passage it is about and the code at the right lines. Spec elaboration
+builds on it. It is one Go binary, `ai-contextview`:
 
-- `ai-specview mcp`: a stdio MCP server ("bridge"), one per Claude session. It
+- `ai-contextview mcp`: a stdio MCP server ("bridge"), one per Claude session. It
   offers the tools `spec_show`, `focus`, `ask`, `ask_wait`, `ask_mode` and
   `spec_done`.
-- `ai-specview serve`: the viewer daemon, one per user. It serves the web page
+- `ai-contextview serve`: the viewer daemon, one per user. It serves the web page
   (`http://127.0.0.1:7878`) and talks to the bridges over a Unix socket.
-- `ai-specview hook`: a Claude Code hook. It blocks the built-in
+- `ai-contextview hook`: a Claude Code hook. It blocks the built-in
   `AskUserQuestion` only in a session that has a spec open or is in ask mode,
   and reports written markdown files and started skills, so the daemon can
   pick the working document (docs/07-layers.md).
-- `ai-specview fakeapp`: a terminal stand-in for the daemon, for testing.
+- `ai-contextview fakeapp`: a terminal stand-in for the daemon, for testing.
 
 The design is in [docs/](docs/README.md); the contract between the parts is
 [docs/01-protocol.md](docs/01-protocol.md). Keep the docs in step with the
@@ -22,7 +23,7 @@ code: a change in behavior updates the matching doc, and
 ## Always work in a git worktree
 
 Never edit files, build or commit in the main checkout
-(`ai-specview/`). Other sessions use it at the same time, and a
+(`ai-contextview/`). Other sessions use it at the same time, and a
 branch switch or an uncommitted edit there affects all of them. The main
 checkout stays on `master` and clean.
 
@@ -30,7 +31,7 @@ For every change, before the first edit:
 
 1. Create a branch and a worktree next to the main checkout, from `master`:
    ```bash
-   git worktree add -b <type>/<name> ../ai-specview-<name> master
+   git worktree add -b <type>/<name> ../ai-contextview-<name> master
    ```
    A session the Claude desktop app started in its own worktree
    (`.claude/worktrees/…`) already has one: work there.
@@ -49,7 +50,7 @@ Read-only work (reading code, answering questions) needs no worktree.
 
 | Path | What it holds |
 |---|---|
-| `cmd/ai-specview/` | Subcommands, `serve` flags (`--detach`, `--restart`, `--stop`), version string |
+| `cmd/ai-contextview/` | Subcommands, `serve` flags (`--detach`, `--restart`, `--stop`), version string |
 | `internal/protocol/` | Socket envelope and messages, MCP tool inputs and outputs, socket path |
 | `internal/tools/` | The MCP tools: validation, quote pre-check, ref resolution, `ask` blocking |
 | `internal/appconn/` | Bridge side of the socket: lazy connect, daemon start, reconnect and replay |
@@ -58,7 +59,7 @@ Read-only work (reading code, answering questions) needs no worktree.
 | `internal/specsrc/` | Quote matching (exact, normalized, fuzzy, heading), sections, spec roots |
 | `internal/resolve/` | Code refs: line ranges, Go symbols via `go/packages` |
 | `internal/hook/` | The hook: blocking `AskUserQuestion`, reporting written documents and skills |
-| `internal/glob/` | Glob patterns with `**`, for spec-mode paths and `AI_SPECVIEW_DOC_PATHS` |
+| `internal/glob/` | Glob patterns with `**`, for spec-mode paths and `AI_CONTEXTVIEW_DOC_PATHS` |
 | `internal/identity/` | Workspace id, project name, Claude and ancestor process ids |
 | `internal/e2e/` | End-to-end tests, including the multi-process test |
 | `protocol/` | Golden message fixtures and quote-matching fixtures |
@@ -97,7 +98,7 @@ The `CI` workflow (`.github/workflows/ci.yml`) runs gofmt, `go vet` and
 requests. A push to `master` that only changes markdown files or `docs/` skips
 it. It does not run the `claude plugin` checks.
 
-Versions come from git tags (`cmd/ai-specview/version.go`). To release, run
+Versions come from git tags (`cmd/ai-contextview/version.go`). To release, run
 `go run ./tools/changelog release X.Y.Z`, commit, then tag `master` with
 `vX.Y.Z` and push the tag. The `Release` workflow checks the changelog, tests,
 builds the binaries and creates the GitHub release
@@ -116,7 +117,7 @@ the files into `CHANGELOG.md` as
 To try a change locally, install it and replace the running daemon:
 
 ```bash
-go install ./cmd/ai-specview && ai-specview serve --restart
+go install ./cmd/ai-contextview && ai-contextview serve --restart
 ```
 
 ## Things to know
@@ -130,7 +131,7 @@ go install ./cmd/ai-specview && ai-specview serve --restart
   before it listens.
 - HTTP accepts loopback only, checks the `Host` header, checks `Origin` on
   POSTs and sends no CORS headers. Keep it that way.
-- The environment variables (`AI_SPECVIEW_SOCKET`, `AI_SPECVIEW_ADDR`,
-  `AI_SPECVIEW_ASK_MODE`, `AI_SPECVIEW_DOC_PATHS`,
-  `AI_SPECVIEW_ASK_WAIT`, `AI_SPECVIEW_OPEN`, `AI_SPECVIEW_DAEMON`) are listed in the
+- The environment variables (`AI_CONTEXTVIEW_SOCKET`, `AI_CONTEXTVIEW_ADDR`,
+  `AI_CONTEXTVIEW_ASK_MODE`, `AI_CONTEXTVIEW_DOC_PATHS`,
+  `AI_CONTEXTVIEW_ASK_WAIT`, `AI_CONTEXTVIEW_OPEN`, `AI_CONTEXTVIEW_DAEMON`) are listed in the
   README.

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/rrgmc/ai-specview/internal/protocol"
+	"github.com/rrgmc/ai-contextview/internal/protocol"
 )
 
 // Limits from the protocol.

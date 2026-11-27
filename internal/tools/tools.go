@@ -1,4 +1,4 @@
-// Package tools implements the MCP tools of `ai-specview mcp`: spec_show, focus,
+// Package tools implements the MCP tools of `ai-contextview mcp`: spec_show, focus,
 // ask, ask_wait, ask_mode and spec_done.
 package tools
 
@@ -17,11 +17,11 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/rrgmc/ai-specview/internal/identity"
-	"github.com/rrgmc/ai-specview/internal/protocol"
-	"github.com/rrgmc/ai-specview/internal/resolve"
-	"github.com/rrgmc/ai-specview/internal/specsrc"
-	"github.com/rrgmc/ai-specview/internal/validate"
+	"github.com/rrgmc/ai-contextview/internal/identity"
+	"github.com/rrgmc/ai-contextview/internal/protocol"
+	"github.com/rrgmc/ai-contextview/internal/resolve"
+	"github.com/rrgmc/ai-contextview/internal/specsrc"
+	"github.com/rrgmc/ai-contextview/internal/validate"
 )
 
 // Daemon is the bridge's view of the daemon connection (appconn.Client).
@@ -98,31 +98,31 @@ const (
 const DefaultReopenDelay = 10 * time.Second
 
 // OpenPane asks Claude to open the viewer in the built-in browser pane of the
-// Claude desktop app. It is the default; AI_SPECVIEW_OPEN=browser or never
+// Claude desktop app. It is the default; AI_CONTEXTVIEW_OPEN=browser or never
 // turns it off.
 const OpenPane = "pane"
 
-// AskModeFromEnv reports whether AI_SPECVIEW_ASK_MODE=always turns ask mode
+// AskModeFromEnv reports whether AI_CONTEXTVIEW_ASK_MODE=always turns ask mode
 // on for every session.
 func AskModeFromEnv() bool {
-	return os.Getenv("AI_SPECVIEW_ASK_MODE") == "always"
+	return os.Getenv("AI_CONTEXTVIEW_ASK_MODE") == "always"
 }
 
-// OpenInFromEnv returns OpenPane unless AI_SPECVIEW_OPEN is set to another
+// OpenInFromEnv returns OpenPane unless AI_CONTEXTVIEW_OPEN is set to another
 // value than pane (browser or never).
 func OpenInFromEnv() string {
-	switch os.Getenv("AI_SPECVIEW_OPEN") {
+	switch os.Getenv("AI_CONTEXTVIEW_OPEN") {
 	case "", OpenPane:
 		return OpenPane
 	}
 	return ""
 }
 
-// OpenBrowser opens a URL with the platform opener unless AI_SPECVIEW_OPEN=never.
+// OpenBrowser opens a URL with the platform opener unless AI_CONTEXTVIEW_OPEN=never.
 // It also opens with the pane default: the bridge calls it only when no page
 // is open, so it is the fallback when there is no pane.
 func OpenBrowser(url string) {
-	if os.Getenv("AI_SPECVIEW_OPEN") == "never" {
+	if os.Getenv("AI_CONTEXTVIEW_OPEN") == "never" {
 		return
 	}
 	var cmd *exec.Cmd
@@ -193,7 +193,7 @@ func (b *Bridge) absPath(p string) string {
 func Register(s *mcp.Server, b *Bridge) {
 	mcp.AddTool(s, &mcp.Tool{
 		Name: "spec_show",
-		Description: "Show a spec in the ai-specview viewer (a browser page beside the chat). " +
+		Description: "Show a spec in the ai-contextview viewer (a browser page beside the chat). " +
 			"Call it as soon as the spec path is known and again after every edit, with the headings you changed. " +
 			"The path is a markdown file or a folder of markdown artifacts. Returns the section names and the viewer url. " +
 			"If the result has open: \"pane\", open the url in the built-in browser pane when that tool is available.",
@@ -205,7 +205,7 @@ func Register(s *mcp.Server, b *Bridge) {
 	}, b.Focus)
 	mcp.AddTool(s, &mcp.Tool{
 		Name: "ask",
-		Description: "Ask the user 1-6 clarifying questions in the ai-specview viewer and wait for the answers. " +
+		Description: "Ask the user 1-6 clarifying questions in the ai-contextview viewer and wait for the answers. " +
 			"Use this for every clarifying question instead of asking in chat. Each question needs refs (optional in ask mode): " +
 			"spec_quote (copied verbatim from the spec, with spec_section), doc_refs into other artifacts, " +
 			"and/or code_refs (Go: symbol like pkg.(*Type).Method; other files: lines N-M). " +

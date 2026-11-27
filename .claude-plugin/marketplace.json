@@ -1,12 +1,12 @@
 {
-  "name": "ai-specview",
+  "name": "ai-contextview",
   "owner": {
     "name": "Rangel Reale"
   },
-  "description": "ai-specview: a front end for Claude's questions, with the documents and code they are about.",
+  "description": "ai-contextview: a front end for Claude's questions, with the documents and code they are about.",
   "plugins": [
     {
-      "name": "ai-specview",
+      "name": "ai-contextview",
       "source": "./plugin",
       "description": "A front end for Claude's questions, with the documents and code they are about, and spec elaboration on top of it; in a browser page or in a pane beside the chat."
     }

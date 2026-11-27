@@ -1,14 +1,14 @@
 # 06 — Pane mod
 
-The `ai-specview` plugin has two ways to show a spec:
+The `ai-contextview` plugin has two ways to show a spec:
 
 | Skill | Tools | Viewer |
 |---|---|---|
-| `ai-specview:spec-elaborate` | The bridge's MCP tools, `mcp__plugin_ai-specview_ai-specview__…` | The browser page served by the daemon |
-| `ai-specview:spec-elaborate-mod` | The mod's own tools, `mcp__ai-specview__…` | A pane beside the chat, drawn by a Claude Code mod |
+| `ai-contextview:spec-elaborate` | The bridge's MCP tools, `mcp__plugin_ai-contextview_ai-contextview__…` | The browser page served by the daemon |
+| `ai-contextview:spec-elaborate-mod` | The mod's own tools, `mcp__ai-contextview__…` | A pane beside the chat, drawn by a Claude Code mod |
 
-Ask mode (04) has a skill for each: `ai-specview:ask-mode` uses the bridge's
-`ask_mode` tool, `ai-specview:ask-mode-mod` the mod's. The mod keeps the mode
+Ask mode (04) has a skill for each: `ai-contextview:ask-mode` uses the bridge's
+`ask_mode` tool, `ai-contextview:ask-mode-mod` the mod's. The mod keeps the mode
 in its state, blocks `AskUserQuestion` while it is on, accepts questions with
 no refs, and with no spec shown draws the pane as "Ask mode" without a spec
 file or section list. A `spec_quote` still needs a spec.
@@ -18,12 +18,12 @@ Doc refs follow the bridge's rules (01): any text file of the project, by
 lines before the range, the range in the framed box, and the lines after.
 With no spec, the document column shows for a whole question set when any of
 its questions has a document, and is left out otherwise; a question with no
-document keeps the last one and says so. `AI_SPECVIEW_ASK_MODE=always` turns
+document keeps the last one and says so. `AI_CONTEXTVIEW_ASK_MODE=always` turns
 ask mode on when the session starts.
 
 The mod picks the working document from written files as the daemon does (01,
 `ask_mode`; 07): its `tool.call` hook sees `Write`, `Edit` and `MultiEdit`
-after they run, applies the hook's file rules and `AI_SPECVIEW_DOC_PATHS`, and
+after they run, applies the hook's file rules and `AI_CONTEXTVIEW_DOC_PATHS`, and
 shows the picked file as `spec_show` would; a `Skill` call raises the spec-mode
 score. The pick lives in the mod's state (`work`). Instead of a line to Claude,
 it shows a toast to the user.
@@ -54,7 +54,7 @@ What a mod cannot do, and the browser page can:
 At `session.start` the mod registers `spec_show`, `focus`, `ask`, `ask_wait`
 and `spec_done` (`plugin/hooks/tools.ts`), with the bridge's input schemas
 (`internal/protocol/mcp.go`) and descriptions that name the pane. Claude Code
-lists them as `mcp__ai-specview__<name>`, behind ToolSearch like MCP tools. A
+lists them as `mcp__ai-contextview__<name>`, behind ToolSearch like MCP tools. A
 `tool.call` hook answers them, so they need no permission prompt. Each answer
 is the JSON text the bridge would send: an MCP tool's result must be text, not
 an object.
@@ -62,11 +62,11 @@ an object.
 - **Errors.** Bad input or a ref that is not found fails the call with the
   bridge's wording ("invalid input" or "fix these and call again"). If a hook
   fails or the person interrupts the call, the hook's `.catch` refuses it.
-- **`AskUserQuestion`.** `ai-specview hook` asks the daemon whether a spec is
+- **`AskUserQuestion`.** `ai-contextview hook` asks the daemon whether a spec is
   open, and the pane does not use the daemon. So the mod blocks the built-in
   question tool itself, with the hook's message, from `spec_show` to
   `spec_done`.
-- **`/specview-pane`** opens the pane again after the person closed it.
+- **`/contextview-pane`** opens the pane again after the person closed it.
 
 ## 3. Specs, doc refs and files
 
@@ -91,7 +91,7 @@ inside the folder for a folder spec, and hold the quote.
   resolved as `focus` resolves them.
 - **Waiting.** The question set is stored in session state and the pane shows
   it. The `tool.call` hook then waits for the person's choice, checking once a
-  second, for up to 10 minutes (the bridge's `AI_SPECVIEW_ASK_WAIT` default).
+  second, for up to 10 minutes (the bridge's `AI_CONTEXTVIEW_ASK_WAIT` default).
   Past that it answers `pending` with the question set id, and `ask_wait` waits
   again. A hook's own time is capped at 10 seconds and a `$.clock` wait counts
   toward it, while time inside any other `$` call does not (up to 20 minutes on

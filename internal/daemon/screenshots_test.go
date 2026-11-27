@@ -1,10 +1,10 @@
 package daemon
 
 // TestScreenshots renders the README screenshots from the sample spec and
-// code in testdata/screenshots. It runs only when AI_SPECVIEW_SCREENSHOTS
+// code in testdata/screenshots. It runs only when AI_CONTEXTVIEW_SCREENSHOTS
 // names the output directory; a relative path is taken from the module root:
 //
-//	AI_SPECVIEW_SCREENSHOTS=docs/images go test -run TestScreenshots ./internal/daemon/
+//	AI_CONTEXTVIEW_SCREENSHOTS=docs/images go test -run TestScreenshots ./internal/daemon/
 
 import (
 	"context"
@@ -18,13 +18,13 @@ import (
 	"github.com/chromedp/chromedp"
 	"github.com/stretchr/testify/require"
 
-	"github.com/rrgmc/ai-specview/internal/protocol"
+	"github.com/rrgmc/ai-contextview/internal/protocol"
 )
 
 func TestScreenshots(t *testing.T) {
-	out := os.Getenv("AI_SPECVIEW_SCREENSHOTS")
+	out := os.Getenv("AI_CONTEXTVIEW_SCREENSHOTS")
 	if out == "" {
-		t.Skip("set AI_SPECVIEW_SCREENSHOTS to the output directory to render the screenshots")
+		t.Skip("set AI_CONTEXTVIEW_SCREENSHOTS to the output directory to render the screenshots")
 	}
 	if !filepath.IsAbs(out) {
 		out = filepath.Join(moduleRoot(t), out)

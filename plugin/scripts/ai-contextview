@@ -1,0 +1,32 @@
+#!/bin/sh
+# Finds the ai-contextview binary and runs it with the given arguments. The plugin
+# does not ship the binary: install it as https://github.com/rrgmc/ai-contextview#install describes.
+# The desktop app often starts Claude Code without the shell's PATH, so the Go
+# install directories are tried as well. AI_CONTEXTVIEW_BIN overrides the search.
+# On Windows, Claude Code runs this script with Git Bash, which finds
+# ai-contextview.exe under the name ai-contextview.
+
+# first_gopath prints the first entry of a GOPATH list. Windows separates the
+# entries with ";" and its paths start with a drive letter ("C:\..."), so a
+# ":" split would cut such a path at the drive.
+first_gopath() {
+	case "$1" in
+	[A-Za-z]:[\\/]*) printf '%s' "${1%%;*}" ;;
+	*) printf '%s' "${1%%:*}" ;;
+	esac
+}
+
+for c in "$AI_CONTEXTVIEW_BIN" "$(command -v ai-contextview 2>/dev/null)" \
+         "${GOBIN:+$GOBIN/ai-contextview}" "${GOPATH:+$(first_gopath "$GOPATH")/bin/ai-contextview}" \
+         "$HOME/go/bin/ai-contextview"; do
+	if [ -n "$c" ] && [ -x "$c" ]; then
+		exec "$c" "$@"
+	fi
+done
+if command -v go >/dev/null 2>&1; then
+	c="$(first_gopath "$(go env GOPATH 2>/dev/null)")/bin/ai-contextview"
+	[ -x "$c" ] && exec "$c" "$@"
+fi
+echo "ai-contextview: binary not found. Install it as https://github.com/rrgmc/ai-contextview#install describes (or set AI_CONTEXTVIEW_BIN)" >&2
+# Exit 1, not 2: for the hook, 2 would block the tool.
+exit 1

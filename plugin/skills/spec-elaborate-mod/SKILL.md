@@ -1,23 +1,23 @@
 ---
 name: spec-elaborate-mod
-description: Elaborate a feature spec with the user, showing the spec, the code and the questions in the ai-specview pane beside the chat (a Claude Code mod; no browser page or daemon). Use when asked to "spec", "write a spec for", "elaborate the spec", or "design" a change before writing code, and the user wants the pane rather than the browser viewer. Asks every clarifying question through the pane's `ask` tool. Do NOT use for writing the code itself, or when the user wants the browser viewer (use spec-elaborate).
+description: Elaborate a feature spec with the user, showing the spec, the code and the questions in the ai-contextview pane beside the chat (a Claude Code mod; no browser page or daemon). Use when asked to "spec", "write a spec for", "elaborate the spec", or "design" a change before writing code, and the user wants the pane rather than the browser viewer. Asks every clarifying question through the pane's `ask` tool. Do NOT use for writing the code itself, or when the user wants the browser viewer (use spec-elaborate).
 ---
 
-# Spec elaboration in the ai-specview pane
+# Spec elaboration in the ai-contextview pane
 
-You write or refine a markdown spec together with the user. The ai-specview
+You write or refine a markdown spec together with the user. The ai-contextview
 pane is a Claude Code mod that shows the spec, the code and the questions in a
 pane beside the chat. The user sees each question next to the spec passage and
 the code it is about, and answers it in the pane.
 
 ## The pane's tools
 
-Use only the pane's tools: `mcp__ai-specview__spec_show`,
-`mcp__ai-specview__focus`, `mcp__ai-specview__ask`,
-`mcp__ai-specview__ask_wait` and `mcp__ai-specview__spec_done`. They are
+Use only the pane's tools: `mcp__ai-contextview__spec_show`,
+`mcp__ai-contextview__focus`, `mcp__ai-contextview__ask`,
+`mcp__ai-contextview__ask_wait` and `mcp__ai-contextview__spec_done`. They are
 deferred: load them first with ToolSearch, as
-`select:mcp__ai-specview__spec_show,mcp__ai-specview__focus,mcp__ai-specview__ask,mcp__ai-specview__ask_wait,mcp__ai-specview__spec_done`.
-Never call the `mcp__plugin_ai-specview_ai-specview__…` tools in this skill:
+`select:mcp__ai-contextview__spec_show,mcp__ai-contextview__focus,mcp__ai-contextview__ask,mcp__ai-contextview__ask_wait,mcp__ai-contextview__spec_done`.
+Never call the `mcp__plugin_ai-contextview_ai-contextview__…` tools in this skill:
 they drive the browser viewer. Below, `spec_show`, `ask` and the others mean
 the pane's tools.
 
@@ -28,7 +28,7 @@ the pane's tools.
    `templates/spec.md`. A new spec is a draft outside the repository (see
    **Draft specs**), unless the user asks for it in the repository.
 2. **Show it.** As soon as the file exists, call `spec_show(path)`. The pane
-   opens beside the chat; `/specview-pane` opens it again if the user closed
+   opens beside the chat; `/contextview-pane` opens it again if the user closed
    it. Use the returned section names when you refer to sections.
 3. **Read the relevant code.** Find the packages, types and functions the
    change touches. Note the exact symbols; you will cite them in questions.
@@ -133,7 +133,7 @@ section. An existing spec the user names stays where it is.
     the deferred questions again in one `ask`; whatever is still deferred goes
     under "Still open" in the `spec_done` summary.
 - If the pane's tools are missing (the mod is not loaded), say so, and offer
-  the browser viewer (`ai-specview:spec-elaborate`) or questions in chat.
+  the browser viewer (`ai-contextview:spec-elaborate`) or questions in chat.
 - Call `spec_done` only at the very end, never between rounds.
 - Use `focus` to point the user at a spec passage and code without asking
   anything, for example when summarizing a change.

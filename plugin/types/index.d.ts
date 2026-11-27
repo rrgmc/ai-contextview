@@ -139,7 +139,7 @@ export type WorkDoc = {
 
 declare module 'claude-code' {
   interface PluginState {
-    'ai-specview': {
+    'ai-contextview': {
       view: Shaped<SpecView | null>
       ui: Shaped<PaneUi>
       ask: Shaped<AskView | null>

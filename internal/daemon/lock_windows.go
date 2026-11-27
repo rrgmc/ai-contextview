@@ -8,7 +8,7 @@ import (
 )
 
 // ErrLocked means another daemon holds the instance lock.
-var ErrLocked = errors.New("another ai-specview daemon is running or starting")
+var ErrLocked = errors.New("another ai-contextview daemon is running or starting")
 
 // Lock takes the single-instance lock for the socket at sockPath: an
 // exclusive LockFileEx on sockPath+".lock", held until release is called or

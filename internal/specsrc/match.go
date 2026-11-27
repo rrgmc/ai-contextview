@@ -6,7 +6,7 @@ import (
 
 	"github.com/sergi/go-diff/diffmatchpatch"
 
-	"github.com/rrgmc/ai-specview/internal/protocol"
+	"github.com/rrgmc/ai-contextview/internal/protocol"
 )
 
 // Result is a quote match: a source byte range and its quality.

@@ -69,8 +69,8 @@ const manifest = `{
 `
 
 const readme = "# R\n\nReleases are git tags such as `v0.5.0`.\n\n" +
-	"    go install github.com/o/r/cmd/ai-specview@v0.5.0\n\n" +
-	"`ai-specview version` prints the git tag (`v1.2.3`).\n"
+	"    go install github.com/o/r/cmd/ai-contextview@v0.5.0\n\n" +
+	"`ai-contextview version` prints the git tag (`v1.2.3`).\n"
 
 func writeRepo(t *testing.T, entries map[string]string) string {
 	t.Helper()
@@ -191,7 +191,7 @@ func TestSetReadmeVersion(t *testing.T) {
 	out, err := setReadmeVersion(readme, "1.2.3")
 	require.NoError(t, err)
 	assert.Contains(t, out, "tags such as `v1.2.3`")
-	assert.Contains(t, out, "cmd/ai-specview@v1.2.3\n")
+	assert.Contains(t, out, "cmd/ai-contextview@v1.2.3\n")
 	assert.Contains(t, out, "git tag (`v1.2.3`)")
 	assert.NoError(t, checkReadme(out, "1.2.3"))
 

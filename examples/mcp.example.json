@@ -1,9 +1,9 @@
 {
   "mcpServers": {
-    "ai-specview": {
-      "command": "ai-specview",
+    "ai-contextview": {
+      "command": "ai-contextview",
       "args": ["mcp"],
-      "env": { "AI_SPECVIEW_ASK_WAIT": "600s" }
+      "env": { "AI_CONTEXTVIEW_ASK_WAIT": "600s" }
     }
   }
 }

@@ -1,6 +1,6 @@
 // Package fakeapp is a test double for the viewer daemon. It speaks the socket
 // protocol, prints every message, and answers questions either from a hook
-// (tests) or from the terminal (`ai-specview fakeapp`).
+// (tests) or from the terminal (`ai-contextview fakeapp`).
 package fakeapp
 
 import (
@@ -17,8 +17,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/rrgmc/ai-specview/internal/protocol"
-	"github.com/rrgmc/ai-specview/internal/specsrc"
+	"github.com/rrgmc/ai-contextview/internal/protocol"
+	"github.com/rrgmc/ai-contextview/internal/specsrc"
 )
 
 // Server is a fake daemon.

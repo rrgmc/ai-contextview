@@ -1,4 +1,4 @@
-module github.com/rrgmc/ai-specview
+module github.com/rrgmc/ai-contextview
 
 go 1.26.0
 

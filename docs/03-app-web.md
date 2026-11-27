@@ -1,4 +1,4 @@
-# 03 — `ai-specview serve` (Go web viewer)
+# 03 — `ai-contextview serve` (Go web viewer)
 
 A long-lived Go daemon. It speaks the socket protocol (01) to bridges and serves
 a small web UI on `127.0.0.1`. It knows nothing about MCP.
@@ -21,7 +21,7 @@ a small web UI on `127.0.0.1`. It knows nothing about MCP.
 Single Go module, shared with the bridge:
 
 ```
-cmd/ai-specview/main.go          # subcommands: mcp, serve, fakeapp, version
+cmd/ai-contextview/main.go          # subcommands: mcp, serve, fakeapp, version
 internal/
 ├── protocol/                 # envelope + message structs (shared with bridge)
 ├── specsrc/                  # normalize + quote matching on markdown source (shared)
@@ -45,8 +45,8 @@ internal/
 
 ## Process and lifecycle
 
-- `ai-specview serve` runs in the foreground (useful while developing).
-  `ai-specview serve --detach` forks into the background and exits once the socket
+- `ai-contextview serve` runs in the foreground (useful while developing).
+  `ai-contextview serve --detach` forks into the background and exits once the socket
   is listening; the bridge uses this to start it.
 - **Single instance**: on start, try to connect to the socket. If that works,
   another daemon is running: print its URL and exit 0. Otherwise take an
@@ -56,7 +56,7 @@ internal/
   the lock when the process ends, even on `kill -9`.
 - `--restart` asks the running daemon to exit (a `shutdown` message on the
   socket, only accepted from the same uid), then starts.
-- HTTP listens on `127.0.0.1:7878` by default (`--addr` / `$AI_SPECVIEW_ADDR`). If
+- HTTP listens on `127.0.0.1:7878` by default (`--addr` / `$AI_CONTEXTVIEW_ADDR`). If
   the port is taken, try the next 9 ports. The chosen URL is returned to bridges
   in `hello_ack.url`.
 - **Idle exit** (optional, default off): exit after 30 min with no bridges and no
@@ -133,7 +133,7 @@ State is small, so no event log is needed.
 ## Page layout
 
 ```
-┌ ai-specview · shop · retry.md ● ──────────────────────── [Questions below] ◐ ┐
+┌ ai-contextview · shop · retry.md ● ──────────────────────── [Questions below] ◐ ┐
 ├──────────────┬───────────────────────────┬────────────────────────────────┤
 │ Artifacts    │ Doc pane                  │ Question panel                 │
 │ (folders)    │ ## Retry policy ◆changed  │ Retry semantics   ‹ Q 1/2 ›    │

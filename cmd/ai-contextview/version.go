@@ -4,9 +4,9 @@ import "runtime/debug"
 
 // version is the binary's version. Release builds take it from the git tag:
 //
-//   - `go install github.com/rrgmc/ai-specview/cmd/ai-specview@v1.2.3` records
+//   - `go install github.com/rrgmc/ai-contextview/cmd/ai-contextview@v1.2.3` records
 //     the module version, "v1.2.3".
-//   - `go build` or `go install ./cmd/ai-specview` in a checkout records the
+//   - `go build` or `go install ./cmd/ai-contextview` in a checkout records the
 //     tag on HEAD ("v1.2.3"), a pseudo-version for commits after a tag
 //     ("v1.2.4-0.20261124101500-abcdef123456"), and "+dirty" when the tree has
 //     uncommitted changes.

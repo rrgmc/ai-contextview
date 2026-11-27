@@ -1,5 +1,5 @@
 // Package protocol defines the socket protocol between the bridge
-// (ai-specview mcp) and the viewer daemon (ai-specview serve), and the shared
+// (ai-contextview mcp) and the viewer daemon (ai-contextview serve), and the shared
 // types used by the MCP tools. See docs/01-protocol.md.
 package protocol
 
@@ -40,17 +40,17 @@ const (
 	// TypeAskMode turns ask mode on or off for the workspace; the reply is
 	// result {}.
 	TypeAskMode = "ask_mode"
-	// TypeDocWritten is sent by `ai-specview hook` after Claude writes a
+	// TypeDocWritten is sent by `ai-contextview hook` after Claude writes a
 	// markdown file; the reply is a result with DocWrittenResult.
 	TypeDocWritten = "doc_written"
-	// TypeSkillStarted is sent by `ai-specview hook` when Claude starts a
+	// TypeSkillStarted is sent by `ai-contextview hook` when Claude starts a
 	// skill; the reply is result {}.
 	TypeSkillStarted = "skill_started"
 	// TypeDocShown is sent by the daemon to the bridge, unasked, when it
 	// made a written file the working document.
 	TypeDocShown = "doc_shown"
 	// TypeSessionCwd carries the Claude session's working folder: from
-	// `ai-specview hook` to the daemon (with pids), and from the daemon to
+	// `ai-contextview hook` to the daemon (with pids), and from the daemon to
 	// the bridge, unasked, when it changed. In a desktop-app worktree it is
 	// the worktree, while the bridge was started in the main checkout.
 	TypeSessionCwd = "session_cwd"
@@ -60,10 +60,10 @@ const (
 	// folder the hook just reported is used.
 	TypeCwd = "cwd"
 	// TypePing and TypeShutdown are daemon-management messages used by
-	// `ai-specview serve` itself (single-instance check and --restart).
+	// `ai-contextview serve` itself (single-instance check and --restart).
 	TypePing     = "ping"
 	TypeShutdown = "shutdown"
-	// TypeActive is sent by `ai-specview hook`: is a spec open in ai-specview for
+	// TypeActive is sent by `ai-contextview hook`: is a spec open in ai-contextview for
 	// one of these Claude Code processes?
 	TypeActive = "active"
 )
@@ -279,7 +279,7 @@ type Hello struct {
 	TTY           string `json:"tty,omitempty"`
 	ProjectName   string `json:"project_name"`
 	// BridgePPID is the bridge's parent: the Claude Code process that
-	// started it. `ai-specview hook` matches it against its own ancestors.
+	// started it. `ai-contextview hook` matches it against its own ancestors.
 	BridgePPID int `json:"bridge_ppid,omitempty"`
 }
 
@@ -431,7 +431,7 @@ func (d *Done) Validate() error {
 }
 
 // AskMode turns ask mode on or off. In ask mode every question of the
-// session goes through ai-specview, with or without a spec, and the hook
+// session goes through ai-contextview, with or without a spec, and the hook
 // blocks the built-in question tool.
 type AskMode struct {
 	On bool `json:"on"`

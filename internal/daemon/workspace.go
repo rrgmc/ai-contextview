@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rrgmc/ai-specview/internal/protocol"
-	"github.com/rrgmc/ai-specview/internal/render"
-	"github.com/rrgmc/ai-specview/internal/specsrc"
+	"github.com/rrgmc/ai-contextview/internal/protocol"
+	"github.com/rrgmc/ai-contextview/internal/render"
+	"github.com/rrgmc/ai-contextview/internal/specsrc"
 )
 
 const (
@@ -99,7 +99,7 @@ type Workspace struct {
 	// Done is set by spec_done: the spec is finished. A later ask clears it.
 	Done *DoneState
 	// AskMode is set by ask_mode: every question of the session goes
-	// through ai-specview, with or without a spec.
+	// through ai-contextview, with or without a spec.
 	AskMode bool
 	// work picks the working document from the files Claude writes (07).
 	work workDoc

@@ -1,4 +1,4 @@
-// Command ai-specview shows the spec and the code side by side while Claude
+// Command ai-contextview shows the spec and the code side by side while Claude
 // elaborates a spec. Subcommands: mcp (the per-Claude stdio MCP bridge),
 // serve (the web viewer daemon), fakeapp (a terminal test double for serve),
 // version.
@@ -23,19 +23,19 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/rrgmc/ai-specview/internal/appconn"
-	"github.com/rrgmc/ai-specview/internal/daemon"
-	"github.com/rrgmc/ai-specview/internal/detach"
-	"github.com/rrgmc/ai-specview/internal/fakeapp"
-	"github.com/rrgmc/ai-specview/internal/hook"
-	"github.com/rrgmc/ai-specview/internal/identity"
-	"github.com/rrgmc/ai-specview/internal/protocol"
-	"github.com/rrgmc/ai-specview/internal/resolve"
-	"github.com/rrgmc/ai-specview/internal/tools"
+	"github.com/rrgmc/ai-contextview/internal/appconn"
+	"github.com/rrgmc/ai-contextview/internal/daemon"
+	"github.com/rrgmc/ai-contextview/internal/detach"
+	"github.com/rrgmc/ai-contextview/internal/fakeapp"
+	"github.com/rrgmc/ai-contextview/internal/hook"
+	"github.com/rrgmc/ai-contextview/internal/identity"
+	"github.com/rrgmc/ai-contextview/internal/protocol"
+	"github.com/rrgmc/ai-contextview/internal/resolve"
+	"github.com/rrgmc/ai-contextview/internal/tools"
 )
 
 func usage() {
-	fmt.Fprintf(os.Stderr, `usage: ai-specview <command> [flags]
+	fmt.Fprintf(os.Stderr, `usage: ai-contextview <command> [flags]
 
 commands:
   mcp       run the stdio MCP server (Claude Code starts this)
@@ -63,7 +63,7 @@ func main() {
 		// A Claude Code PreToolUse hook: exit 2 blocks the tool.
 		os.Exit(hook.Run(os.Stdin, os.Stdout, os.Stderr, protocol.SocketPath(), identity.AncestorPIDs(16)))
 	case "version", "--version", "-v":
-		fmt.Println("ai-specview", version)
+		fmt.Println("ai-contextview", version)
 	case "help", "-h", "--help":
 		usage()
 	default:
@@ -71,7 +71,7 @@ func main() {
 		os.Exit(2)
 	}
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "ai-specview:", err)
+		fmt.Fprintln(os.Stderr, "ai-contextview:", err)
 		os.Exit(1)
 	}
 }
@@ -79,17 +79,17 @@ func main() {
 // ------------------------------------------------------------------- mcp
 
 func runMCP() error {
-	logger := log.New(os.Stderr, "ai-specview mcp: ", log.LstdFlags)
+	logger := log.New(os.Stderr, "ai-contextview mcp: ", log.LstdFlags)
 	id, err := identity.New()
 	if err != nil {
 		return err
 	}
 	askWait := 10 * time.Minute
-	if v := os.Getenv("AI_SPECVIEW_ASK_WAIT"); v != "" {
+	if v := os.Getenv("AI_CONTEXTVIEW_ASK_WAIT"); v != "" {
 		if d, err := time.ParseDuration(v); err == nil && d > 0 {
 			askWait = d
 		} else {
-			logger.Printf("ignoring bad AI_SPECVIEW_ASK_WAIT=%q", v)
+			logger.Printf("ignoring bad AI_CONTEXTVIEW_ASK_WAIT=%q", v)
 		}
 	}
 	daemonCmd, err := daemonCommand()
@@ -122,8 +122,8 @@ func runMCP() error {
 		Cwd: id.Cwd, Daemon: client, Resolver: resolve.New(), AskWait: askWait,
 		Open: tools.OpenBrowser, OpenIn: tools.OpenInFromEnv(), Logf: logger.Printf,
 	}
-	server := mcp.NewServer(&mcp.Implementation{Name: "ai-specview", Version: version}, &mcp.ServerOptions{
-		Instructions: "ai-specview shows the spec and the code beside the chat. Call spec_show when a spec is created or " +
+	server := mcp.NewServer(&mcp.Implementation{Name: "ai-contextview", Version: version}, &mcp.ServerOptions{
+		Instructions: "ai-contextview shows the spec and the code beside the chat. Call spec_show when a spec is created or " +
 			"edited, and ask every clarifying question with ask, quoting verbatim the spec passage it is about and pointing at the code.",
 	})
 	tools.Register(server, bridge)
@@ -149,10 +149,10 @@ func runMCP() error {
 	return err
 }
 
-// daemonCommand is $AI_SPECVIEW_DAEMON (run with sh -c) or this executable with
+// daemonCommand is $AI_CONTEXTVIEW_DAEMON (run with sh -c) or this executable with
 // `serve --detach`.
 func daemonCommand() ([]string, error) {
-	if v := os.Getenv("AI_SPECVIEW_DAEMON"); v != "" {
+	if v := os.Getenv("AI_CONTEXTVIEW_DAEMON"); v != "" {
 		return []string{"/bin/sh", "-c", v}, nil
 	}
 	exe, err := os.Executable()
@@ -194,7 +194,7 @@ func ping(sock string, typ string) (*protocol.PingResult, error) {
 func runServe(args []string) error {
 	fs := flag.NewFlagSet("serve", flag.ExitOnError)
 	defAddr := "127.0.0.1:7878"
-	if v := os.Getenv("AI_SPECVIEW_ADDR"); v != "" {
+	if v := os.Getenv("AI_CONTEXTVIEW_ADDR"); v != "" {
 		defAddr = v
 	}
 	addr := fs.String("addr", defAddr, "HTTP listen address (loopback); the next 9 ports are tried when taken")
@@ -207,11 +207,11 @@ func runServe(args []string) error {
 	sock := protocol.SocketPath()
 	if *stop {
 		if _, err := ping(sock, protocol.TypePing); err != nil {
-			fmt.Println("ai-specview is not running")
+			fmt.Println("ai-contextview is not running")
 			return nil
 		}
 		_, _ = ping(sock, protocol.TypeShutdown)
-		fmt.Println("ai-specview stopped")
+		fmt.Println("ai-contextview stopped")
 		return nil
 	}
 	oldPID := 0
@@ -229,7 +229,7 @@ func runServe(args []string) error {
 					break
 				}
 				if res.PID != old.PID {
-					fmt.Printf("ai-specview restarted (pid %d, was %d): %s\n", res.PID, old.PID, res.URL)
+					fmt.Printf("ai-contextview restarted (pid %d, was %d): %s\n", res.PID, old.PID, res.URL)
 					fmt.Println("a running Claude session started it; it uses the binary that session runs")
 					return nil
 				}
@@ -241,9 +241,9 @@ func runServe(args []string) error {
 		}
 	}
 	if res, err := ping(sock, protocol.TypePing); err == nil {
-		fmt.Printf("ai-specview %s is already running: %s\n", res.DaemonVersion, res.URL)
+		fmt.Printf("ai-contextview %s is already running: %s\n", res.DaemonVersion, res.URL)
 		if res.DaemonVersion != version {
-			fmt.Printf("this binary is %s; run `ai-specview serve --restart` to switch\n", version)
+			fmt.Printf("this binary is %s; run `ai-contextview serve --restart` to switch\n", version)
 		}
 		return nil
 	}
@@ -256,9 +256,9 @@ func runServe(args []string) error {
 		}
 		switch {
 		case *restart && oldPID != 0:
-			fmt.Printf("ai-specview restarted (pid %d, was %d): %s\n", res.PID, oldPID, res.URL)
+			fmt.Printf("ai-contextview restarted (pid %d, was %d): %s\n", res.PID, oldPID, res.URL)
 		case *restart:
-			fmt.Printf("ai-specview started (pid %d): %s\n", res.PID, res.URL)
+			fmt.Printf("ai-contextview started (pid %d): %s\n", res.PID, res.URL)
 		default:
 			fmt.Println(res.URL)
 		}
@@ -277,7 +277,7 @@ func detachServe(sock, addr string, idle time.Duration) (*protocol.PingResult, e
 	if err := os.MkdirAll(logDir, 0o700); err != nil {
 		return nil, err
 	}
-	logFile, err := os.OpenFile(filepath.Join(logDir, "ai-specview.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+	logFile, err := os.OpenFile(filepath.Join(logDir, "ai-contextview.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
 	if err != nil {
 		return nil, err
 	}
@@ -303,7 +303,7 @@ func detachServe(sock, addr string, idle time.Duration) (*protocol.PingResult, e
 }
 
 func serve(sock, addr string, idle time.Duration) error {
-	logger := log.New(os.Stderr, "ai-specview serve: ", log.LstdFlags)
+	logger := log.New(os.Stderr, "ai-contextview serve: ", log.LstdFlags)
 	if err := os.MkdirAll(filepath.Dir(sock), 0o700); err != nil {
 		return err
 	}
@@ -348,7 +348,7 @@ func serve(sock, addr string, idle time.Duration) error {
 			d.RequestShutdown()
 		}
 	}()
-	logger.Printf("ai-specview %s listening on %s (socket %s)", version, d.BaseURL, sock)
+	logger.Printf("ai-contextview %s listening on %s (socket %s)", version, d.BaseURL, sock)
 	fmt.Println(d.BaseURL)
 
 	sigs := make(chan os.Signal, 1)

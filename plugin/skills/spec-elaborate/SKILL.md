@@ -1,11 +1,11 @@
 ---
 name: spec-elaborate
-description: Elaborate a feature spec with the user, showing the spec and the code side by side in the ai-specview viewer. Use when asked to "spec", "write a spec for", "elaborate the spec", or "design" a change before writing code. Asks every clarifying question through the ai-specview `ask` tool, with the spec passage and the code it is about. Do NOT use for writing the code itself, or when the user wants the spec in a pane beside the chat (use spec-elaborate-mod).
+description: Elaborate a feature spec with the user, showing the spec and the code side by side in the ai-contextview viewer. Use when asked to "spec", "write a spec for", "elaborate the spec", or "design" a change before writing code. Asks every clarifying question through the ai-contextview `ask` tool, with the spec passage and the code it is about. Do NOT use for writing the code itself, or when the user wants the spec in a pane beside the chat (use spec-elaborate-mod).
 ---
 
-# Spec elaboration with ai-specview
+# Spec elaboration with ai-contextview
 
-You write or refine a markdown spec together with the user. ai-specview is a
+You write or refine a markdown spec together with the user. ai-contextview is a
 local viewer (a browser page) that shows the spec and the code beside the chat.
 The user sees each question next to the spec passage and the code it is about.
 
@@ -96,7 +96,7 @@ section. An existing spec the user names stays where it is.
   `spec_show` with the new path, and do not commit it unless the user asks.
   Then call `spec_done`.
 
-## Using ai-specview
+## Using ai-contextview
 
 - Ask **every** clarifying question with the `ask` tool, never in plain chat
   text and never with another question tool.
@@ -145,7 +145,7 @@ section. An existing spec the user names stays where it is.
   - `keep_open` (with `in_chat` or `dismissed`): in a change folder, write one
     `open-questions/<slug>.md` per listed question, with the question, its
     options and its refs. Remove the file once the question is resolved.
-- If a tool says the ai-specview viewer is not reachable, continue normally and
+- If a tool says the ai-contextview viewer is not reachable, continue normally and
   ask in chat.
 - Call `spec_done` only at the very end, never between rounds.
 - Use `focus` to point the user at a spec passage and code without asking

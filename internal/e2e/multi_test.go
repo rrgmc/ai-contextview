@@ -1,7 +1,7 @@
 package e2e
 
-// TestMultiSession is the M7 scripted test with real processes: the ai-specview
-// binary is built, three `ai-specview mcp` bridges run as separate processes in
+// TestMultiSession is the M7 scripted test with real processes: the ai-contextview
+// binary is built, three `ai-contextview mcp` bridges run as separate processes in
 // three projects (as three Claude sessions would start them), and the
 // bridges start the daemon themselves. While all three have a question
 // pending, the daemon is restarted and then killed. Each question must come
@@ -32,8 +32,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/rrgmc/ai-specview/internal/protocol"
-	"github.com/rrgmc/ai-specview/internal/testenv"
+	"github.com/rrgmc/ai-contextview/internal/protocol"
+	"github.com/rrgmc/ai-contextview/internal/testenv"
 )
 
 // multiEnv is the environment shared by the bridges and the daemon: its own
@@ -49,10 +49,10 @@ type multiEnv struct {
 
 func (e *multiEnv) environ() []string {
 	return append(os.Environ(),
-		"AI_SPECVIEW_SOCKET="+e.sock,
-		"AI_SPECVIEW_ADDR="+e.addr,
-		"AI_SPECVIEW_OPEN=never",
-		"AI_SPECVIEW_ASK_WAIT=30s",
+		"AI_CONTEXTVIEW_SOCKET="+e.sock,
+		"AI_CONTEXTVIEW_ADDR="+e.addr,
+		"AI_CONTEXTVIEW_OPEN=never",
+		"AI_CONTEXTVIEW_ASK_WAIT=30s",
 		"HOME="+e.home,
 		"XDG_CACHE_HOME="+filepath.Join(e.home, ".cache"),
 		"LOCALAPPDATA="+filepath.Join(e.home, "AppData", "Local"),
@@ -78,11 +78,11 @@ func newMultiEnv(t *testing.T) *multiEnv {
 		require.NotEqual(t, parent, root, "go.mod not found")
 		root = parent
 	}
-	bin := filepath.Join(dir, "ai-specview")
+	bin := filepath.Join(dir, "ai-contextview")
 	if runtime.GOOS == "windows" {
 		bin += ".exe"
 	}
-	build := exec.Command("go", "build", "-o", bin, "./cmd/ai-specview")
+	build := exec.Command("go", "build", "-o", bin, "./cmd/ai-contextview")
 	build.Dir = root
 	out, err := build.CombinedOutput()
 	require.NoError(t, err, string(out))
@@ -102,9 +102,9 @@ func newMultiEnv(t *testing.T) *multiEnv {
 			return
 		}
 		logs, _ := filepath.Glob(filepath.Join(dir, "*.log"))
-		logs = append(logs, filepath.Join(e.home, "Library", "Caches", "ai-specview", "ai-specview.log"),
-			filepath.Join(e.home, ".cache", "ai-specview", "ai-specview.log"),
-			filepath.Join(e.home, "AppData", "Local", "ai-specview", "ai-specview.log"))
+		logs = append(logs, filepath.Join(e.home, "Library", "Caches", "ai-contextview", "ai-contextview.log"),
+			filepath.Join(e.home, ".cache", "ai-contextview", "ai-contextview.log"),
+			filepath.Join(e.home, "AppData", "Local", "ai-contextview", "ai-contextview.log"))
 		for _, l := range logs {
 			if b, err := os.ReadFile(l); err == nil {
 				t.Logf("--- %s\n%s", filepath.Base(l), b)
@@ -114,7 +114,7 @@ func newMultiEnv(t *testing.T) *multiEnv {
 	return e
 }
 
-// run runs the ai-specview binary with the shared environment.
+// run runs the ai-contextview binary with the shared environment.
 func (e *multiEnv) run(args ...string) (string, error) {
 	cmd := exec.Command(e.bin, args...)
 	cmd.Env = e.environ()

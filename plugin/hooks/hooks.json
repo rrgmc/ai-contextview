@@ -2,11 +2,11 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "^(AskUserQuestion|Skill|mcp__.*ai-specview.*__.+)$",
+        "matcher": "^(AskUserQuestion|Skill|mcp__.*ai-contextview.*__.+)$",
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/ai-specview hook",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/ai-contextview hook",
             "timeout": 5
           }
         ]
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/ai-specview hook",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/ai-contextview hook",
             "timeout": 5
           }
         ]

@@ -1,23 +1,23 @@
 ---
 name: spec-mode-mod
-description: Turn on ai-specview spec mode for the rest of the session - ask mode that expects a spec. Every question goes to the ai-specview pane beside the chat, and the spec shows there as the working document as soon as it is written, whichever skill writes it (a company's spec skill, spec-elaborate, or none). Use when the user runs /spec-mode-mod, optionally with the spec's path or a glob, or asks to show the spec they are about to write in ai-specview; "/spec-mode-mod off" turns it off. Do NOT use to write the spec itself (use the user's spec skill, or spec-elaborate-mod), or when the user wants the browser viewer (use spec-mode).
+description: Turn on ai-contextview spec mode for the rest of the session - ask mode that expects a spec. Every question goes to the ai-contextview pane beside the chat, and the spec shows there as the working document as soon as it is written, whichever skill writes it (a company's spec skill, spec-elaborate, or none). Use when the user runs /spec-mode-mod, optionally with the spec's path or a glob, or asks to show the spec they are about to write in ai-contextview; "/spec-mode-mod off" turns it off. Do NOT use to write the spec itself (use the user's spec skill, or spec-elaborate-mod), or when the user wants the browser viewer (use spec-mode).
 argument-hint: "[path or glob | off]"
 ---
 
-# Spec mode in the ai-specview pane
+# Spec mode in the ai-contextview pane
 
 Spec mode is ask mode that expects a spec. It sends every question you ask
-the user for the rest of this session to the ai-specview pane beside the chat, and shows the
+the user for the rest of this session to the ai-contextview pane beside the chat, and shows the
 spec there as the working document as soon as it is written. The user
 answers next to the spec and the code each question is about.
 
 ## The pane's tools
 
-Use only the pane's tools: `mcp__ai-specview__ask_mode`,
-`mcp__ai-specview__ask` and `mcp__ai-specview__ask_wait`. They are deferred:
+Use only the pane's tools: `mcp__ai-contextview__ask_mode`,
+`mcp__ai-contextview__ask` and `mcp__ai-contextview__ask_wait`. They are deferred:
 load them first with ToolSearch, as
-`select:mcp__ai-specview__ask_mode,mcp__ai-specview__ask,mcp__ai-specview__ask_wait`.
-Never call the `mcp__plugin_ai-specview_ai-specview__…` tools in this skill:
+`select:mcp__ai-contextview__ask_mode,mcp__ai-contextview__ask,mcp__ai-contextview__ask_wait`.
+Never call the `mcp__plugin_ai-contextview_ai-contextview__…` tools in this skill:
 they drive the browser viewer. Below, `ask_mode`, `ask` and `ask_wait` mean
 the pane's tools.
 
@@ -27,7 +27,7 @@ the pane's tools.
   `{"spec": true}`, adding `"paths": ["<the argument>"]` when there is one
   (relative to the project directory, or absolute; `**` matches any folders,
   for example `docs/specs/**`). The first file you write that matches becomes
-  the working document. Without paths, ai-specview picks the written file
+  the working document. Without paths, ai-contextview picks the written file
   that looks most like a spec. The pane opens. Tell the user in one line that
   spec mode is on, then wait for their next instruction. Do not start any
   other work.

@@ -3,12 +3,12 @@ import { expect, mock, test } from 'claude-code/testing'
 import * as spec from '../hooks/spec'
 
 // The mod's own tools, as Claude Code lists them.
-const SPEC_SHOW = 'mcp__ai-specview__spec_show'
-const FOCUS = 'mcp__ai-specview__focus'
-const ASK = 'mcp__ai-specview__ask'
-const ASK_WAIT = 'mcp__ai-specview__ask_wait'
-const SPEC_DONE = 'mcp__ai-specview__spec_done'
-const ASK_MODE = 'mcp__ai-specview__ask_mode'
+const SPEC_SHOW = 'mcp__ai-contextview__spec_show'
+const FOCUS = 'mcp__ai-contextview__focus'
+const ASK = 'mcp__ai-contextview__ask'
+const ASK_WAIT = 'mcp__ai-contextview__ask_wait'
+const SPEC_DONE = 'mcp__ai-contextview__spec_done'
+const ASK_MODE = 'mcp__ai-contextview__ask_mode'
 
 const SPEC = `# Widget
 
@@ -68,10 +68,10 @@ const DIRS: Record<string, { name: string; kind: 'file' | 'dir' }[]> = {
 // The pane as the desktop docks it beside the chat; `columns` sets its width.
 function pane(surface: 'terminal' | 'desktop', columns: number) {
   return {
-    plugin: 'ai-specview',
+    plugin: 'ai-contextview',
     surface,
     component: 'Pane',
-    requestId: 'ai-specview',
+    requestId: 'ai-contextview',
     props: {
       title: 'Spec',
       isFocused: false,

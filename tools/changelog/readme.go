@@ -13,9 +13,9 @@ const readmeFile = "README.md"
 
 // readmeVersionRe matches the release tags in the README's install section:
 // the example tag ("tags such as `v1.2.3`") and the install command
-// ("ai-specview@v1.2.3"). Other tags in the README, such as the sample
-// output of `ai-specview version`, do not match.
-var readmeVersionRe = regexp.MustCompile("(tags such as `v|/cmd/ai-specview@v)([0-9]+\\.[0-9]+\\.[0-9]+[^`\\s]*)")
+// ("ai-contextview@v1.2.3"). Other tags in the README, such as the sample
+// output of `ai-contextview version`, do not match.
+var readmeVersionRe = regexp.MustCompile("(tags such as `v|/cmd/ai-contextview@v)([0-9]+\\.[0-9]+\\.[0-9]+[^`\\s]*)")
 
 // isPrerelease reports whether version has a suffix such as "-rc.1". The
 // README keeps pointing at the last stable release during a prerelease.

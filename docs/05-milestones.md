@@ -29,7 +29,7 @@ What changed from the plan while building and using it:
   `keep_open` stays in the protocol for "Back to chat" and "Skip".
 - **Ask mode.** The `ask-mode` and `ask-mode-mod` skills turn on a mode
   (`ask_mode` tool and message) that routes every question of a session
-  through ai-specview, with or without a spec. Refs are optional in it, and
+  through ai-contextview, with or without a spec. Refs are optional in it, and
   the hook blocks the built-in question tool while it is on.
 - **A closed viewer is reopened.** When an `ask` finds no open page (the user
   closed the browser pane), it returns `pending` with the `url` at once, so
@@ -48,7 +48,7 @@ What changed from the plan while building and using it:
   highlighted passage.
 - **Layout.** Spec on the left; questions on the right with the code below them.
 - **The built-in question tool is blocked by a hook, not a deny rule.**
-  `ai-specview hook` blocks `AskUserQuestion` only in the Claude session that has
+  `ai-contextview hook` blocks `AskUserQuestion` only in the Claude session that has
   an unfinished spec open, so other sessions keep it (04, section 2).
 - **Install.** The module path is the repository path, and the MCP server,
   skill and hook ship as a Claude Code plugin (README).
@@ -67,7 +67,7 @@ What changed from the plan while building and using it:
   folder.
 - **Viewer in the desktop app's browser.** By default `spec_show` returns
   `open: "pane"` and the `spec-elaborate` skill opens the viewer `url` in the
-  Claude desktop app's built-in browser. `AI_SPECVIEW_OPEN=browser` turns
+  Claude desktop app's built-in browser. `AI_CONTEXTVIEW_OPEN=browser` turns
   this off. The bridge still opens the default browser when no page is open
   at an `ask`, so the CLI and IDEs work as before.
 - **Versions come from git tags.** The binary has no version constant. It
@@ -85,7 +85,7 @@ What changed from the plan while building and using it:
   the instance lock (`flock` / `LockFileEx`), detached daemons (`setsid` /
   `DETACHED_PROCESS`) and the process tree (`ps` / a Toolhelp snapshot). The
   plugin's `sh` launcher runs there too: Claude Code starts it with Git Bash,
-  which finds `ai-specview.exe` as `ai-specview`, and it reads a `;`-separated
+  which finds `ai-contextview.exe` as `ai-contextview`, and it reads a `;`-separated
   Windows `GOPATH`. Releases include Windows binaries (amd64 and arm64, as
   `.zip`); CI does not test on Windows yet.
 - **Front end.** Plain JavaScript instead of htmx; the web server lives in
@@ -94,7 +94,7 @@ What changed from the plan while building and using it:
 
 ## M0 — Contract and skeleton
 
-- Repo layout from the README: one `go.mod`, `cmd/ai-specview` with empty `mcp`,
+- Repo layout from the README: one `go.mod`, `cmd/ai-contextview` with empty `mcp`,
   `serve`, `fakeapp` subcommands that build.
 - `internal/protocol`: envelope and message structs for 01, including
   `DocRef`/`ResolvedDocRef`/`Artifact`.
@@ -109,19 +109,19 @@ structs.
 
 ## M1 — Bridge end to end with the fake daemon
 
-- `ai-specview mcp` with all tools (four planned; `spec_done` came later),
+- `ai-contextview mcp` with all tools (four planned; `spec_done` came later),
   validation, `lines`-only code refs (no symbols yet), the `specsrc` quote
   pre-check (single file and folder roots, `doc_refs`), `appconn` with daemon
   start and reconnect.
-- `ai-specview fakeapp`, which prints messages and prompts for answers in the
+- `ai-contextview fakeapp`, which prints messages and prompts for answers in the
   terminal.
-- Register it in a scratch project with `AI_SPECVIEW_DAEMON="ai-specview fakeapp"`;
+- Register it in a scratch project with `AI_CONTEXTVIEW_DAEMON="ai-contextview fakeapp"`;
   ask Claude to call `ask` with a sample question.
 
 **Done when:**
 - a real Claude Code session calls `ask`, the answer typed into fakeapp comes
   back as the tool result, and Claude continues
-- `pending` → `ask_wait` works (with `AI_SPECVIEW_ASK_WAIT=10s`)
+- `pending` → `ask_wait` works (with `AI_CONTEXTVIEW_ASK_WAIT=10s`)
 - killing fakeapp mid-question and restarting it re-delivers the question
 
 ## M2 — Daemon: socket, workspaces, doc pane
@@ -179,7 +179,7 @@ in the right place. Bridge and daemon pass the same fixtures by construction
 
 - `resolve` with `go/packages`, caching, near-miss suggestions.
 - Example skill `plugin/skills/spec-elaborate/`, CLAUDE.md snippet, and the
-  `ai-specview hook` that blocks the built-in question tool while a spec is open.
+  `ai-contextview hook` that blocks the built-in question tool while a spec is open.
 - Dogfood: elaborate a real spec for one of your Go projects.
 
 **Done when:** a dogfood session with at least 3 question rounds needs no manual
@@ -189,7 +189,7 @@ navigation; every question lands on the right spec text and code.
 
 - Archive on disconnect, auto-adopt on resume (same cwd, < 2h) with page
   redirect, the archived workspace limit.
-- `ai-specview serve --restart`; version mismatch message between an old daemon and
+- `ai-contextview serve --restart`; version mismatch message between an old daemon and
   a new bridge.
 - Optional idle exit.
 - Installation notes in the repo README (`go install`, the plugin,
@@ -199,7 +199,7 @@ navigation; every question lands on the right spec text and code.
 restarts, and a `claude --resume` shows no cross-talk and no lost pending
 questions.
 
-**Result:** `TestMultiSession` builds the binary and runs three `ai-specview mcp`
+**Result:** `TestMultiSession` builds the binary and runs three `ai-contextview mcp`
 processes in three projects, as three Claude sessions would. The bridges start
 the daemon themselves. With a question pending in each, the test restarts the
 daemon with `serve --restart`, then kills it with `kill -9`. Each page must show
@@ -272,7 +272,7 @@ already answered in the ADRs.
 5. Answer. Claude applies the answer, and the Decisions section gets ◆ changed.
 6. Start Claude in project B at the same time and ask a question there: it shows
    on B's page only, and A's page is unchanged.
-7. Kill `ai-specview serve` while B has a question pending: the bridge restarts it,
+7. Kill `ai-contextview serve` while B has a question pending: the bridge restarts it,
    B's page reconnects and shows the question again, and Claude B is still
    waiting.
 8. Exit Claude A: A's page greys out. Run `claude --resume` in A: the page
@@ -286,8 +286,8 @@ already answered in the ADRs.
 | Risk | Impact | Mitigation |
 |---|---|---|
 | Claude paraphrases a quote | Highlights miss | Bridge pre-check with the same matcher returns an error naming the file and nearest headings; skill rule says "verbatim"; fuzzy stage; heading fallback |
-| MCP tool timeout during a long wait | Claude sees an error | `AI_SPECVIEW_ASK_WAIT` < `MCP_TOOL_TIMEOUT`; `pending` + `ask_wait` |
-| Built-in question tool used anyway | Questions bypass the UI | `ai-specview hook` blocks it while a spec is open; skill rule |
+| MCP tool timeout during a long wait | Claude sees an error | `AI_CONTEXTVIEW_ASK_WAIT` < `MCP_TOOL_TIMEOUT`; `pending` + `ask_wait` |
+| Built-in question tool used anyway | Questions bypass the UI | `ai-contextview hook` blocks it while a spec is open; skill rule |
 | Question arrives with no page open | User doesn't notice | `viewers: 0` → `ask` returns so Claude reopens the pane, else the bridge opens the URL; browser notification |
 | Splitting goldmark text nodes is fiddly (ranges across inline nodes, entities) | Highlight lands wrong | Golden HTML tests from the quote fixtures; fall back to highlighting the containing block when a split isn't clean |
 | Another local web page talks to the daemon | Forged answers | Loopback only; Host check (DNS rebinding); Origin check on POSTs; no CORS |
@@ -295,7 +295,7 @@ already answered in the ADRs.
 | `go/packages` slow on big modules | Slow `ask` | Per-package cache with mtime invalidation; load only the package containing the file, not `./...` |
 | Atomic saves drop fsnotify watches | Spec stops updating | Watch the directory, not the file; also poll the mtime every 2s as a safety net |
 | Bridge starts before the daemon and Claude times out the server start | MCP server marked failed | MCP stdio starts at once; the daemon connection is lazy and in the background |
-| Old daemon still running after an upgrade | Protocol mismatch | Version in `hello`; clear error suggesting `ai-specview serve --restart` |
+| Old daemon still running after an upgrade | Protocol mismatch | Version in `hello`; clear error suggesting `ai-contextview serve --restart` |
 | Hard to identify the Claude PID | Wrong label | Informational only; isolation never depends on it |
 
 ## Decisions taken
@@ -310,3 +310,7 @@ already answered in the ADRs.
   or the session start.
 - **The built-in question tool is blocked per session by a hook**, never by a
   global deny rule.
+- **The project is called ai-contextview** (renamed from ai-specview after
+  v1.4.5). It shows each question with its context, and a spec is only one
+  kind of working document. The README says that the "context" is the
+  question's documents and code, not Claude's context window.

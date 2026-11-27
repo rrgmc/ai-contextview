@@ -1,4 +1,4 @@
-// ai-specview workspace page. Server-Sent Events carry state; answers go back as
+// ai-contextview workspace page. Server-Sent Events carry state; answers go back as
 // POSTs. No build step, no framework.
 (function () {
   "use strict";
@@ -9,8 +9,8 @@
   const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
 
   const store = {
-    get(k, d) { try { const v = localStorage.getItem("ai-specview." + k); return v === null ? d : v; } catch (e) { return d; } },
-    set(k, v) { try { localStorage.setItem("ai-specview." + k, v); } catch (e) { /* private mode */ } },
+    get(k, d) { try { const v = localStorage.getItem("ai-contextview." + k); return v === null ? d : v; } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem("ai-contextview." + k, v); } catch (e) { /* private mode */ } },
   };
 
   const docEl = $("#doc");
@@ -548,7 +548,7 @@
   // given on the index page.
   function notify(title, project, body) {
     if (!("Notification" in window) || Notification.permission !== "granted" || !document.hidden) return;
-    const n = new Notification("ai-specview · " + title + (project ? " · " + project : ""), { body, tag: "ai-specview-" + ws });
+    const n = new Notification("ai-contextview · " + title + (project ? " · " + project : ""), { body, tag: "ai-contextview-" + ws });
     n.onclick = () => { window.focus(); n.close(); };
   }
 
@@ -567,7 +567,7 @@
       panel.classList.toggle("disabled", !d.live);
       $("#ended").hidden = d.live;
       $("#project").textContent = d.project;
-      baseTitle = "ai-specview · " + d.project;
+      baseTitle = "ai-contextview · " + d.project;
       setPending(d.pending && !!pendingQS);
       $("#done-pill").hidden = !d.done;
       $("#prov-pill").hidden = !d.provisional;

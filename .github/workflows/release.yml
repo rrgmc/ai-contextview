@@ -49,19 +49,19 @@ jobs:
         with:
           go-version-file: go.mod
 
-      # Windows gets ai-specview.exe in a .zip, the others a .tar.gz.
+      # Windows gets ai-contextview.exe in a .zip, the others a .tar.gz.
       - name: Build binaries
         run: |
           mkdir dist
           for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64; do
             os=${target%/*} arch=${target#*/}
-            name="ai-specview_${GITHUB_REF_NAME}_${os}_${arch}"
+            name="ai-contextview_${GITHUB_REF_NAME}_${os}_${arch}"
             exe=""
             [ "$os" = windows ] && exe=".exe"
             mkdir "$name"
             CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build -trimpath \
               -ldflags "-s -w -X main.version=$GITHUB_REF_NAME" \
-              -o "$name/ai-specview$exe" ./cmd/ai-specview
+              -o "$name/ai-contextview$exe" ./cmd/ai-contextview
             cp LICENSE README.md CHANGELOG.md "$name/"
             if [ "$os" = windows ]; then
               zip -qr "dist/$name.zip" "$name"
@@ -79,7 +79,7 @@ jobs:
             echo "## Install"
             echo
             echo '```bash'
-            echo "go install github.com/rrgmc/ai-specview/cmd/ai-specview@$GITHUB_REF_NAME"
+            echo "go install github.com/rrgmc/ai-contextview/cmd/ai-contextview@$GITHUB_REF_NAME"
             echo '```'
             echo
             echo "Or download the archive for your system below."

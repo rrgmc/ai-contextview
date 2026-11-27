@@ -1,22 +1,22 @@
 ---
 name: ask-mode-mod
-description: Turn on ai-specview ask mode in the pane beside the chat (a Claude Code mod; no browser page or daemon) for the rest of the session, so every question Claude asks goes to the pane instead of the chat, with or without a spec. Use when the user runs /ask-mode-mod or asks to route all questions through the ai-specview pane from now on; "/ask-mode-mod off" turns it off. Do NOT use for writing a spec (use spec-elaborate-mod), or when the user wants the browser viewer (use ask-mode).
+description: Turn on ai-contextview ask mode in the pane beside the chat (a Claude Code mod; no browser page or daemon) for the rest of the session, so every question Claude asks goes to the pane instead of the chat, with or without a spec. Use when the user runs /ask-mode-mod or asks to route all questions through the ai-contextview pane from now on; "/ask-mode-mod off" turns it off. Do NOT use for writing a spec (use spec-elaborate-mod), or when the user wants the browser viewer (use ask-mode).
 argument-hint: "[off]"
 ---
 
-# Ask mode in the ai-specview pane
+# Ask mode in the ai-contextview pane
 
 Ask mode sends every question you ask the user for the rest of this session
-to the ai-specview pane beside the chat. The user answers there, next to the
+to the ai-contextview pane beside the chat. The user answers there, next to the
 code each question is about.
 
 ## The pane's tools
 
-Use only the pane's tools: `mcp__ai-specview__ask_mode`,
-`mcp__ai-specview__ask` and `mcp__ai-specview__ask_wait`. They are deferred:
+Use only the pane's tools: `mcp__ai-contextview__ask_mode`,
+`mcp__ai-contextview__ask` and `mcp__ai-contextview__ask_wait`. They are deferred:
 load them first with ToolSearch, as
-`select:mcp__ai-specview__ask_mode,mcp__ai-specview__ask,mcp__ai-specview__ask_wait`.
-Never call the `mcp__plugin_ai-specview_ai-specview__…` tools in this skill:
+`select:mcp__ai-contextview__ask_mode,mcp__ai-contextview__ask,mcp__ai-contextview__ask_wait`.
+Never call the `mcp__plugin_ai-contextview_ai-contextview__…` tools in this skill:
 they drive the browser viewer. Below, `ask_mode`, `ask` and `ask_wait` mean
 the pane's tools.
 

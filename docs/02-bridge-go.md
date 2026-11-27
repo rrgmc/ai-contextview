@@ -1,4 +1,4 @@
-# 02 — `ai-specview mcp` (Go bridge)
+# 02 — `ai-contextview mcp` (Go bridge)
 
 The bridge is a stdio MCP server launched by Claude Code, one per Claude
 instance. It is thin and stateless apart from its connection: identity,
@@ -7,11 +7,11 @@ validation, symbol resolution and forwarding.
 ## Module layout
 
 The bridge and the viewer daemon (03) are one Go module and one binary,
-`ai-specview`; the bridge is the `mcp` subcommand.
+`ai-contextview`; the bridge is the `mcp` subcommand.
 
 ```
-go.mod                             # module github.com/rrgmc/ai-specview
-cmd/ai-specview/main.go               # subcommands: mcp, serve, fakeapp, version
+go.mod                             # module github.com/rrgmc/ai-contextview
+cmd/ai-contextview/main.go               # subcommands: mcp, serve, fakeapp, version
 internal/
 ├── identity/      # workspace id, cwd, claude pid discovery
 ├── appconn/       # socket client: dial, start daemon, hello, reconnect, request/response
@@ -19,7 +19,7 @@ internal/
 ├── validate/      # input rules from 01-protocol.md
 ├── specsrc/       # markdown source: headings, artifacts, quote matching (shared with daemon)
 ├── resolve/       # code refs → ResolvedRef (go/packages, lines)
-├── fakeapp/       # terminal test double for the daemon (`ai-specview fakeapp`)
+├── fakeapp/       # terminal test double for the daemon (`ai-contextview fakeapp`)
 └── protocol/      # envelope + message structs (shared with daemon, tested against /protocol/fixtures)
 ```
 
@@ -43,12 +43,12 @@ Dependencies:
    because Claude Code will time out the server start.
 3. `appconn` connects lazily, on the first tool call, in the background:
    - Dial the socket path (see 01). On `ENOENT`/`ECONNREFUSED`, start the
-     daemon: run its own executable as `ai-specview serve --detach` (or
-     `$AI_SPECVIEW_DAEMON` when set, e.g. `ai-specview fakeapp` during M1). Then
+     daemon: run its own executable as `ai-contextview serve --detach` (or
+     `$AI_CONTEXTVIEW_DAEMON` when set, e.g. `ai-contextview fakeapp` during M1). Then
      retry with backoff (100ms → 2s, total 10s).
    - Send `hello`, wait for `hello_ack`, and keep `url` (the workspace page).
 4. If the daemon can't be reached, tool calls return an MCP **tool error**:
-   *"ai-specview viewer not reachable; ask your question in the chat instead."* The
+   *"ai-contextview viewer not reachable; ask your question in the chat instead."* The
    session keeps working without the UI.
 
 ## Tool handlers
@@ -62,7 +62,7 @@ Dependencies:
    pre-checks, and for replay after reconnect).
 4. Forward `spec_show`, wait for `result`, and return it. The result also
    includes `url`, so Claude can tell the user where the viewer is. Unless
-   `AI_SPECVIEW_OPEN` is `browser` or `never`, it includes `open: "pane"`,
+   `AI_CONTEXTVIEW_OPEN` is `browser` or `never`, it includes `open: "pane"`,
    and the skill opens `url` in the desktop app's browser pane.
 
 ### `focus`
@@ -96,8 +96,8 @@ resolved code refs.
    `none`, send `ask_cancel` and return a tool error. If `viewers` is 0, open
    the workspace `url` with `open` (macOS), `xdg-open` (Linux) or
    `rundll32 url.dll,FileProtocolHandler` (Windows), unless
-   `AI_SPECVIEW_OPEN=never`.
-5. Wait for `ask_result` up to `AI_SPECVIEW_ASK_WAIT` (default **10 min**):
+   `AI_CONTEXTVIEW_OPEN=never`.
+5. Wait for `ask_result` up to `AI_CONTEXTVIEW_ASK_WAIT` (default **10 min**):
    - Got `ask_result` → map it to the tool result (01).
    - Timed out → return `status: "pending"` with `qs_id`. **The question stays
      shown in the viewer.**
@@ -110,7 +110,7 @@ nobody was waiting, the bridge has buffered it, so return it right away.
 
 ### Timeouts
 - Claude Code applies an MCP tool timeout (`MCP_TOOL_TIMEOUT`, in ms). The
-  install docs (04) set it to e.g. `1800000`. `AI_SPECVIEW_ASK_WAIT` must stay
+  install docs (04) set it to e.g. `1800000`. `AI_CONTEXTVIEW_ASK_WAIT` must stay
   **below** it, so the bridge always answers first with `pending` instead of
   Claude seeing a timeout error.
 
@@ -161,7 +161,7 @@ type Resolver interface {
 stdin EOF (Claude exited) → send `bye`, close the socket, exit 0. Also handle
 SIGTERM/SIGINT the same way.
 
-## `ai-specview fakeapp`
+## `ai-contextview fakeapp`
 
 A subcommand that listens on the same socket and prints every message. For
 `ask`, it prompts for answers on the terminal. This lets the whole MCP path be
@@ -181,5 +181,5 @@ is the in-process fake used by the `tools` tests.
 - **`tools`**: handler tests against an in-process fake daemon connection,
   covering timeouts (`pending`), cancellation, and buffered results for
   `ask_wait`.
-- **End-to-end**: run `ai-specview mcp` under the go-sdk test client with
-  `ai-specview fakeapp`, and later with a real `ai-specview serve` driven over HTTP.
+- **End-to-end**: run `ai-contextview mcp` under the go-sdk test client with
+  `ai-contextview fakeapp`, and later with a real `ai-contextview serve` driven over HTTP.

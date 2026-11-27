@@ -1,4 +1,4 @@
-// Package e2e runs the whole path: an MCP client calls the ai-specview tools,
+// Package e2e runs the whole path: an MCP client calls the ai-contextview tools,
 // the bridge forwards to a real daemon, and the answer comes back over HTTP.
 package e2e
 
@@ -18,12 +18,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/rrgmc/ai-specview/internal/appconn"
-	"github.com/rrgmc/ai-specview/internal/daemon"
-	"github.com/rrgmc/ai-specview/internal/protocol"
-	"github.com/rrgmc/ai-specview/internal/resolve"
-	"github.com/rrgmc/ai-specview/internal/testenv"
-	"github.com/rrgmc/ai-specview/internal/tools"
+	"github.com/rrgmc/ai-contextview/internal/appconn"
+	"github.com/rrgmc/ai-contextview/internal/daemon"
+	"github.com/rrgmc/ai-contextview/internal/protocol"
+	"github.com/rrgmc/ai-contextview/internal/resolve"
+	"github.com/rrgmc/ai-contextview/internal/testenv"
+	"github.com/rrgmc/ai-contextview/internal/tools"
 )
 
 const spec = `# Retry spec
@@ -73,7 +73,7 @@ func TestEndToEnd(t *testing.T) {
 	var opened []string
 	bridge := &tools.Bridge{Cwd: cwd, Daemon: client, Resolver: resolve.New(), AskWait: 5 * time.Second,
 		Open: func(u string) { opened = append(opened, u) }}
-	server := mcp.NewServer(&mcp.Implementation{Name: "ai-specview", Version: "e2e"}, nil)
+	server := mcp.NewServer(&mcp.Implementation{Name: "ai-contextview", Version: "e2e"}, nil)
 	tools.Register(server, bridge)
 	st, ct := mcp.NewInMemoryTransports()
 	ctx := context.Background()

@@ -1,22 +1,22 @@
 ---
 name: ask-mode
-description: Turn on ai-specview ask mode for the rest of the session, so every question Claude asks goes to the ai-specview viewer (a browser page) instead of the chat, with or without a spec. Use when the user runs /ask-mode or asks to route, send or ask all questions through ai-specview or the viewer from now on; "/ask-mode off" turns it off. Do NOT use for writing a spec (use spec-elaborate), or when the user wants the questions in the pane beside the chat (use ask-mode-mod).
+description: Turn on ai-contextview ask mode for the rest of the session, so every question Claude asks goes to the ai-contextview viewer (a browser page) instead of the chat, with or without a spec. Use when the user runs /ask-mode or asks to route, send or ask all questions through ai-contextview or the viewer from now on; "/ask-mode off" turns it off. Do NOT use for writing a spec (use spec-elaborate), or when the user wants the questions in the pane beside the chat (use ask-mode-mod).
 argument-hint: "[off]"
 ---
 
-# Ask mode with ai-specview
+# Ask mode with ai-contextview
 
 Ask mode sends every question you ask the user for the rest of this session
-to the ai-specview viewer, a browser page beside the chat. The user answers
+to the ai-contextview viewer, a browser page beside the chat. The user answers
 there, next to the code each question is about.
 
 ## The viewer's tools
 
-Use the ai-specview MCP server's tools:
-`mcp__plugin_ai-specview_ai-specview__ask_mode`,
-`mcp__plugin_ai-specview_ai-specview__ask` and
-`mcp__plugin_ai-specview_ai-specview__ask_wait`. If they are deferred, load
-them first with ToolSearch. Never call the `mcp__ai-specview__…` tools in this
+Use the ai-contextview MCP server's tools:
+`mcp__plugin_ai-contextview_ai-contextview__ask_mode`,
+`mcp__plugin_ai-contextview_ai-contextview__ask` and
+`mcp__plugin_ai-contextview_ai-contextview__ask_wait`. If they are deferred, load
+them first with ToolSearch. Never call the `mcp__ai-contextview__…` tools in this
 skill: they drive the pane. Below, `ask_mode`, `ask` and `ask_wait` mean the
 viewer's tools.
 
@@ -34,7 +34,7 @@ viewer's tools.
 
 ## While ask mode is on
 
-- Ask **every** question with the ai-specview `ask` tool: clarifying
+- Ask **every** question with the ai-contextview `ask` tool: clarifying
   questions, choices between approaches, confirmations. Never ask in plain
   chat text and never with another question tool. A hook blocks the built-in
   question tool while ask mode is on.

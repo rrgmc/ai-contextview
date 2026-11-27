@@ -16,12 +16,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rrgmc/ai-specview/internal/detach"
-	"github.com/rrgmc/ai-specview/internal/protocol"
+	"github.com/rrgmc/ai-contextview/internal/detach"
+	"github.com/rrgmc/ai-contextview/internal/protocol"
 )
 
 // ErrUnreachable is returned when the daemon cannot be reached.
-var ErrUnreachable = errors.New("ai-specview viewer not reachable; ask your question in the chat instead")
+var ErrUnreachable = errors.New("ai-contextview viewer not reachable; ask your question in the chat instead")
 
 // Options configure a Client.
 type Options struct {
@@ -151,7 +151,7 @@ func (c *Client) startDaemon() {
 		return
 	}
 	cmd := exec.Command(c.opts.DaemonCmd[0], c.opts.DaemonCmd[1:]...)
-	cmd.Env = append(os.Environ(), "AI_SPECVIEW_SOCKET="+c.opts.Socket)
+	cmd.Env = append(os.Environ(), "AI_CONTEXTVIEW_SOCKET="+c.opts.Socket)
 	cmd.SysProcAttr = detach.SysProcAttr()
 	if err := cmd.Start(); err != nil {
 		c.opts.Logf("start daemon %v: %v", c.opts.DaemonCmd, err)
@@ -211,7 +211,7 @@ func (c *Client) connect(ctx context.Context) error {
 	c.url = ack.URL
 	c.daemonVer = ack.DaemonVersion
 	if hello.BridgeVersion != "" && ack.DaemonVersion != hello.BridgeVersion {
-		c.opts.Logf("daemon is version %s, bridge is %s; run `ai-specview serve --restart` to update the daemon", ack.DaemonVersion, hello.BridgeVersion)
+		c.opts.Logf("daemon is version %s, bridge is %s; run `ai-contextview serve --restart` to update the daemon", ack.DaemonVersion, hello.BridgeVersion)
 	}
 	spec := c.lastSpecShow
 	ask := c.pendingAsk

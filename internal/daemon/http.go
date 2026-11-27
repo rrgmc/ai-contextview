@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rrgmc/ai-specview/internal/protocol"
-	"github.com/rrgmc/ai-specview/internal/render"
-	"github.com/rrgmc/ai-specview/internal/specsrc"
+	"github.com/rrgmc/ai-contextview/internal/protocol"
+	"github.com/rrgmc/ai-contextview/internal/render"
+	"github.com/rrgmc/ai-contextview/internal/specsrc"
 )
 
 // ListenHTTP listens on addr, trying the next 9 ports when it is taken.

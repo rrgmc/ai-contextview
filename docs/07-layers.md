@@ -5,12 +5,12 @@ proposed. Ask mode itself is described in 04 and 06.
 
 ## Why
 
-ai-specview started as a spec viewer: the spec on the left, the questions and
+ai-contextview started as a spec viewer: the spec on the left, the questions and
 the code on the right. In use, its main value is broader. It is a front end for
 Claude's questions that shows each question next to its context: the code, a
 document, or both. A spec is one source of context among several.
 
-This document reorganizes the plugin around that use. It splits ai-specview
+This document reorganizes the plugin around that use. It splits ai-contextview
 into three layers, says how the user selects them, and changes the viewer
 layout so that any document, not only a spec, can be the main context.
 
@@ -36,27 +36,27 @@ The user picks the highest layer they need. The lower layers come with it.
 
 | The user wants | How they select it | What is on |
 |---|---|---|
-| Questions with context in any session | `/ai-specview:ask-mode`, or the `AI_SPECVIEW_ASK_MODE=always` setting | Layer 1, until turned off |
-| Claude writes a document with them | Ask mode finds it (see "Finding the working document"), or ask in words ("write the plan in the viewer"), or `/ai-specview:doc <path>` | Layers 1 and 2, until the document is done |
-| A spec, written by any skill (their own, a company's, or none) | `/ai-specview:spec-mode [path or glob]` | Layers 1 and 2, with a stronger search for the spec, until turned off |
-| A spec written with ai-specview's own workflow | `/ai-specview:spec-elaborate`, or ask in words ("spec this") | Layers 1, 2 and 3, until `done` |
+| Questions with context in any session | `/ai-contextview:ask-mode`, or the `AI_CONTEXTVIEW_ASK_MODE=always` setting | Layer 1, until turned off |
+| Claude writes a document with them | Ask mode finds it (see "Finding the working document"), or ask in words ("write the plan in the viewer"), or `/ai-contextview:doc <path>` | Layers 1 and 2, until the document is done |
+| A spec, written by any skill (their own, a company's, or none) | `/ai-contextview:spec-mode [path or glob]` | Layers 1 and 2, with a stronger search for the spec, until turned off |
+| A spec written with ai-contextview's own workflow | `/ai-contextview:spec-elaborate`, or ask in words ("spec this") | Layers 1, 2 and 3, until `done` |
 
 Rules:
 
 - **Ask mode is off by default.** It starts only when the user turns it on.
-  `AI_SPECVIEW_ASK_MODE=always`, in the `env` block of the Claude Code
+  `AI_CONTEXTVIEW_ASK_MODE=always`, in the `env` block of the Claude Code
   settings, turns it on for every session.
 - **Layer 2 from inside ask mode.** A hook finds the document Claude writes
   and shows it as the working document (see "Finding the working document").
-  The user rarely needs `/ai-specview:doc`.
+  The user rarely needs `/ai-contextview:doc`.
 - **Spec mode** is ask mode that expects a spec. It suits a spec skill that
-  is not ai-specview's own, such as a company's: that skill keeps its
-  workflow, and ai-specview adds the questions and the working document.
+  is not ai-contextview's own, such as a company's: that skill keeps its
+  workflow, and ai-contextview adds the questions and the working document.
 - **Ending.** `done` ends layers 2 and 3. Ask mode stays on if the user turned
   it on. Otherwise question routing ends with the document, as it ends with
   the spec today.
 - **Browser or pane** is a separate choice, made with one setting,
-  `AI_SPECVIEW_VIEW=browser|pane` (default `browser`). There is one skill per
+  `AI_CONTEXTVIEW_VIEW=browser|pane` (default `browser`). There is one skill per
   layer, and each skill uses the tools of the chosen viewer. This replaces the
   `-mod` copies of the skills (`spec-elaborate-mod`, `ask-mode-mod`).
 
@@ -98,7 +98,7 @@ would jump. The layout is therefore chosen once per question set.
 
 ## Finding the working document
 
-Claude does not tell ai-specview which document it is writing unless a skill
+Claude does not tell ai-contextview which document it is writing unless a skill
 says so (`spec_show`). Another skill, such as a company's spec skill, has its
 own instructions and will not. In one real session, a company skill's spec
 still showed as the working document, but only because the `spec-elaborate`
@@ -109,7 +109,7 @@ hook, independent of the skill.
 ### The write hook
 
 A `PostToolUse` hook on `Write`, `Edit` and `MultiEdit` reports each file
-Claude writes to the daemon. The hook finds its session as `ai-specview hook`
+Claude writes to the daemon. The hook finds its session as `ai-contextview hook`
 does today, through the Claude Code process (04), and sends a new socket
 message, for example `doc_written {pids, path}`. The pane mod sees the same
 tool calls in its `tool.call` hook and applies the same rules without a
@@ -131,7 +131,7 @@ Outside the project, drafts in `~/.claude/specs/` and plans in
 
 Nothing names a particular layout such as `docs/specs/`: every team and skill
 keeps documents in other places. The optional setting
-`AI_SPECVIEW_DOC_PATHS` (glob patterns, for example
+`AI_CONTEXTVIEW_DOC_PATHS` (glob patterns, for example
 `docs/specs/**,docs/rfc/**`) replaces these rules: when it is set, only
 matching files count.
 
@@ -149,7 +149,7 @@ matching files count.
    view instead; it was left out, because two specs in one folder are often
    unrelated. A folder spec shown with `spec_show` still lists its files.)
 5. After the first pick, the hook tells Claude in one line: "`<file>` is now
-   the working document in ai-specview; call `spec_show` to show another."
+   the working document in ai-contextview; call `spec_show` to show another."
    Claude can correct a wrong pick.
 6. A picked document is not a spec Claude opened. When ask mode ends, the
    viewer and the pane clear it and go back to their state without a
@@ -162,9 +162,9 @@ it.
 
 ### Spec mode: a stronger search
 
-`/ai-specview:spec-mode` turns on ask mode and says that a spec is coming.
+`/ai-contextview:spec-mode` turns on ask mode and says that a spec is coming.
 
-- **With a path or glob** (`/ai-specview:spec-mode docs/specs/SW-1234.md`),
+- **With a path or glob** (`/ai-contextview:spec-mode docs/specs/SW-1234.md`),
   there is no detection: the first write to a matching file makes it the
   working document. The file need not exist yet. This is the main way to use
   spec mode.
@@ -213,9 +213,9 @@ Spec mode adds no spec workflow (layer 3). It works under any spec skill:
 | Part | Change |
 |---|---|
 | Protocol (01) | `doc_refs` gains `lines`; a doc ref may name any text file in the project. The working-document tool is generalized from `spec_show` (a new name such as `doc_show`, with `spec_show` kept as an alias so installed skills keep working). `spec_done` likewise becomes `done` with an alias. New socket messages for the write hook (`doc_written`) and for spec mode (its path or glob). |
-| Bridge (02) | Resolves doc refs outside the spec folder and by line range. Reads `AI_SPECVIEW_ASK_MODE` and turns ask mode on at start. Reads `AI_SPECVIEW_VIEW`. |
+| Bridge (02) | Resolves doc refs outside the spec folder and by line range. Reads `AI_CONTEXTVIEW_ASK_MODE` and turns ask mode on at start. Reads `AI_CONTEXTVIEW_VIEW`. |
 | Daemon and page (03) | The document panel, document tabs, the per-set layout, source view for non-markdown documents. |
-| Hooks (04) | A `PostToolUse` hook on `Write`, `Edit` and `MultiEdit`, and a `PreToolUse` hook on `Skill` for spec mode, both in `ai-specview hook`. |
+| Hooks (04) | A `PostToolUse` hook on `Write`, `Edit` and `MultiEdit`, and a `PreToolUse` hook on `Skill` for spec mode, both in `ai-contextview hook`. |
 | Skills (04) | One skill per layer: `ask-mode`, `spec-mode` (new), `doc` (new), `spec-elaborate`. The `-mod` skills go away. |
 | Pane mod (06) | The same layout rules and tools, drawn in the pane, and the same rules for finding the working document in its `tool.call` hook. |
 | README and plugin description | Present ask mode as the main feature, with the working document and the spec workflow built on it. |
@@ -226,20 +226,20 @@ Each phase can be released on its own.
 
 1. **Questions with context (layer 1).** Built. The document panel, document
    tabs, `lines` in doc refs, documents outside the spec folder or with no
-   spec, the per-set layout, the `AI_SPECVIEW_ASK_MODE` setting, and the new
+   spec, the per-set layout, the `AI_CONTEXTVIEW_ASK_MODE` setting, and the new
    README and plugin description. In the pane, a source document shows the
    lines before, in and after the range as code; document tabs are the
    pane's file list.
 2. **Working document (layer 2).** Built: the write hook with its file
-   rules and the `AI_SPECVIEW_DOC_PATHS` setting, spec mode
-   (`/ai-specview:spec-mode`) with its path argument and its scoring, in the
+   rules and the `AI_CONTEXTVIEW_DOC_PATHS` setting, spec mode
+   (`/ai-contextview:spec-mode`) with its path argument and its scoring, in the
    viewer and in the pane. Spec mode is `ask_mode` with `spec: true`, not a
    tool of its own. The folder rule (step 4 of "Ask mode") is left out: two
    specs in one folder are often unrelated, so a sibling write stays a
    candidate. A provisional `spec_show` shows notes until the spec is
    written. Not built yet: renaming `spec_show` and `spec_done`, and
-   `/ai-specview:doc`; with the write hook, `spec_show` covers it.
-3. **Skills and viewer choice.** One skill per layer, `AI_SPECVIEW_VIEW`
+   `/ai-contextview:doc`; with the write hook, `spec_show` covers it.
+3. **Skills and viewer choice.** One skill per layer, `AI_CONTEXTVIEW_VIEW`
    choosing the viewer, and `spec-elaborate` as the spec workflow on top of
    layers 1 and 2.
 

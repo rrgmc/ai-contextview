@@ -19,7 +19,7 @@ import (
 
 	"golang.org/x/tools/go/packages"
 
-	"github.com/rrgmc/ai-specview/internal/protocol"
+	"github.com/rrgmc/ai-contextview/internal/protocol"
 )
 
 // Resolver resolves code refs.

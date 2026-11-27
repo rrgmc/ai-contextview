@@ -3,14 +3,14 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "^(AskUserQuestion|Skill|mcp__.*ai-specview.*__.+)$",
-        "hooks": [{ "type": "command", "command": "ai-specview hook" }]
+        "matcher": "^(AskUserQuestion|Skill|mcp__.*ai-contextview.*__.+)$",
+        "hooks": [{ "type": "command", "command": "ai-contextview hook" }]
       }
     ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit",
-        "hooks": [{ "type": "command", "command": "ai-specview hook" }]
+        "hooks": [{ "type": "command", "command": "ai-contextview hook" }]
       }
     ]
   }

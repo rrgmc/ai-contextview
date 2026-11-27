@@ -11,11 +11,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/rrgmc/ai-specview/internal/appconn"
-	"github.com/rrgmc/ai-specview/internal/fakeapp"
-	"github.com/rrgmc/ai-specview/internal/protocol"
-	"github.com/rrgmc/ai-specview/internal/resolve"
-	"github.com/rrgmc/ai-specview/internal/testenv"
+	"github.com/rrgmc/ai-contextview/internal/appconn"
+	"github.com/rrgmc/ai-contextview/internal/fakeapp"
+	"github.com/rrgmc/ai-contextview/internal/protocol"
+	"github.com/rrgmc/ai-contextview/internal/resolve"
+	"github.com/rrgmc/ai-contextview/internal/testenv"
 )
 
 const specMD = `# Retry spec
@@ -124,8 +124,8 @@ func TestSpecShowProvisional(t *testing.T) {
 
 func TestOpenInFromEnv(t *testing.T) {
 	for value, want := range map[string]string{"": OpenPane, "pane": OpenPane, "browser": "", "never": ""} {
-		t.Setenv("AI_SPECVIEW_OPEN", value)
-		assert.Equal(t, want, OpenInFromEnv(), "AI_SPECVIEW_OPEN=%q", value)
+		t.Setenv("AI_CONTEXTVIEW_OPEN", value)
+		assert.Equal(t, want, OpenInFromEnv(), "AI_CONTEXTVIEW_OPEN=%q", value)
 	}
 }
 
@@ -457,9 +457,9 @@ func TestDocRefsWithoutSpecAndByLines(t *testing.T) {
 }
 
 func TestAskModeFromEnv(t *testing.T) {
-	t.Setenv("AI_SPECVIEW_ASK_MODE", "always")
+	t.Setenv("AI_CONTEXTVIEW_ASK_MODE", "always")
 	assert.True(t, AskModeFromEnv())
-	t.Setenv("AI_SPECVIEW_ASK_MODE", "")
+	t.Setenv("AI_CONTEXTVIEW_ASK_MODE", "")
 	assert.False(t, AskModeFromEnv())
 }
 
