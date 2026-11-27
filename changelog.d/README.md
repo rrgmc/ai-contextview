@@ -53,8 +53,7 @@ the plugin version `X.Y.Z` and, for a stable release, the README install tag
 It runs the tests, builds `ai-specview` for Linux, macOS and Windows (amd64 and arm64),
 and creates the GitHub release with the archives and the `[X.Y.Z]` section as
 its notes. A tag with a suffix such as `v1.2.3-rc.1` is marked as a
-prerelease. Last, it asks the Go module proxy for the version, so
-`go install …@latest` finds it at once.
+prerelease.
 
 Run `go run ./tools/changelog check vX.Y.Z` before tagging to catch a failed
 check early. A tag whose workflow failed has to be deleted

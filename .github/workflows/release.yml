@@ -93,8 +93,3 @@ jobs:
           case "$GITHUB_REF_NAME" in *-*) prerelease="--prerelease" ;; esac
           gh release create "$GITHUB_REF_NAME" dist/* \
             --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag $prerelease
-
-      # Asks the Go module proxy for the new version, so that
-      # `go install …@latest` finds it without waiting for the proxy's cache.
-      - name: Warm the Go module proxy
-        run: curl -fsS "https://proxy.golang.org/github.com/rrgmc/ai-specview/@v/$GITHUB_REF_NAME.info"

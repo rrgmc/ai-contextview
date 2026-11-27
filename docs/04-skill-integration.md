@@ -9,7 +9,7 @@ step (README, "Install"). Its second skill, `spec-elaborate-mod`, uses the pane
 mod's own tools instead of the MCP server (06). The rest of this section
 describes the manual setup.
 
-Install the binary with `go install github.com/rrgmc/ai-specview/cmd/ai-specview@latest`
+Install the binary as the [README](../README.md#install) describes
 (it must be on the `PATH` Claude Code sees), then register it per project in
 `.mcp.json`, or user-wide with `claude mcp add --scope user ai-specview -- ai-specview mcp`:
 

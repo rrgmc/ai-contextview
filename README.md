@@ -33,16 +33,12 @@ ai-specview runs on Linux, macOS and Windows 10 or later. Install the binary
 from the latest release:
 
 ```bash
-go install github.com/rrgmc/ai-specview/cmd/ai-specview@latest
+go install github.com/rrgmc/ai-specview/cmd/ai-specview@v1.4.0
 ```
 
 Releases are git tags such as `v1.4.0` (see the
-[tags](https://github.com/rrgmc/ai-specview/tags)). To install one release, put
-its tag after the `@`:
-
-```bash
-go install github.com/rrgmc/ai-specview/cmd/ai-specview@v1.4.0
-```
+[tags](https://github.com/rrgmc/ai-specview/tags)). To install another release,
+put its tag after the `@`.
 
 Each release on the
 [releases page](https://github.com/rrgmc/ai-specview/releases) also has

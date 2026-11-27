@@ -1,7 +1,6 @@
 #!/bin/sh
 # Finds the ai-specview binary and runs it with the given arguments. The plugin
-# does not ship the binary: install it with
-#   go install github.com/rrgmc/ai-specview/cmd/ai-specview@latest
+# does not ship the binary: install it as https://github.com/rrgmc/ai-specview#install describes.
 # The desktop app often starts Claude Code without the shell's PATH, so the Go
 # install directories are tried as well. AI_SPECVIEW_BIN overrides the search.
 # On Windows, Claude Code runs this script with Git Bash, which finds
@@ -28,6 +27,6 @@ if command -v go >/dev/null 2>&1; then
 	c="$(first_gopath "$(go env GOPATH 2>/dev/null)")/bin/ai-specview"
 	[ -x "$c" ] && exec "$c" "$@"
 fi
-echo "ai-specview: binary not found. Install it with: go install github.com/rrgmc/ai-specview/cmd/ai-specview@latest (or set AI_SPECVIEW_BIN)" >&2
+echo "ai-specview: binary not found. Install it as https://github.com/rrgmc/ai-specview#install describes (or set AI_SPECVIEW_BIN)" >&2
 # Exit 1, not 2: for the hook, 2 would block the tool.
 exit 1
