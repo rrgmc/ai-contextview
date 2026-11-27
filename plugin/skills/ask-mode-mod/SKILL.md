@@ -39,7 +39,10 @@ the pane's tools.
   give its `path` (any text file of the project) and either a `quote` copied
   verbatim from a markdown file or `lines` (`N` or `N-M`), which also works
   for YAML, JSON and other files. Leave both out for a question about
-  neither. `spec_quote` needs a spec shown with
+  neither. A question about the whole document, such as a sign-off or a
+  summary, takes no ref at all, not even `spec_quote`: a ref highlights
+  one passage, and the user reads it as what the question is about.
+  `spec_quote` needs a spec shown with
   `spec_show`.
 - Give 2 to 6 options with short labels and the trade-off in each
   `description`. Mark the option you recommend with `"recommended": true` and

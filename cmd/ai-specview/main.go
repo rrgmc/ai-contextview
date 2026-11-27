@@ -124,7 +124,7 @@ func runMCP() error {
 	}
 	server := mcp.NewServer(&mcp.Implementation{Name: "ai-specview", Version: version}, &mcp.ServerOptions{
 		Instructions: "ai-specview shows the spec and the code beside the chat. Call spec_show when a spec is created or " +
-			"edited, and ask every clarifying question with ask, quoting the spec verbatim and pointing at the code.",
+			"edited, and ask every clarifying question with ask, quoting verbatim the spec passage it is about and pointing at the code.",
 	})
 	tools.Register(server, bridge)
 

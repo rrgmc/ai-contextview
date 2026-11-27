@@ -110,6 +110,7 @@ export const TOOLS: readonly ToolDef[] = [
       'Use this for every clarifying question instead of asking in chat. Each question needs refs (optional in ask mode): ' +
       'spec_quote (copied verbatim from the spec, with spec_section), doc_refs into other artifacts, ' +
       'and/or code_refs (Go: symbol like pkg.(*Type).Method; other files: lines N-M). ' +
+      'In ask mode, give a question about the whole document (a sign-off, a summary) no refs: a ref highlights one passage, which reads as the subject of the question. ' +
       'Results: answered (apply the answers), in_chat (wait for the user\'s chat message), ' +
       'pending (call ask_wait with question_set_id), dismissed (continue without it). ' +
       'An answered result may list deferred questions (the user chose Decide later): record them as open questions and ask again before finishing. ' +
