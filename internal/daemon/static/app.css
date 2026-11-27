@@ -277,10 +277,14 @@ input[type=text], textarea { font: inherit; color: var(--fg); background: var(--
 
 @media (max-width: 760px) {
   body:not(.index) { overflow: auto; }
+  /* One column that the page scrolls. The questions come first: they are
+     what needs an answer. Each pane keeps a fixed height and scrolls inside. */
   .layout, .layout.has-artifacts, .layout.bottom, .layout.bottom.has-artifacts {
-    display: flex; flex-direction: column;
+    display: flex; flex-direction: column; flex: none;
   }
-  .pane { min-height: 50vh; }
-  .splitter, .splitter-h { display: none; }
+  .layout > * { flex: none; }
+  .panel { order: -1; max-height: 70vh; border-bottom: 1px solid var(--border); }
+  .pane { height: 70vh; }
+  .splitter, .splitter-h, #dock-toggle { display: none; }
   .doc { padding: 8px 16px; }
 }
