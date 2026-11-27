@@ -1,1 +1,1 @@
-{"v":1,"type":"ask_shown","re":"b4","body":{"qs_id":"qs_1","viewers":1,"matches":[{"id":"q1","doc":0,"match":"exact"}]}}
+{"v":1,"type":"ask_shown","re":"b4","body":{"qs_id":"qs_1","viewers":1,"matches":[{"id":"q1","doc":0,"match":"exact"}],"hidden":1}}

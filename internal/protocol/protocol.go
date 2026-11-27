@@ -593,8 +593,11 @@ type QuestionMatch struct {
 
 // AskShown tells the bridge the question set is on screen.
 type AskShown struct {
-	QSID    string          `json:"qs_id"`
-	Viewers int             `json:"viewers"`
+	QSID    string `json:"qs_id"`
+	Viewers int    `json:"viewers"`
+	// Hidden counts the pages among Viewers that report they are hidden,
+	// such as a closed browser pane whose tab is still open.
+	Hidden  int             `json:"hidden,omitempty"`
 	Matches []QuestionMatch `json:"matches"`
 }
 
@@ -677,10 +680,18 @@ func (v *Viewers) Validate() error { return nil }
 // ViewersResult answers viewers.
 type ViewersResult struct {
 	Viewers int `json:"viewers"`
+	// Hidden counts the pages among Viewers that report they are hidden.
+	Hidden int `json:"hidden,omitempty"`
+	// Seen is set when someone used a page of the workspace (mouse,
+	// keyboard, scroll) since the pending question set was shown.
+	Seen bool `json:"seen,omitempty"`
+	// Presence is set by daemons that track Hidden and Seen; without it
+	// the bridge cannot tell an unseen question from an old daemon.
+	Presence bool `json:"presence,omitempty"`
 }
 
 func (r *ViewersResult) Validate() error {
-	if r.Viewers < 0 {
+	if r.Viewers < 0 || r.Hidden < 0 {
 		return errors.New("viewers result: negative viewers")
 	}
 	return nil

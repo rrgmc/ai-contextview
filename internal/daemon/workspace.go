@@ -116,6 +116,9 @@ type Workspace struct {
 	// AnswersAt is when the user last replied to a question set (send, back
 	// to chat or skip); the Changes tab compares against the files then.
 	AnswersAt time.Time
+	// SeenAt is when someone last used a page of the workspace (mouse,
+	// keyboard, scroll), as the page reports it.
+	SeenAt time.Time
 }
 
 // DoneState is the finished-spec message.

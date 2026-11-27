@@ -569,3 +569,69 @@ func TestRelativePathsAskTheDaemonForTheSessionFolder(t *testing.T) {
 	}
 	assert.Equal(t, []string{filepath.Join(wt, "docs/**")}, mode.Paths)
 }
+
+func TestAskHiddenViewerReturnsPending(t *testing.T) {
+	e := setup(t, nil)
+	e.fake.SetViewers(1)
+	e.fake.SetPresence(1, false)
+	e.show(t)
+	start := time.Now()
+	_, out, err := e.bridge.Ask(context.Background(), nil, question("retries use exponential backoff capped at 30s"))
+	require.NoError(t, err)
+	assert.Less(t, time.Since(start), time.Second, "returns at once")
+	assert.Equal(t, protocol.StatusPending, out.Status)
+	assert.Equal(t, MsgHidden, out.Message)
+	assert.NotEmpty(t, out.URL)
+	assert.Empty(t, e.openedURLs(), "a hidden page is not replaced by the system browser")
+
+	// ask_wait keeps waiting for the same set.
+	require.NoError(t, e.fake.Answer("ws_test", &protocol.AskResult{QSID: out.QuestionSetID, Status: protocol.StatusAnswered,
+		Answers: []protocol.Answer{{ID: "q1", Selected: []string{"Yes"}}}}))
+	_, out, err = e.bridge.AskWaitTool(context.Background(), nil, protocol.AskWaitInput{QuestionSetID: out.QuestionSetID})
+	require.NoError(t, err)
+	assert.Equal(t, protocol.StatusAnswered, out.Status)
+}
+
+func TestAskNudgesWhenUnseen(t *testing.T) {
+	e := setup(t, nil)
+	e.fake.SetViewers(1)
+	e.fake.SetPresence(0, false)
+	e.bridge.NudgeDelay = 50 * time.Millisecond
+	e.show(t)
+	start := time.Now()
+	_, out, err := e.bridge.Ask(context.Background(), nil, question("retries use exponential backoff capped at 30s"))
+	require.NoError(t, err)
+	assert.Less(t, time.Since(start), e.bridge.AskWait, "returns at the nudge, not at AskWait")
+	assert.Equal(t, protocol.StatusPending, out.Status)
+	assert.Equal(t, MsgUnseen, out.Message)
+	assert.NotEmpty(t, out.URL)
+}
+
+func TestAskNoNudgeWhenSeen(t *testing.T) {
+	e := setup(t, nil)
+	e.fake.SetViewers(1)
+	e.fake.SetPresence(0, true)
+	e.bridge.NudgeDelay = 50 * time.Millisecond
+	e.bridge.AskWait = 300 * time.Millisecond
+	e.show(t)
+	start := time.Now()
+	_, out, err := e.bridge.Ask(context.Background(), nil, question("retries use exponential backoff capped at 30s"))
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, time.Since(start), 250*time.Millisecond, "waits the whole AskWait")
+	assert.Equal(t, protocol.StatusPending, out.Status)
+	assert.Equal(t, MsgPending, out.Message)
+}
+
+func TestAskAnswerBeforeNudge(t *testing.T) {
+	e := setup(t, func(_ string, a *protocol.Ask) *protocol.AskResult {
+		return &protocol.AskResult{QSID: a.QSID, Status: protocol.StatusAnswered,
+			Answers: []protocol.Answer{{ID: "q1", Selected: []string{"Yes"}}}}
+	})
+	e.fake.SetViewers(1)
+	e.fake.SetPresence(0, false)
+	e.bridge.NudgeDelay = time.Second
+	e.show(t)
+	_, out, err := e.bridge.Ask(context.Background(), nil, question("retries use exponential backoff capped at 30s"))
+	require.NoError(t, err)
+	assert.Equal(t, protocol.StatusAnswered, out.Status)
+}

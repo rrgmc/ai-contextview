@@ -64,9 +64,10 @@ viewer's tools.
   - `answered`: act on the answers.
   - `in_chat`: stop and wait for the user's message.
   - `pending`: call `ask_wait` with the returned `question_set_id`. If the
-    result also has `url`, no viewer page is open: reopen `url` in the
-    built-in browser first and tell the user in one line that questions are
-    waiting there.
+    result also has `url`, the user may not see the questions (no viewer
+    page, a hidden one, or nobody used it yet): follow its `message`, which
+    says when to reopen `url` in the built-in browser, and tell the user in
+    one line in the chat that questions are waiting there.
   - `dismissed`: continue without that decision, or ask in chat if it is
     essential.
   - `deferred` (with `answered`): the user chose **Decide later**. Continue

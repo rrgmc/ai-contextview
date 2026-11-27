@@ -98,13 +98,14 @@ entries (refcounted), which only read.
 |---|---|
 | `GET /` | Index: live workspaces (pending-question badge), then archived ones |
 | `GET /w/{ws}` | The workspace page (full HTML) |
-| `GET /w/{ws}/events` | SSE stream for that workspace |
+| `GET /w/{ws}/events` | SSE stream for that workspace; `c` is the page's id, `h=1` when it starts hidden |
 | `GET /w/{ws}/doc?path=…` | Rendered artifact fragment (for switching docs) |
 | `GET /w/{ws}/code?path=…&start=…&end=…` | Rendered code fragment |
 | `POST /w/{ws}/qs/{qs}/answer` | Form: answers, other, notes → `ask_result{answered}` |
 | `POST /w/{ws}/qs/{qs}/in-chat` | → `ask_result{in_chat}` |
 | `POST /w/{ws}/qs/{qs}/dismiss` | → `ask_result{dismissed}` |
 | `POST /w/{ws}/close` | Close an archived workspace |
+| `POST /w/{ws}/presence` | Form: `c` (the page's id), `hidden` (`1` or `0`, when the page is hidden or shown), `active` (`1` when someone used the page: mouse, keyboard, scroll; sent at most every 5 seconds) → 204 |
 | `POST /w/{ws}/open` | Form: `kind` (`doc` with a document key, or `code` with a code tab's absolute path), `line`, `editor` → opens the file in the editor; other files are refused |
 | `GET /static/…` | Embedded assets |
 

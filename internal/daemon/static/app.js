@@ -691,8 +691,33 @@
     redirect(d) { window.location.href = d.url; },
   };
 
+  // ------------------------------------------------------------ presence
+
+  // The page tells the daemon when it is hidden (a closed browser pane keeps
+  // its tab) and when someone uses it, so that Claude can say in the chat
+  // that questions are waiting when nobody sees them.
+  const pageID = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Math.random()).slice(2);
+  function presence(fields) {
+    const body = new URLSearchParams(Object.assign({ c: pageID }, fields));
+    fetch(base + "/presence", {
+      method: "POST", body, headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    }).catch(() => {});
+  }
+  document.addEventListener("visibilitychange", () => presence({ hidden: document.hidden ? "1" : "0" }));
+  let lastActive = 0;
+  function used() {
+    if (document.hidden) return;
+    const now = Date.now();
+    if (now - lastActive < 5000) return;
+    lastActive = now;
+    presence({ active: "1" });
+  }
+  for (const ev of ["pointermove", "pointerdown", "keydown", "wheel", "touchstart"]) {
+    window.addEventListener(ev, used, { passive: true, capture: true });
+  }
+
   function connect() {
-    const es = new EventSource(base + "/events");
+    const es = new EventSource(base + "/events?c=" + encodeURIComponent(pageID) + (document.hidden ? "&h=1" : ""));
     for (const name of Object.keys(handlers)) {
       es.addEventListener(name, (e) => {
         try { handlers[name](JSON.parse(e.data)); } catch (err) { console.error(name, err); }

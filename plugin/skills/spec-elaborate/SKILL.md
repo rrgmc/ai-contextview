@@ -67,7 +67,7 @@ browser and `open` is missing.
 - Do not use that browser tab for other work during the session, so the
   viewer stays on screen. Open another tab if you need one.
 - Open it again when the user asks, or when an `ask` result is `pending`
-  with a `url`: that means no page is open.
+  with a `url` and its `message` says to: no page is open, or it is hidden.
 
 ## Draft specs
 
@@ -134,9 +134,11 @@ section. An existing spec the user names stays where it is.
   - `in_chat`: stop and wait for the user's message. The questions are already
     on the user's clipboard.
   - `pending`: call `ask_wait` with the returned `question_set_id`. If the
-    result also has `url`, no viewer page is open (the user may have closed
-    it): first reopen `url` in the built-in browser (see **Built-in browser**)
-    and tell the user in one line that new questions are waiting there.
+    result also has `url`, the user may not see the questions (no viewer
+    page, a hidden one, or nobody used it yet): follow its `message`, which
+    says when to reopen `url` in the built-in browser (see **Built-in
+    browser**), and tell the user in one line in the chat that new questions
+    are waiting there.
   - `dismissed` (the user clicked Skip): continue without that decision, or
     ask in chat if it is essential.
   - `deferred` (with `answered`): the user chose **Decide later** for these

@@ -392,7 +392,7 @@ func (d *Daemon) ask(id string, req *protocol.Ask) (*protocol.AskShown, error) {
 	d.publishIndex()
 	d.updateWatches()
 	d.lastActive = time.Now()
-	shown.Viewers = d.hub.Viewers(w.ID)
+	shown.Viewers, shown.Hidden = d.hub.Counts(w.ID)
 	return shown, nil
 }
 
@@ -769,4 +769,18 @@ func (d *Daemon) touch() {
 	d.mu.Lock()
 	d.lastActive = time.Now()
 	d.mu.Unlock()
+}
+
+// viewers answers a bridge's viewers request: the open and hidden pages of
+// the workspace, and whether someone used one since the pending question
+// set was shown.
+func (d *Daemon) viewers(id string) *protocol.ViewersResult {
+	res := &protocol.ViewersResult{Presence: true}
+	res.Viewers, res.Hidden = d.hub.Counts(id)
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if w := d.workspaces[id]; w != nil && w.Pending != nil {
+		res.Seen = !w.SeenAt.Before(w.Pending.Shown)
+	}
+	return res
 }

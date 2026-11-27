@@ -19,9 +19,12 @@ func newEvent(name string, v any) Event {
 	return Event{Name: name, Data: b}
 }
 
-// Sub is one open browser page.
+// Sub is one open browser page. id is the page's own id, used to find it
+// when it reports that it is hidden or visible.
 type Sub struct {
-	ch chan Event
+	ch     chan Event
+	id     string
+	hidden bool
 }
 
 // indexKey is the hub key for the index page.
@@ -36,8 +39,11 @@ type Hub struct {
 func newHub() *Hub { return &Hub{subs: map[string]map[*Sub]struct{}{}} }
 
 // Subscribe registers a page for a workspace.
-func (h *Hub) Subscribe(ws string) *Sub {
-	s := &Sub{ch: make(chan Event, 256)}
+func (h *Hub) Subscribe(ws string) *Sub { return h.SubscribeAs(ws, "", false) }
+
+// SubscribeAs registers a page with its id and whether it starts hidden.
+func (h *Hub) SubscribeAs(ws, id string, hidden bool) *Sub {
+	s := &Sub{ch: make(chan Event, 256), id: id, hidden: hidden}
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if h.subs[ws] == nil {
@@ -55,6 +61,34 @@ func (h *Hub) Unsubscribe(ws string, s *Sub) {
 	if len(h.subs[ws]) == 0 {
 		delete(h.subs, ws)
 	}
+}
+
+// SetHidden records whether the page with the given id is hidden.
+func (h *Hub) SetHidden(ws, id string, hidden bool) {
+	if id == "" {
+		return
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	for s := range h.subs[ws] {
+		if s.id == id {
+			s.hidden = hidden
+		}
+	}
+}
+
+// Counts returns the open pages of a workspace and how many of them are
+// hidden.
+func (h *Hub) Counts(ws string) (total, hidden int) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	for s := range h.subs[ws] {
+		total++
+		if s.hidden {
+			hidden++
+		}
+	}
+	return total, hidden
 }
 
 // Viewers counts the open pages of a workspace.

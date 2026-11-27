@@ -26,6 +26,11 @@ type Server struct {
 	Socket  string
 	BaseURL string
 	Viewers int
+	// Hidden, Seen and Presence are reported as a presence-tracking daemon
+	// reports them (SetPresence); without Presence they are not sent.
+	Hidden   int
+	Seen     bool
+	Presence bool
 	// SessionCwd is the session folder the server answers cwd with.
 	SessionCwd string
 	// OnAsk returns the answer to a question set, or nil to leave it pending.
@@ -179,6 +184,7 @@ func (s *Server) handle(c *conn) {
 			var b protocol.Ask
 			_ = env.Decode(&b)
 			shown := protocol.AskShown{QSID: b.QSID, Viewers: s.viewers(), Matches: []protocol.QuestionMatch{}}
+			shown.Hidden = s.viewersResult().Hidden
 			for _, q := range b.Questions {
 				for i, d := range q.Docs {
 					shown.Matches = append(shown.Matches, protocol.QuestionMatch{ID: q.ID, Doc: i, Match: match(d)})
@@ -199,7 +205,7 @@ func (s *Server) handle(c *conn) {
 			s.mu.Unlock()
 			s.reply(c, env.ID, protocol.TypeResult, res)
 		case protocol.TypeViewers:
-			s.reply(c, env.ID, protocol.TypeResult, &protocol.ViewersResult{Viewers: s.viewers()})
+			s.reply(c, env.ID, protocol.TypeResult, s.viewersResult())
 		case protocol.TypeAskCancel, protocol.TypePing, protocol.TypeDone, protocol.TypeAskMode:
 			s.reply(c, env.ID, protocol.TypeResult, map[string]any{})
 		case protocol.TypeBye:
@@ -222,6 +228,24 @@ func (s *Server) SetSessionCwd(cwd string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.SessionCwd = cwd
+}
+
+// SetPresence makes the server track presence: hidden of its viewers are
+// hidden, and seen says whether someone used a page.
+func (s *Server) SetPresence(hidden int, seen bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.Hidden, s.Seen, s.Presence = hidden, seen, true
+}
+
+func (s *Server) viewersResult() *protocol.ViewersResult {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	res := &protocol.ViewersResult{Viewers: s.Viewers}
+	if s.Presence {
+		res.Hidden, res.Seen, res.Presence = s.Hidden, s.Seen, true
+	}
+	return res
 }
 
 func (s *Server) viewers() int {

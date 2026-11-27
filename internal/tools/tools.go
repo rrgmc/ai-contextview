@@ -47,7 +47,12 @@ type Bridge struct {
 	// ReopenDelay is how long ask waits, in pane mode, for a page to connect
 	// before it opens the system browser instead. Zero means DefaultReopenDelay.
 	ReopenDelay time.Duration
-	Logf        func(format string, args ...any)
+	// NudgeDelay is how long ask waits before it returns pending, so that
+	// Claude says in the chat that questions are waiting, when nobody has
+	// used the viewer page since the questions were shown. Zero means
+	// DefaultNudgeDelay.
+	NudgeDelay time.Duration
+	Logf       func(format string, args ...any)
 
 	mu      sync.Mutex
 	root    *specsrc.Root
@@ -84,8 +89,13 @@ func (b *Bridge) SessionCwd(s protocol.SessionCwd) {
 
 // Messages returned to Claude.
 const (
-	MsgInChat   = "The user will answer in the chat. Wait for their message."
-	MsgPending  = "Still waiting for the user. Call ask_wait with this id to keep waiting."
+	MsgInChat  = "The user will answer in the chat. Wait for their message."
+	MsgPending = "Still waiting for the user. Call ask_wait with this id to keep waiting."
+	MsgHidden  = "The viewer page is open but hidden (for example a closed browser pane), so the user may not see these questions. " +
+		"Tell the user in one line in the chat that questions are waiting in the viewer, with url. " +
+		"If you have the built-in browser tools, show the pane again (preview_start with url). Then call ask_wait with this id."
+	MsgUnseen = "Nobody has used the viewer page since these questions were shown, so the user may not have noticed them. " +
+		"Tell the user in one line in the chat that questions are waiting in the viewer, with url, then call ask_wait with this id."
 	MsgNoViewer = "No viewer page is open, so the user cannot see these questions. " +
 		"If you have the built-in browser tools, open url in the built-in browser pane now (preview_start with url) and tell the user in one line; " +
 		"otherwise the system browser opens shortly. Then call ask_wait with this id."
@@ -96,6 +106,9 @@ const (
 
 // DefaultReopenDelay is the ReopenDelay used when it is zero.
 const DefaultReopenDelay = 10 * time.Second
+
+// DefaultNudgeDelay is the NudgeDelay used when it is zero.
+const DefaultNudgeDelay = 45 * time.Second
 
 // OpenPane asks Claude to open the viewer in the built-in browser pane of the
 // Claude desktop app. It is the default; AI_CONTEXTVIEW_OPEN=browser or never
@@ -527,7 +540,61 @@ func (b *Bridge) Ask(ctx context.Context, _ *mcp.CallToolRequest, in protocol.As
 			b.Open(u)
 		}
 	}
-	return b.wait(ctx, ask.QSID)
+	if u := b.Daemon.URL(); shown.Viewers > 0 && shown.Hidden >= shown.Viewers {
+		// Every page that shows the questions is hidden: say so in the chat
+		// now instead of waiting in silence.
+		b.markPending(ask.QSID)
+		return nil, protocol.AskOutput{Status: protocol.StatusPending, QuestionSetID: ask.QSID, URL: u, Message: MsgHidden}, nil
+	}
+	return b.waitNudge(ctx, ask.QSID)
+}
+
+func (b *Bridge) markPending(qs string) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.pending == nil {
+		b.pending = map[string]bool{}
+	}
+	b.pending[qs] = true
+}
+
+// waitNudge waits for the answers like wait, but returns pending after
+// NudgeDelay when nobody has used the viewer page since the questions were
+// shown, so that Claude says in the chat that they are waiting.
+func (b *Bridge) waitNudge(ctx context.Context, qs string) (*mcp.CallToolResult, protocol.AskOutput, error) {
+	nd := b.NudgeDelay
+	if nd <= 0 {
+		nd = DefaultNudgeDelay
+	}
+	if b.AskWait <= nd {
+		return b.wait(ctx, qs, b.AskWait)
+	}
+	res, err := b.Daemon.WaitResult(ctx, qs, nd)
+	if err != nil || res != nil {
+		return b.finish(ctx, qs, res, err)
+	}
+	if b.seen(ctx) {
+		return b.wait(ctx, qs, b.AskWait-nd)
+	}
+	b.markPending(qs)
+	return nil, protocol.AskOutput{Status: protocol.StatusPending, QuestionSetID: qs, URL: b.Daemon.URL(), Message: MsgUnseen}, nil
+}
+
+// seen reports whether someone used the viewer page since the pending
+// question set was shown. Without an answer from the daemon, or from a
+// daemon that does not track it, it reports true: no nudge.
+func (b *Bridge) seen(ctx context.Context) bool {
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	reply, err := b.Daemon.Request(ctx, protocol.TypeViewers, &protocol.Viewers{})
+	if err != nil {
+		return true
+	}
+	var res protocol.ViewersResult
+	if reply.Decode(&res) != nil || !res.Presence {
+		return true
+	}
+	return res.Seen
 }
 
 // openLater opens the system browser for a question set after ReopenDelay,
@@ -649,11 +716,16 @@ func (b *Bridge) AskWaitTool(ctx context.Context, _ *mcp.CallToolRequest, in pro
 	if !known && !b.Daemon.HasResult(in.QuestionSetID) {
 		return nil, protocol.AskOutput{}, fmt.Errorf("unknown question_set_id %q", in.QuestionSetID)
 	}
-	return b.wait(ctx, in.QuestionSetID)
+	return b.wait(ctx, in.QuestionSetID, b.AskWait)
 }
 
-func (b *Bridge) wait(ctx context.Context, qs string) (*mcp.CallToolResult, protocol.AskOutput, error) {
-	res, err := b.Daemon.WaitResult(ctx, qs, b.AskWait)
+func (b *Bridge) wait(ctx context.Context, qs string, d time.Duration) (*mcp.CallToolResult, protocol.AskOutput, error) {
+	res, err := b.Daemon.WaitResult(ctx, qs, d)
+	return b.finish(ctx, qs, res, err)
+}
+
+// finish turns what WaitResult returned into the ask output.
+func (b *Bridge) finish(ctx context.Context, qs string, res *protocol.AskResult, err error) (*mcp.CallToolResult, protocol.AskOutput, error) {
 	if err != nil {
 		if ctx.Err() != nil {
 			b.cancel(qs, "client_cancelled")

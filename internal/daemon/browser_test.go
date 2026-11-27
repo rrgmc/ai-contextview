@@ -341,3 +341,20 @@ func TestBrowserDocLines(t *testing.T) {
 	)
 	assert.Equal(t, want, text(t, ctx, `#doc-lines`))
 }
+
+// The page reports that it is used, so an unseen question can be told apart.
+func TestBrowserReportsUse(t *testing.T) {
+	h, _ := twoQuestions(t)
+	ctx := newBrowser(t)
+	run(t, ctx,
+		chromedp.Navigate(h.http.URL+"/w/ws_A"),
+		chromedp.WaitVisible(q1Section+` .qtext`),
+	)
+	total, hidden := h.d.hub.Counts("ws_A")
+	assert.Equal(t, 1, total)
+	assert.Equal(t, 0, hidden)
+	assert.False(t, h.d.viewers("ws_A").Seen)
+
+	run(t, ctx, chromedp.Click(q1Section+` .qtext`))
+	assert.Eventually(t, func() bool { return h.d.viewers("ws_A").Seen }, 3*time.Second, 50*time.Millisecond)
+}

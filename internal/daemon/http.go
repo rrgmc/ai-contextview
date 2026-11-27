@@ -53,6 +53,7 @@ func (d *Daemon) Handler() http.Handler {
 	mux.HandleFunc("POST /w/{ws}/qs/{qs}/{action}", d.handleAnswer)
 	mux.HandleFunc("POST /w/{ws}/close", d.handleClose)
 	mux.HandleFunc("POST /w/{ws}/open", d.handleOpen)
+	mux.HandleFunc("POST /w/{ws}/presence", d.handlePresence)
 	mux.HandleFunc("GET /static/chroma.css", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/css; charset=utf-8")
 		_, _ = w.Write([]byte(chromaCSS))
@@ -143,7 +144,8 @@ func (d *Daemon) stream(w http.ResponseWriter, r *http.Request, key string, init
 		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
 		return
 	}
-	sub := d.hub.Subscribe(key)
+	q := r.URL.Query()
+	sub := d.hub.SubscribeAs(key, q.Get("c"), q.Get("h") == "1")
 	defer func() {
 		d.hub.Unsubscribe(key, sub)
 		d.touch()
@@ -209,6 +211,29 @@ func (d *Daemon) handleEvents(w http.ResponseWriter, r *http.Request) {
 		defer d.mu.Unlock()
 		return d.snapshot(ws)
 	})
+}
+
+// handlePresence records what a page reports about itself: hidden=1 or 0
+// when it is hidden or shown again, active=1 when someone used it.
+func (d *Daemon) handlePresence(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad form", http.StatusBadRequest)
+		return
+	}
+	d.mu.Lock()
+	ws, real := d.lookup(r.PathValue("ws"))
+	if ws != nil && r.Form.Get("active") == "1" {
+		ws.SeenAt = time.Now()
+	}
+	d.mu.Unlock()
+	if ws == nil {
+		http.Error(w, "unknown workspace", http.StatusNotFound)
+		return
+	}
+	if h := r.Form.Get("hidden"); h == "0" || h == "1" {
+		d.hub.SetHidden(real, r.Form.Get("c"), h == "1")
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func writeJSON(w http.ResponseWriter, v any) {

@@ -799,3 +799,44 @@ func TestNoDocumentPillNeedsDocPanel(t *testing.T) {
 	// No document panel: nothing to say.
 	assert.NotContains(t, ev, `chip-nodoc`)
 }
+
+// Pages report when they are hidden and when someone uses them; the daemon
+// passes both to the bridge.
+func TestPresence(t *testing.T) {
+	h := newHarness(t)
+	cwd, specPath := writeSpec(t)
+	b := h.bridge("ws_A", cwd)
+	b.req(protocol.TypeSpecShow, &protocol.SpecShow{RootAbs: specPath})
+	sub := h.d.hub.SubscribeAs("ws_A", "p1", true)
+	defer h.d.hub.Unsubscribe("ws_A", sub)
+
+	env := b.req(protocol.TypeAsk, askBody(cwd, specPath, "qs_1"))
+	var shown protocol.AskShown
+	require.NoError(t, env.Decode(&shown))
+	assert.Equal(t, 1, shown.Viewers)
+	assert.Equal(t, 1, shown.Hidden, "the page connected hidden")
+
+	res := h.d.viewers("ws_A")
+	assert.True(t, res.Presence)
+	assert.Equal(t, 1, res.Hidden)
+	assert.False(t, res.Seen)
+
+	// Shown again, then used.
+	resp := h.do(http.MethodPost, "/w/ws_A/presence", url.Values{"c": {"p1"}, "hidden": {"0"}}, nil)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+	assert.Equal(t, 0, h.d.viewers("ws_A").Hidden)
+	resp = h.do(http.MethodPost, "/w/ws_A/presence", url.Values{"c": {"p1"}, "active": {"1"}}, nil)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+	assert.True(t, h.d.viewers("ws_A").Seen)
+
+	// A new question set is unseen until the page is used again.
+	resp = h.do(http.MethodPost, "/w/ws_A/qs/qs_1/answer", url.Values{"sel.q1": {"No"}}, nil)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+	b.read()
+	time.Sleep(5 * time.Millisecond)
+	b.req(protocol.TypeAsk, askBody(cwd, specPath, "qs_2"))
+	assert.False(t, h.d.viewers("ws_A").Seen)
+
+	resp = h.do(http.MethodPost, "/w/nope/presence", url.Values{"c": {"p1"}}, nil)
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+}

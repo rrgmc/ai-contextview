@@ -327,7 +327,7 @@ Match          = "exact" | "normalized" | "fuzzy" | "heading" | "none"
 | `ask` | `{qs_id, title?, questions: [ {…, docs: [ResolvedDocRef], code: [ResolvedRef]} ]}` | `ask_shown {matches}` right away, **then later** `ask_result` |
 | `ask_cancel` | `{qs_id, reason}` | `result` |
 | `done` | `{summary?}` | `result {}` |
-| `viewers` | `{}` | `result {viewers: int}` (open browser pages of the workspace) |
+| `viewers` | `{}` | `result {viewers: int, hidden?: int, seen?: bool, presence?: bool}` (open browser pages of the workspace; `hidden` of them report they are hidden; `seen` when someone used a page since the pending set was shown; `presence` when the daemon tracks `hidden` and `seen`) |
 | `ask_mode` | `{on: bool, spec?: bool, paths?: [abs glob]}` | `result {}` |
 | `cwd` | `{}`, sent before the bridge resolves a relative path | `result {cwd?: abs}` (the session's folder from the hook; empty when none was reported) |
 | `bye` | `{}` | (none; the bridge closes) |
@@ -370,7 +370,7 @@ asks with `cwd` and uses the answer.
 | `hello_ack` | `{daemon_version, url, adopted_from?: ws}` (`url` is the workspace page, e.g. `http://127.0.0.1:7878/w/ws_A`) |
 | `result` | `{…}` (reply to `re`) |
 | `error` | `{code, message}` (reply to `re`) |
-| `ask_shown` | `{qs_id, viewers: int, matches: [{id, doc: int, match}]}` (`doc` indexes the question's `docs`; `viewers` is the number of open browser pages) |
+| `ask_shown` | `{qs_id, viewers: int, hidden?: int, matches: [{id, doc: int, match}]}` (`doc` indexes the question's `docs`; `viewers` is the number of open browser pages, `hidden` how many of them are hidden) |
 | `ask_result` | `{qs_id, status: "answered"\|"in_chat"\|"dismissed", answers?, deferred?: [id], keep_open?: [id]}` |
 | `session_cwd` | `{cwd}`: the session's working folder changed (from the hook). |
 | `doc_shown` | `{root_abs}`: the daemon made a written file the working document. The bridge loads it as its spec root, so `spec_quote` quotes it, and replays it after a reconnect as `spec_show` with `auto: true`. |
@@ -400,6 +400,17 @@ Error codes: `bad_request`, `file_not_found`, `not_markdown`, `empty_folder`,
     That is the fallback when there is no pane (the CLI, an IDE).
   - `browser`: the bridge opens `url` in the default browser at once and
     waits as usual.
+- **`ask_shown` with every viewer hidden** (`hidden` equal to `viewers`, for
+  example a closed browser pane whose tab is still open): `ask` returns at
+  once with `pending` and `url`, and its message tells Claude to say in the
+  chat that questions are waiting and to show the pane again. No browser is
+  opened.
+- **The nudge.** Otherwise `ask` waits for the answers. After 45 seconds
+  without an answer it sends `viewers`; if the daemon tracks presence and
+  `seen` is false (nobody used a page since the questions were shown), `ask`
+  returns `pending` with `url`, and its message tells Claude to say in the
+  chat that questions are waiting, then call `ask_wait`. `ask_wait` never
+  nudges. Pages report what they know with `POST /w/{ws}/presence` (03).
   - `never`: the bridge opens nothing and waits as usual.
 - **If the daemon restarts,** the bridge reconnects, re-sends `hello` with the
   same `ws`, re-sends the last `spec_show` (or `doc_shown`), the last `ask_mode`, any pending
