@@ -14,6 +14,18 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.4.4] - 2026-11-27
+
+### Changed
+
+- With the questions above the code, the code pane hides while there is no
+  code to show, and the questions take the whole right column. The other
+  layouts keep the pane, so nothing moves sideways.
+- A question with no document says so more clearly while a document is
+  shown: a "No document" pill sits under the question, and the note above
+  the document is a coloured badge instead of grey text. The pane mod shows
+  both notes too.
+
 ## [1.4.3] - 2026-11-27
 
 ### Fixed
@@ -279,7 +291,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.4.3...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-specview/compare/v1.4.4...HEAD
+[1.4.4]: https://github.com/rrgmc/ai-specview/compare/v1.4.3...v1.4.4
 [1.4.3]: https://github.com/rrgmc/ai-specview/compare/v1.4.2...v1.4.3
 [1.4.2]: https://github.com/rrgmc/ai-specview/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/rrgmc/ai-specview/compare/v1.4.0...v1.4.1
