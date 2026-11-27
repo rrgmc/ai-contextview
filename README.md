@@ -233,7 +233,7 @@ directory within 2 hours takes the old workspace over.
 |---|---|
 | `ai-contextview mcp` | The stdio MCP server. Claude Code starts one per instance. |
 | `ai-contextview serve` | The viewer daemon. `--detach` starts it in the background, `--restart` replaces a running one (or starts one) in the background, `--stop` stops it, `--addr` sets the address (default `127.0.0.1:7878`, the next 9 ports are tried), `--idle-exit 30m` exits when unused. |
-| `ai-contextview fakeapp` | A terminal stand-in for the daemon, for testing the MCP path. |
+| `ai-contextview fakeapp` | A terminal stand-in for the daemon, for testing the MCP path. It refuses to start while a daemon runs. |
 | `ai-contextview hook` | Claude Code hook: blocks the built-in question tool only while this session has a spec open or is in ask mode; reports the markdown files Claude writes and the skills it starts, to pick the working document. |
 | `ai-contextview version` | Prints the version: the git tag (`v1.2.3`), a Go pseudo-version for a build between tags, with `+dirty` for uncommitted changes, or `devel` when the build has no version information. |
 
