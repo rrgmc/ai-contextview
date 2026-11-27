@@ -665,8 +665,18 @@ func (b *Bridge) AskModeTool(ctx context.Context, _ *mcp.CallToolRequest, in pro
 			}
 		}
 	}
-	if _, err := b.Daemon.Request(ctx, protocol.TypeAskMode, req); err != nil {
+	reply, err := b.Daemon.Request(ctx, protocol.TypeAskMode, req)
+	if err != nil {
 		return nil, protocol.AskModeOutput{}, err
+	}
+	var res protocol.AskModeResult
+	if err := reply.Decode(&res); err != nil {
+		return nil, protocol.AskModeOutput{}, err
+	}
+	if res.Shown != "" {
+		// The daemon also sends doc_shown; follow it here too, so a
+		// spec_quote right after this call quotes the shown file.
+		b.DocShown(protocol.DocShown{RootAbs: res.Shown})
 	}
 	b.mu.Lock()
 	b.askMode = on
@@ -678,7 +688,7 @@ func (b *Bridge) AskModeTool(ctx context.Context, _ *mcp.CallToolRequest, in pro
 		}
 	}
 	b.mu.Unlock()
-	out := protocol.AskModeOutput{On: on, Spec: req.Spec}
+	out := protocol.AskModeOutput{On: on, Spec: req.Spec, Shown: res.Shown}
 	if on {
 		out.URL = b.Daemon.URL()
 		out.Open = b.OpenIn

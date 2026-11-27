@@ -720,7 +720,7 @@ test('in ask mode the first written document becomes the working document', asyn
 test('spec mode with paths, and spec_show wins over writes', async ($, on) => {
   engine(on)
   await $.session.start({ cwd: '/repo', surface: 'desktop', isInteractive: true })
-  expect(await result(call($, { tool: ASK_MODE, spec: true, paths: ['docs/spec.md'] }))).toEqual({ on: true, spec: true })
+  expect(await result(call($, { tool: ASK_MODE, spec: true, paths: ['docs/spec*.md'] }))).toEqual({ on: true, spec: true })
   await call($, { tool: 'Write', file_path: 'docs/design.md', content: 'x' })
   let ui = await $.ui.mount(pane('desktop', 140))
   expect(await ui.find({ type: 'Text', text: /^docs\/design\.md$/ })).toBeUndefined()
@@ -740,13 +740,37 @@ test('spec mode with paths, and spec_show wins over writes', async ($, on) => {
   await ui.unmount()
 })
 
+test('spec mode shows an existing spec given by its path at once', async ($, on) => {
+  engine(on)
+  await $.session.start({ cwd: '/repo', surface: 'desktop', isInteractive: true })
+  // A missing file waits for a write.
+  expect(await result(call($, { tool: ASK_MODE, spec: true, paths: ['docs/new.md'] }))).toEqual({ on: true, spec: true })
+  // An existing one shows now, as a pick.
+  expect(await result(call($, { tool: ASK_MODE, spec: true, paths: ['docs/spec.md'] }))).toEqual({
+    on: true,
+    spec: true,
+    shown: '/repo/docs/spec.md',
+  })
+  let ui = await $.ui.mount(pane('desktop', 140))
+  expect(await ui.find({ type: 'Text', text: /^docs\/spec\.md$/ })).toBeDefined()
+  await ui.unmount()
+  // Ask mode off clears it.
+  await call($, { tool: ASK_MODE, off: true })
+  ui = await $.ui.mount(pane('desktop', 140))
+  expect(await ui.find({ type: 'Text', text: /^docs\/spec\.md$/ })).toBeUndefined()
+  await ui.unmount()
+  // Claude's own spec_show wins over the path.
+  await call($, { tool: SPEC_SHOW, path: 'docs/design.md' })
+  expect(await result(call($, { tool: ASK_MODE, spec: true, paths: ['docs/spec.md'] }))).toEqual({ on: true, spec: true })
+})
+
 test('a provisional document shows until the working document is written', async ($, on) => {
   engine(on)
   await $.session.start({ cwd: '/repo', surface: 'desktop', isInteractive: true })
   // Outside ask mode, provisional is refused.
   expect(failed(await call($, { tool: SPEC_SHOW, path: 'docs/design.md', provisional: true }))).toBe(true)
 
-  await call($, { tool: ASK_MODE, spec: true, paths: ['docs/spec.md'] })
+  await call($, { tool: ASK_MODE, spec: true, paths: ['docs/spec*.md'] })
   await call($, { tool: SPEC_SHOW, path: 'docs/design.md', provisional: true })
   let ui = await $.ui.mount(pane('desktop', 140))
   expect(await ui.find({ type: 'Text', text: /^docs\/design\.md$/ })).toBeDefined()

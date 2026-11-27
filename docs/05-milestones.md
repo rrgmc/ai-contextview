@@ -94,6 +94,10 @@ What changed from the plan while building and using it:
 - **Front end.** Plain JavaScript instead of htmx; the web server lives in
   `internal/daemon`. Browser tests in `internal/daemon/browser_test.go` drive
   the panel in headless Chrome.
+- **Spec mode shows an existing spec.** A spec-mode path that names an
+  existing markdown file shows it at once, in the viewer and the pane, so a
+  session that implements a written spec sees it without writing to it
+  (01, `ask_mode`; 07).
 
 ## M0 — Contract and skeleton
 

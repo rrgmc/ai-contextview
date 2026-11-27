@@ -409,7 +409,28 @@ async function askMode($: EngineInterface, args: Args) {
     await update($, uiAtom, () => ({ file: '', shown: -1, codeTab: 0 }))
   }
   if (!on) return { on, next: OFF_NEXT }
-  return spec ? { on, spec } : { on }
+  if (!spec) return { on }
+  const shown = await showExisting($, paths)
+  return shown ? { on, spec, shown } : { on, spec }
+}
+
+/**
+ * Shows a spec-mode path that names an existing markdown file, so a spec
+ * written before spec mode started shows at once. Only a plain path counts,
+ * not a glob. Returns the path shown, or ''.
+ */
+async function showExisting($: EngineInterface, paths: string[]): Promise<string> {
+  const w = await read($, workAtom)
+  if (w.explicit || (w.doc !== '' && !w.provisional)) return ''
+  for (const raw of paths) {
+    const p = clean(raw)
+    if (/[*?[]/.test(p) || !MARKDOWN.test(p)) continue
+    if (!(await $.fs.exists(p)) || (await $.fs.stat(p)).kind === 'dir') continue
+    if (p === w.doc && !w.provisional) return p
+    await showWorking($, p)
+    return p
+  }
+  return ''
 }
 
 /** Shows a written file as the working document, as spec_show would. */

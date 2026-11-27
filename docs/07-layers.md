@@ -168,8 +168,10 @@ it.
 
 - **With a path or glob** (`/ai-contextview:spec-mode docs/specs/SW-1234.md`),
   there is no detection: the first write to a matching file makes it the
-  working document. The file need not exist yet. This is the main way to use
-  spec mode.
+  working document. The file need not exist yet. If it already exists, as
+  when Claude implements a written spec, it shows at once, with no write.
+  Only a plain path does this, not a glob. This is the main way to use spec
+  mode.
 - **Without one,** each markdown write that counts gets a score, and the best
   candidate becomes the working document:
 

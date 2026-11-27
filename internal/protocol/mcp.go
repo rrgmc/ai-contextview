@@ -83,7 +83,7 @@ type SpecDoneOutput struct {
 type AskModeInput struct {
 	Off   bool     `json:"off,omitempty" jsonschema:"true turns ask mode off and hands the questions back to the chat, even with a spec open; omit to turn it on"`
 	Spec  bool     `json:"spec,omitempty" jsonschema:"spec mode: ask mode that expects a spec and shows it as the working document once it is written"`
-	Paths []string `json:"paths,omitempty" jsonschema:"spec mode: glob patterns of the spec file, relative to the project dir or absolute (** for any folders); the first written file that matches is shown"`
+	Paths []string `json:"paths,omitempty" jsonschema:"spec mode: glob patterns of the spec file, relative to the project dir or absolute (** for any folders); the first written file that matches is shown; a plain path to an existing markdown file is shown at once"`
 }
 
 // AskModeOutput is the output of ask_mode.
@@ -92,6 +92,9 @@ type AskModeOutput struct {
 	Spec bool   `json:"spec,omitempty"`
 	URL  string `json:"url,omitempty" jsonschema:"the viewer page for this session"`
 	Open string `json:"open,omitempty" jsonschema:"where the user wants the viewer: pane means open url in the built-in browser pane when one is available"`
+	// Shown is a spec-mode path that already existed and now shows as the
+	// working document.
+	Shown string `json:"shown,omitempty" jsonschema:"spec mode: the existing spec file now shown as the working document; spec_quote quotes it"`
 	// Next, when ask mode was turned off, tells Claude to ask in the chat
 	// again: the skills loaded earlier in the session say otherwise.
 	Next string `json:"next,omitempty"`

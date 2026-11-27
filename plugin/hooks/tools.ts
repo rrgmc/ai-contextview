@@ -181,7 +181,8 @@ export const TOOLS: readonly ToolDef[] = [
       'The built-in question tool is blocked while it is on. off: true hands the questions back to the chat for the rest of the session, ' +
       "even with a spec open: follow the result's next. The pane opens. The first markdown document you write becomes the " +
       'working document the user sees beside the questions; spec_show picks another. spec: true is spec mode, which expects a spec: ' +
-      'with paths (globs) the first written file that matches is shown, without them the file that looks most like a spec.',
+      'with paths (globs) the first written file that matches is shown, without them the file that looks most like a spec. ' +
+      'A plain path (no glob) to a markdown file that already exists is shown at once; the result then has shown, and spec_quote quotes it.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -198,7 +199,7 @@ export const TOOLS: readonly ToolDef[] = [
           type: 'array',
           items: { type: 'string' },
           description:
-            'spec mode: glob patterns of the spec file, relative to the project dir or absolute (** for any folders); the first written file that matches is shown',
+            'spec mode: glob patterns of the spec file, relative to the project dir or absolute (** for any folders); the first written file that matches is shown; a plain path to an existing markdown file is shown at once',
         },
       },
     },
