@@ -43,7 +43,10 @@ question with `ask`. As a safety net, `ai-contextview hook` blocks the built-in
 question tool (`AskUserQuestion`) **only while this Claude session has a spec
 open in ai-contextview** (shown with `spec_show` and not finished with `spec_done`)
 **or is in ask mode**, and tells Claude to use `ask` instead. Other sessions,
-and spec-free work in the same session, keep the built-in tool.
+and spec-free work in the same session, keep the built-in tool. Turning ask
+mode off (`ask_mode` with `off: true`) releases an open spec too: the hook
+stops blocking until ask mode is on again or `spec_show` shows another spec
+(01, `ask_mode`).
 
 The same command also handles two more events. After Claude writes or edits a
 markdown file (`PostToolUse` on `Write`, `Edit` and `MultiEdit`), it reports

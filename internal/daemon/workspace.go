@@ -101,6 +101,10 @@ type Workspace struct {
 	// AskMode is set by ask_mode: every question of the session goes
 	// through ai-contextview, with or without a spec.
 	AskMode bool
+	// Released is set when ask mode is turned off: the session asks in the
+	// chat again, so an open spec no longer blocks the built-in question
+	// tool. Turning ask mode on clears it.
+	Released bool
 	// work picks the working document from the files Claude writes (07).
 	work workDoc
 	// RootAuto is set while Root is a document picked from a write, not one
@@ -134,6 +138,7 @@ func (w *Workspace) adopt(old *Workspace) {
 	w.Code, w.codeAllowed, w.focus, w.History = old.Code, old.codeAllowed, old.focus, old.History
 	w.Done = old.Done
 	w.AskMode = old.AskMode
+	w.Released = old.Released
 	w.work = old.work
 	w.RootAuto = old.RootAuto
 	w.SessionCwd = old.SessionCwd

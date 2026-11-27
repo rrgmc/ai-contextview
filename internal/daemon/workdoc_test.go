@@ -154,6 +154,33 @@ func TestPickedDocIsNotAnOpenSpec(t *testing.T) {
 	assert.False(t, h.d.active(pids, "").AskMode)
 }
 
+func TestAskModeOffReleasesSpec(t *testing.T) {
+	h, b, cwd := workSetup(t)
+	pids := []int{999, testPID, 1}
+	spec := filepath.Join(cwd, "docs/specs/SW-1.md")
+	b.req(protocol.TypeSpecShow, &protocol.SpecShow{RootAbs: spec})
+	assert.True(t, h.d.active(pids, "").Active, "an open spec blocks")
+
+	// Off releases the open spec; it stays shown.
+	b.req(protocol.TypeAskMode, &protocol.AskMode{On: false})
+	assert.False(t, h.d.active(pids, "").Active)
+	assert.Equal(t, spec, workingDoc(h))
+
+	// Showing the same spec again, as after an edit, keeps it released.
+	b.req(protocol.TypeSpecShow, &protocol.SpecShow{RootAbs: spec})
+	assert.False(t, h.d.active(pids, "").Active)
+
+	// Ask mode on again ends the release.
+	b.req(protocol.TypeAskMode, &protocol.AskMode{On: true})
+	assert.True(t, h.d.active(pids, "").Active)
+	b.req(protocol.TypeAskMode, &protocol.AskMode{On: false})
+	assert.False(t, h.d.active(pids, "").Active)
+
+	// Another spec starts a new spec session.
+	b.req(protocol.TypeSpecShow, &protocol.SpecShow{RootAbs: filepath.Join(cwd, "docs/other.md")})
+	assert.True(t, h.d.active(pids, "").Active)
+}
+
 func TestAskModeOffKeepsExplicitSpec(t *testing.T) {
 	h, b, cwd := workSetup(t)
 	other := filepath.Join(cwd, "docs/other.md")

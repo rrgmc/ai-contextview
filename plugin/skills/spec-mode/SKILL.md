@@ -1,6 +1,6 @@
 ---
 name: spec-mode
-description: Turn on ai-contextview spec mode for the rest of the session - ask mode that expects a spec. Every question goes to the ai-contextview viewer (a browser page), and the spec shows there as the working document as soon as it is written, whichever skill writes it (a company's spec skill, spec-elaborate, or none). Use when the user runs /spec-mode, optionally with the spec's path or a glob, or asks to show the spec they are about to write in ai-contextview; "/spec-mode off" turns it off. Do NOT use to write the spec itself (use the user's spec skill, or spec-elaborate), or when the user wants the pane beside the chat (use spec-mode-mod).
+description: Turn on ai-contextview spec mode for the rest of the session - ask mode that expects a spec. Every question goes to the ai-contextview viewer (a browser page), and the spec shows there as the working document as soon as it is written, whichever skill writes it (a company's spec skill, spec-elaborate, or none). Use when the user runs /spec-mode, optionally with the spec's path or a glob, or asks to show the spec they are about to write in ai-contextview; "/spec-mode off" turns it off and hands the questions back to the chat, even with a spec open. Do NOT use to write the spec itself (use the user's spec skill, or spec-elaborate), or when the user wants the pane beside the chat (use spec-mode-mod).
 argument-hint: "[path or glob | off]"
 ---
 
@@ -38,7 +38,10 @@ viewer's tools.
   - Tell the user in one line that spec mode is on, then wait for their next
     instruction. Do not start any other work.
 - With the argument `off`, call `ask_mode` with `{"off": true}` and tell the
-  user in one line that spec mode is off.
+  user in one line that spec mode is off and questions come back to the chat.
+  This also releases a spec that is open, for example one from
+  spec-elaborate. From then on, ask every question in the chat or with the
+  built-in question tool, never with `ask`, as the result's `next` says.
 
 ## While spec mode is on
 

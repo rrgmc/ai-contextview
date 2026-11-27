@@ -227,7 +227,7 @@ func Register(s *mcp.Server, b *Bridge) {
 		Name: "ask_mode",
 		Description: "Turn ask mode on (or off with off: true) for this session. In ask mode, ask every question of the session " +
 			"with the ask tool, with or without a spec: refs are optional, so add code_refs or doc_refs only when the question is about them. " +
-			"The built-in question tool is blocked while it is on. The first markdown document you write becomes the working document " +
+			"The built-in question tool is blocked while it is on. off: true hands the questions back to the chat for the rest of the session, even with a spec open: follow the result's next. The first markdown document you write becomes the working document " +
 			"the user sees beside the questions; spec_show picks another. spec: true is spec mode, which expects a spec: with paths " +
 			"(globs) the first written file that matches is shown, without them the file that looks most like a spec. " +
 			"If the result has open: \"pane\", open the url in the built-in browser pane when that tool is available.",
@@ -615,6 +615,8 @@ func (b *Bridge) AskModeTool(ctx context.Context, _ *mcp.CallToolRequest, in pro
 	if on {
 		out.URL = b.Daemon.URL()
 		out.Open = b.OpenIn
+	} else {
+		out.Next = protocol.OffNext
 	}
 	return nil, out, nil
 }

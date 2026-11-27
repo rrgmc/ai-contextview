@@ -65,7 +65,8 @@ an object.
 - **`AskUserQuestion`.** `ai-contextview hook` asks the daemon whether a spec is
   open, and the pane does not use the daemon. So the mod blocks the built-in
   question tool itself, with the hook's message, from `spec_show` to
-  `spec_done`.
+  `spec_done`. Turning ask mode off releases the spec, as in the daemon:
+  the block ends until ask mode is on again or another spec is shown.
 - **`/contextview-pane`** opens the pane again after the person closed it.
 
 ## 3. Specs, doc refs and files

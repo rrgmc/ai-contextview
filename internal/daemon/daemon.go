@@ -123,9 +123,10 @@ func (d *Daemon) hello(c *Conn, h *protocol.Hello) (*protocol.HelloAck, error) {
 	return ack, nil
 }
 
-// active reports whether a live workspace with an open, unfinished spec
-// belongs to one of the given processes (the hook's ancestors). It matches
-// the Claude Code process that started the bridge.
+// active reports whether a live workspace with an open, unfinished spec, or
+// in ask mode, belongs to one of the given processes (the hook's ancestors).
+// It matches the Claude Code process that started the bridge. A workspace
+// released by turning ask mode off is not active, even with a spec open.
 func (d *Daemon) active(pids []int, cwd string) *protocol.ActiveResult {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -133,7 +134,7 @@ func (d *Daemon) active(pids []int, cwd string) *protocol.ActiveResult {
 		d.setSessionCwd(w, cwd)
 		// A document picked from a write is not a spec Claude opened: once
 		// ask mode is off, it no longer blocks the built-in question tool.
-		specOpen := w.Root != nil && w.Done == nil && !w.RootAuto
+		specOpen := w.Root != nil && w.Done == nil && !w.RootAuto && !w.Released
 		if specOpen || w.AskMode {
 			return &protocol.ActiveResult{Active: true, WS: w.ID, URL: d.wsURL(w.ID), AskMode: !specOpen}
 		}
@@ -215,8 +216,15 @@ func (d *Daemon) specShow(id string, req *protocol.SpecShow) (*protocol.SpecShow
 	if w == nil {
 		return nil, errors.New("unknown workspace")
 	}
+	prev := rootFile(w.Root)
 	res, err := d.specShowLocked(w, req)
 	if err == nil {
+		// Showing another spec starts a new spec session: an earlier off no
+		// longer applies. Showing the released spec again (spec-elaborate
+		// does after every edit) keeps it released.
+		if w.Released && rootFile(w.Root) != prev {
+			w.Released = false
+		}
 		// Claude's own spec_show wins over the working document the daemon
 		// picks from writes; a replay of a picked one does not.
 		// A provisional document is shown like a picked one: a later write
@@ -229,6 +237,14 @@ func (d *Daemon) specShow(id string, req *protocol.SpecShow) (*protocol.SpecShow
 		}
 	}
 	return res, err
+}
+
+// rootFile is the primary file of a root, or "" for none.
+func rootFile(r *specsrc.Root) string {
+	if r == nil {
+		return ""
+	}
+	return filepath.Join(r.Dir, r.Primary)
 }
 
 // specShowLocked shows a root in w; d.mu is held.
@@ -408,6 +424,7 @@ func (d *Daemon) askMode(id string, req *protocol.AskMode) error {
 		return errors.New("unknown workspace")
 	}
 	w.AskMode = req.On
+	w.Released = !req.On
 	w.work.spec = req.On && req.Spec
 	w.work.paths = nil
 	if w.work.spec {

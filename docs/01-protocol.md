@@ -220,6 +220,14 @@ session goes through `ask`, with or without a spec.
 
 - With no input (or `off: false`) it turns ask mode on; `off: true` turns it
   off.
+- **Off hands the questions back to the chat.** Turning ask mode off also
+  releases an open spec: the daemon no longer counts the session as active,
+  so `ai-contextview hook` stops blocking the built-in question tool, even
+  while a `spec_show` spec is open and not done. The spec stays in the
+  viewer. The tool result has `next`, which tells Claude to ask in the chat
+  from now on. Turning ask mode on again ends the release, and so does a
+  `spec_show` of another spec (a new spec session). A `spec_show` of the
+  released spec, as after an edit, keeps it released.
 - `spec: true` turns on **spec mode**: ask mode that expects a spec. `paths`
   (optional, spec mode only) are glob patterns of the spec file, relative to
   the project directory or absolute; `*` and `?` match within a folder, `**`

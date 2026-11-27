@@ -431,7 +431,8 @@ func (d *Done) Validate() error {
 
 // AskMode turns ask mode on or off. In ask mode every question of the
 // session goes through ai-contextview, with or without a spec, and the hook
-// blocks the built-in question tool.
+// blocks the built-in question tool. Turning it off also releases an open
+// spec: the hook stops blocking the built-in tool until ask mode is on again.
 type AskMode struct {
 	On bool `json:"on"`
 	// Spec turns on spec mode: ask mode that expects a spec and searches

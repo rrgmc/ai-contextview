@@ -93,6 +93,9 @@ section. An existing spec the user names stays where it is.
 
 - Ask **every** clarifying question with the `ask` tool, never in plain chat
   text and never with another question tool.
+- If the user turns ai-contextview off (`ask_mode` with `off: true`, from
+  the ask-mode or spec-mode skill), ask every later question in the chat
+  instead, and keep the spec and `spec_show` as before.
 - **Approvals go to chat.** To ask the user to approve an action that needs
   their permission (an external write such as a Jira or Slack change, or an
   action the permission system refused), ask in plain chat and wait for

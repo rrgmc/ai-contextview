@@ -399,6 +399,7 @@ func TestAskModeMakesRefsOptional(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, mode.On)
 	assert.Empty(t, mode.URL)
+	assert.Equal(t, protocol.OffNext, mode.Next, "off tells Claude to ask in the chat")
 	_, _, err = e.bridge.Ask(context.Background(), nil, noRefs)
 	require.Error(t, err)
 }

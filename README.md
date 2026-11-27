@@ -92,6 +92,12 @@ To send every question of a session to ai-contextview, with or without a spec,
 run `/ai-contextview:ask-mode` at the start of the session. Claude then asks each
 question in the viewer, with the documents and code it is about, and the hook
 blocks the built-in question tool. `/ai-contextview:ask-mode off` turns it off.
+
+To stop using ai-contextview in a session at any time, run
+`/ai-contextview:ask-mode off` (or `/ai-contextview:spec-mode off`). Claude
+asks in the chat again, even while a spec from `spec-elaborate` is open, and
+the spec stays in the viewer. Turning ask mode on again, or starting another
+spec, ends this.
 `/ai-contextview:ask-mode-mod` does the same in the pane. To turn ask mode on for
 every session, set `AI_CONTEXTVIEW_ASK_MODE=always` (see the settings below).
 

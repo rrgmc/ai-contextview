@@ -544,6 +544,33 @@ test('AskUserQuestion is blocked while a spec is open, and allowed after spec_do
   expect(failed(await call($, { tool: 'AskUserQuestion', questions: [] }))).toBe(false)
 })
 
+test('ask_mode off releases an open spec until ask mode is on again or another spec opens', async ($, on) => {
+  engine(on)
+  await $.session.start({ cwd: '/repo', surface: 'desktop', isInteractive: true })
+  const blocked = async () => failed(await call($, { tool: 'AskUserQuestion', questions: [] }))
+
+  await call($, { tool: SPEC_SHOW, path: 'docs/spec.md' })
+  expect(await blocked()).toBe(true)
+
+  // Off: the open spec no longer blocks, and Claude is told to use the chat.
+  const off = await result(call($, { tool: ASK_MODE, off: true }))
+  expect(off.next).toContain('in the chat')
+  expect(await blocked()).toBe(false)
+  // Showing the same spec again after an edit keeps it released.
+  await call($, { tool: SPEC_SHOW, path: 'docs/spec.md' })
+  expect(await blocked()).toBe(false)
+
+  // Ask mode on again ends the release.
+  await call($, { tool: ASK_MODE })
+  expect(await blocked()).toBe(true)
+  await call($, { tool: ASK_MODE, off: true })
+  expect(await blocked()).toBe(false)
+
+  // Another spec starts a new spec session.
+  await call($, { tool: SPEC_SHOW, path: 'docs/design.md' })
+  expect(await blocked()).toBe(true)
+})
+
 test('isLaterLabel spots an option that already means decide later', () => {
   for (const l of ['Decide later', 'decide later.', 'Decide this later (park it)', 'Defer', 'Later']) {
     expect(spec.isLaterLabel(l)).toBe(true)
@@ -600,7 +627,7 @@ test('ask mode asks without a spec and blocks AskUserQuestion until turned off',
   const quoted = [{ ...noRefs[0], spec_quote: 'kept in memory' }]
   expect(failed(await call($, { tool: ASK, questions: quoted }))).toBe(true)
 
-  expect(await result(call($, { tool: ASK_MODE, off: true }))).toEqual({ on: false })
+  expect(await result(call($, { tool: ASK_MODE, off: true }))).toEqual({ on: false, next: expect.stringContaining('in the chat') })
   expect(failed(await call($, { tool: 'AskUserQuestion', questions: [] }))).toBe(false)
 })
 

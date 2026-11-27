@@ -1,6 +1,6 @@
 ---
 name: ask-mode-mod
-description: Turn on ai-contextview ask mode in the pane beside the chat (a Claude Code mod; no browser page or daemon) for the rest of the session, so every question Claude asks goes to the pane instead of the chat, with or without a spec. Use when the user runs /ask-mode-mod or asks to route all questions through the ai-contextview pane from now on; "/ask-mode-mod off" turns it off. Do NOT use for writing a spec (use spec-elaborate-mod), or when the user wants the browser viewer (use ask-mode).
+description: Turn on ai-contextview ask mode in the pane beside the chat (a Claude Code mod; no browser page or daemon) for the rest of the session, so every question Claude asks goes to the pane instead of the chat, with or without a spec. Use when the user runs /ask-mode-mod or asks to route all questions through the ai-contextview pane from now on; "/ask-mode-mod off" turns it off and hands the questions back to the chat, even with a spec open. Do NOT use for writing a spec (use spec-elaborate-mod), or when the user wants the browser viewer (use ask-mode).
 argument-hint: "[off]"
 ---
 
@@ -26,7 +26,10 @@ the pane's tools.
   user in one line that ask mode is on, then wait for their next instruction.
   Do not start any other work.
 - With the argument `off`, call `ask_mode` with `{"off": true}` and tell the
-  user in one line that ask mode is off.
+  user in one line that ask mode is off and questions come back to the chat.
+  This also releases a spec that is open, for example one from
+  spec-elaborate. From then on, ask every question in the chat or with the
+  built-in question tool, never with `ask`, as the result's `next` says.
 
 ## While ask mode is on
 

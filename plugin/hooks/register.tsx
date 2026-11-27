@@ -52,6 +52,12 @@ const askAtom = atom({ plugin: 'ai-contextview', key: 'ask' } as const, null as 
 })
 // Ask mode: every question of the session goes through the pane, with or without a spec.
 const modeAtom = atom({ plugin: 'ai-contextview', key: 'mode' } as const, false, { shape: 'mode-1' })
+// Set when ask mode is turned off: the session asks in the chat again, even
+// with a spec open. Turning ask mode on clears it.
+const releasedAtom = atom({ plugin: 'ai-contextview', key: 'released' } as const, false, { shape: 'released-1' })
+// As protocol.OffNext.
+const OFF_NEXT =
+  'ai-contextview is off for this session. Ask every question in the chat or with the built-in question tool from now on, not with the ask tool, even while a spec is open. The spec stays in the viewer.'
 const noWork = (): WorkDoc => ({
   explicit: false,
   spec: false,
@@ -206,6 +212,9 @@ async function showSpec($: EngineInterface, args: Args) {
   }
   const file = root.primary
   const text: string = await $.fs.read(file)
+  // Showing another spec starts a new spec session: an earlier off no longer
+  // applies. Showing the released spec again keeps it released.
+  if ((await read($, viewAtom))?.specPath !== file) await update($, releasedAtom, () => false)
   const changed = (args.changed as { path?: string }[] | undefined) ?? []
   const view: SpecView = {
     ...noQuote,
@@ -382,6 +391,7 @@ const noSpecView = (): SpecView => ({
 async function askMode($: EngineInterface, args: Args) {
   const on = args.off !== true
   await update($, modeAtom, () => on)
+  await update($, releasedAtom, () => !on)
   const spec = on && args.spec === true
   const paths = spec ? ((args.paths as string[] | undefined) ?? []).map(p => p.trim()).filter(p => p !== '').map(abs) : []
   await update($, workAtom, w =>
@@ -398,6 +408,7 @@ async function askMode($: EngineInterface, args: Args) {
     await update($, workAtom, w => ({ ...w, autoShown: '' }))
     await update($, uiAtom, () => ({ file: '', shown: -1, codeTab: 0 }))
   }
+  if (!on) return { on, next: OFF_NEXT }
   return spec ? { on, spec } : { on }
 }
 
@@ -707,6 +718,7 @@ export const register: Register = on => {
     // ai-contextview's hook asks the daemon, which the pane does not use, so the
     // mod blocks the built-in question tool itself while a spec is open here.
     if (e.tool === 'AskUserQuestion') {
+      if (await read($, releasedAtom)) return next(e)
       const v = await read($, viewAtom)
       // A file the pane shows because a write picked it is not a spec Claude opened.
       const picked = (await read($, workAtom)).autoShown
