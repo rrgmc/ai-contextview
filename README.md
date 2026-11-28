@@ -36,10 +36,10 @@ ai-contextview runs on Linux, macOS and Windows 10 or later. Install the binary
 from the latest release:
 
 ```bash
-go install github.com/rrgmc/ai-contextview/cmd/ai-contextview@v1.6.0
+go install github.com/rrgmc/ai-contextview/cmd/ai-contextview@v1.8.1
 ```
 
-Releases are git tags such as `v1.6.0` (see the
+Releases are git tags such as `v1.8.1` (see the
 [tags](https://github.com/rrgmc/ai-contextview/tags)). To install another release,
 put its tag after the `@`.
 
@@ -131,7 +131,8 @@ way. `AI_CONTEXTVIEW_DOC_PATHS` limits which files count.
 A question's document can be any text file of the project: a markdown passage
 is highlighted by quote or by lines, and another file (YAML, JSON, SQL) shows
 as source with the lines highlighted. When no question of a set has a
-document, the questions and the code take the whole page.
+document, the code and the questions take the whole page, with the
+questions on the right.
 
 ### The browser page inside the desktop app
 
@@ -245,7 +246,7 @@ directory within 2 hours takes the old workspace over.
 |---|---|
 | `ai-contextview mcp` | The stdio MCP server. Claude Code starts one per instance. |
 | `ai-contextview serve` | The viewer daemon. `--detach` starts it in the background, `--restart` replaces a running one (or starts one) in the background, `--stop` stops it, `--addr` sets the address (default `127.0.0.1:7878`, the next 9 ports are tried), `--idle-exit 30m` exits when unused. |
-| `ai-contextview fakeapp` | A terminal stand-in for the daemon, for testing the MCP path. |
+| `ai-contextview fakeapp` | A terminal stand-in for the daemon, for testing the MCP path. It refuses to start while a daemon runs. |
 | `ai-contextview hook` | Claude Code hook: blocks the built-in question tool only while this session has a spec open or is in ask mode; reports the markdown files Claude writes and the skills it starts, to pick the working document. |
 | `ai-contextview version` | Prints the version: the git tag (`v1.2.3`), a Go pseudo-version for a build between tags, with `+dirty` for uncommitted changes, or `devel` when the build has no version information. |
 

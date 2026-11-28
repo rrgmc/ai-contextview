@@ -38,7 +38,7 @@ const (
 	// result with ViewersResult.
 	TypeViewers = "viewers"
 	// TypeAskMode turns ask mode on or off for the workspace; the reply is
-	// result {}.
+	// a result with AskModeResult.
 	TypeAskMode = "ask_mode"
 	// TypeAskHere moves the session's questions to the chat, or back to the
 	// viewer; the reply is a result with AskHereResult.
@@ -445,7 +445,8 @@ type AskMode struct {
 	// harder for it (07).
 	Spec bool `json:"spec,omitempty"`
 	// Paths are absolute glob patterns; in spec mode, the first written
-	// file that matches becomes the working document.
+	// file that matches becomes the working document. A path with no glob
+	// characters that names an existing markdown file is shown at once.
 	Paths []string `json:"paths,omitempty"`
 }
 
@@ -471,6 +472,14 @@ type AskHereResult struct {
 }
 
 func (a *AskHereResult) Validate() error { return nil }
+
+// AskModeResult answers ask_mode. Shown is the absolute path of a spec-mode
+// path that already existed and is now the working document.
+type AskModeResult struct {
+	Shown string `json:"shown,omitempty"`
+}
+
+func (r *AskModeResult) Validate() error { return nil }
 
 // DocWritten tells the daemon that the Claude session of one of PIDs wrote
 // Path, an absolute markdown file that the hook's file rules let through.

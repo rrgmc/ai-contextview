@@ -17,6 +17,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
+	"github.com/rrgmc/ai-contextview/internal/gitwt"
 	"github.com/rrgmc/ai-contextview/internal/identity"
 	"github.com/rrgmc/ai-contextview/internal/protocol"
 	"github.com/rrgmc/ai-contextview/internal/resolve"
@@ -731,12 +732,22 @@ func (b *Bridge) AskModeTool(ctx context.Context, _ *mcp.CallToolRequest, in pro
 		b.syncCwd(ctx, in.Paths...)
 		for _, p := range in.Paths {
 			if p = strings.TrimSpace(p); p != "" {
-				req.Paths = append(req.Paths, b.absPath(p))
+				req.Paths = append(req.Paths, b.specPath(p))
 			}
 		}
 	}
-	if _, err := b.Daemon.Request(ctx, protocol.TypeAskMode, req); err != nil {
+	reply, err := b.Daemon.Request(ctx, protocol.TypeAskMode, req)
+	if err != nil {
 		return nil, protocol.AskModeOutput{}, err
+	}
+	var res protocol.AskModeResult
+	if err := reply.Decode(&res); err != nil {
+		return nil, protocol.AskModeOutput{}, err
+	}
+	if res.Shown != "" {
+		// The daemon also sends doc_shown; follow it here too, so a
+		// spec_quote right after this call quotes the shown file.
+		b.DocShown(protocol.DocShown{RootAbs: res.Shown})
 	}
 	b.mu.Lock()
 	b.askMode = on
@@ -748,7 +759,7 @@ func (b *Bridge) AskModeTool(ctx context.Context, _ *mcp.CallToolRequest, in pro
 		}
 	}
 	b.mu.Unlock()
-	out := protocol.AskModeOutput{On: on, Spec: req.Spec}
+	out := protocol.AskModeOutput{On: on, Spec: req.Spec, Shown: res.Shown}
 	if on {
 		out.URL = b.Daemon.URL()
 		out.Open = b.OpenIn
@@ -756,6 +767,51 @@ func (b *Bridge) AskModeTool(ctx context.Context, _ *mcp.CallToolRequest, in pro
 		out.Next = protocol.OffNext
 	}
 	return nil, out, nil
+}
+
+// specPath makes a spec-mode path absolute. A relative path with no glob
+// that names no file under the session's folder is looked up in the other
+// git worktrees of the session's repository, and of the folder the bridge
+// started in: a spec often lives on another worktree's branch. When several
+// have it, the most recently changed copy wins. With no copy anywhere, the
+// path stays relative to the session's folder and waits for a write.
+func (b *Bridge) specPath(p string) string {
+	abs := b.absPath(p)
+	rel := expandPath(p)
+	if filepath.IsAbs(rel) || strings.ContainsAny(rel, "*?[") || isFile(abs) {
+		return abs
+	}
+	best, bestTime := "", time.Time{}
+	seen := map[string]bool{}
+	for _, dir := range []string{b.cwd(), b.Cwd} {
+		root, _ := gitwt.Root(dir)
+		if root == "" {
+			continue
+		}
+		sub, err := filepath.Rel(root, dir)
+		if err != nil {
+			continue
+		}
+		for _, wt := range gitwt.Worktrees(dir) {
+			c := filepath.Join(wt, sub, rel)
+			if seen[c] {
+				continue
+			}
+			seen[c] = true
+			if fi, err := os.Stat(c); err == nil && fi.Mode().IsRegular() && fi.ModTime().After(bestTime) {
+				best, bestTime = c, fi.ModTime()
+			}
+		}
+	}
+	if best == "" {
+		return abs
+	}
+	return best
+}
+
+func isFile(p string) bool {
+	fi, err := os.Stat(p)
+	return err == nil && fi.Mode().IsRegular()
 }
 
 // DocShown follows the daemon when it made a written file the working

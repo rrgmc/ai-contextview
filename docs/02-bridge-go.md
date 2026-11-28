@@ -177,6 +177,12 @@ A subcommand that listens on the same socket and prints every message. For
 tested with real Claude Code before the web viewer exists (milestone M1), and it
 is the in-process fake used by the `tools` tests.
 
+Like `serve`, it takes the daemon lock (`<socket>.lock`) before it touches the
+socket. While a daemon runs, `fakeapp` exits with an error and leaves the
+socket alone; otherwise it would remove the daemon's socket file and cut the
+daemon off from its bridges. It takes no arguments: `-h` or `--help` prints
+its usage and exits, and any other argument is an error.
+
 ## Tests
 
 - **Golden fixtures**: marshal/unmarshal every message against

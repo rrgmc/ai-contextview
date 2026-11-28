@@ -174,6 +174,9 @@ State is small, so no event log is needed.
   above the code: there the pane hides below the panel, so nothing moves
   sideways. In the other layouts the code pane sits beside another pane and
   stays, with its "no code reference" note.
+- **Narrow window** (760px or less): the panes stack in one column that the
+  page scrolls, with the question panel first. Each pane has a fixed height
+  and scrolls inside. The splitters and "Questions below" hide.
 - Pane sizes and the layout choice are remembered in `localStorage` (wrapped in
   try/catch, per-browser convenience only).
 - The panel is part of the page, never a modal or a `<dialog>`, so the doc and

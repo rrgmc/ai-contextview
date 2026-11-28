@@ -88,7 +88,9 @@ would jump. The layout is therefore chosen once per question set.
 - If any question in the set has a document, or a working document is shown,
   the document panel is shown for the whole set.
 - If no question in the set has a document and there is no working document,
-  the set uses the full width: the questions and the code take the whole page.
+  the set uses the full width: the code on the left and the questions on the
+  right take the whole page. The questions stay on the right, as when a
+  document shows.
 - A question with no document, in a set that shows the panel, keeps the last
   document shown, without a highlight. A short line says that the question has
   no document.
@@ -166,8 +168,13 @@ it.
 
 - **With a path or glob** (`/ai-contextview:spec-mode docs/specs/SW-1234.md`),
   there is no detection: the first write to a matching file makes it the
-  working document. The file need not exist yet. This is the main way to use
-  spec mode.
+  working document. The file need not exist yet. If it already exists, as
+  when Claude implements a written spec, it shows at once, with no write.
+  Only a plain path does this, not a glob. A relative path that is not in
+  the session's folder is looked up in the repository's other git
+  worktrees, where a spec often lives on its own branch; the most recently
+  changed copy wins. This is the main way to use spec
+  mode.
 - **Without one,** each markdown write that counts gets a score, and the best
   candidate becomes the working document:
 

@@ -14,6 +14,44 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.8.1] - 2026-11-27
+
+### Fixed
+
+- `ai-contextview fakeapp` no longer breaks a running daemon. Before, it
+  started on the daemon's socket, even with `--help`, and deleted the socket
+  file, so bridges, `serve --stop` and `serve --restart` could no longer reach
+  the daemon. Now `--help` prints the usage, other arguments are an error, and
+  `fakeapp` refuses to start while a daemon runs.
+
+## [1.8.0] - 2026-11-27
+
+### Changed
+
+- `/ai-contextview:spec-mode <path>` shows the spec at once when the file
+  already exists, for example when Claude implements a spec written earlier.
+  Before, it showed only after Claude wrote to the file. A glob still waits
+  for a write. A relative path that is not in the session's folder is found
+  in the repository's other git worktrees, the most recently changed copy
+  first, so `/ai-contextview:spec-mode docs/specs/SW-1.md` works from any
+  worktree.
+- The ask-mode and spec-mode skills tell Claude to quote the document passage
+  a question is about, such as a requirement of the spec being implemented,
+  with an absolute path when the file is in another git worktree.
+
+### Fixed
+
+- In a narrow window the questions show at the top of the page. Before, the
+  question panel shrank to nothing, so no question showed.
+
+## [1.7.0] - 2026-11-27
+
+### Changed
+
+- When no question of a set has a document, the questions show on the right
+  and the code on the left, so the questions stay on the right in every
+  side-by-side layout.
+
 ## [1.6.0] - 2026-11-27
 
 ### Fixed
@@ -367,7 +405,10 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-contextview/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-contextview/compare/v1.8.1...HEAD
+[1.8.1]: https://github.com/rrgmc/ai-contextview/compare/v1.8.0...v1.8.1
+[1.8.0]: https://github.com/rrgmc/ai-contextview/compare/v1.7.0...v1.8.0
+[1.7.0]: https://github.com/rrgmc/ai-contextview/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/rrgmc/ai-contextview/compare/v1.5.5...v1.6.0
 [1.5.5]: https://github.com/rrgmc/ai-contextview/compare/v1.5.4...v1.5.5
 [1.5.4]: https://github.com/rrgmc/ai-contextview/compare/v1.5.3...v1.5.4

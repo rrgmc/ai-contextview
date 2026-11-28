@@ -44,6 +44,8 @@ func bodyFor(name string) Validator {
 		return &ErrorBody{}
 	case "ask_mode":
 		return &AskMode{}
+	case "ask_mode_result":
+		return &AskModeResult{}
 	case "doc_written":
 		return &DocWritten{}
 	case "doc_written_result":

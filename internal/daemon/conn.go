@@ -272,11 +272,12 @@ func (d *Daemon) dispatch(c *Conn, env protocol.Envelope) bool {
 			c.sendError(env.ID, err)
 			return true
 		}
-		if err := d.askMode(c.ws, &b); err != nil {
+		res, err := d.askMode(c.ws, &b)
+		if err != nil {
 			c.sendError(env.ID, err)
 			return true
 		}
-		c.send(protocol.TypeResult, env.ID, map[string]any{})
+		c.send(protocol.TypeResult, env.ID, res)
 	case protocol.TypeAskHere:
 		var b protocol.AskHere
 		if err := decode(env, &b); err != nil {

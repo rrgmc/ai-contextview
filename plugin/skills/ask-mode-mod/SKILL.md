@@ -53,6 +53,12 @@ the pane's tools.
   one passage, and the user reads it as what the question is about.
   `spec_quote` needs a spec shown with
   `spec_show`.
+- **A question about a document quotes it.** When the question names or
+  depends on a passage of a document, such as a requirement, an acceptance
+  criterion or a section of the spec you are implementing, put that passage
+  in `doc_refs`, even when another session wrote the document. The user
+  reads the question beside it. Give an absolute `path` when the file is
+  outside the session's folder, for example in another git worktree.
 - Give 2 to 6 options with short labels and the trade-off in each
   `description`. Mark the option you recommend with `"recommended": true` and
   say why.

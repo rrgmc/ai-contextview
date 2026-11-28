@@ -253,7 +253,17 @@ session goes through `ask`, with or without a spec.
 - `spec: true` turns on **spec mode**: ask mode that expects a spec. `paths`
   (optional, spec mode only) are glob patterns of the spec file, relative to
   the project directory or absolute; `*` and `?` match within a folder, `**`
-  any folders. The bridge makes them absolute.
+  any folders. The bridge makes them absolute. A path with no glob
+  characters (`*`, `?`, `[`) that names an existing markdown file becomes the
+  working document at once, as a pick (see below), unless Claude's own
+  `spec_show` is shown: a spec written before spec mode started, as when
+  Claude implements it, needs no write to show. The result then has
+  `shown`, its absolute path. A relative path with no glob that names no
+  file under the session's folder is looked up in the other git worktrees
+  of the session's repository (and of the folder the bridge started in),
+  found by reading their `.git` files; when several have it, the most
+  recently changed copy is used. With no copy anywhere, the path stays
+  relative to the session's folder.
 - **The working document.** In ask mode, the markdown files Claude writes are
   reported by `ai-contextview hook` (04) and one of them becomes the working
   document, as if `spec_show` had shown it (07, "Finding the working
@@ -281,7 +291,8 @@ session goes through `ask`, with or without a spec.
 
 Result: `{"on": true, "url": "...", "open": "pane"}` when turned on (`url` and
 `open` as in `spec_show`; `"spec": true` in spec mode), `{"on": false}` when
-turned off.
+turned off. In spec mode, `"shown": "<abs path>"` when a path named an
+existing spec, now the working document.
 
 ### `spec_done`
 
@@ -350,7 +361,7 @@ Match          = "exact" | "normalized" | "fuzzy" | "heading" | "none"
 | `ask_cancel` | `{qs_id, reason}` | `result` |
 | `done` | `{summary?}` | `result {}` |
 | `viewers` | `{}` | `result {viewers: int, hidden?: int, seen?: bool, presence?: bool}` (open browser pages of the workspace; `hidden` of them report they are hidden; `seen` when someone used a page since the pending set was shown; `presence` when the daemon tracks `hidden` and `seen`) |
-| `ask_mode` | `{on: bool, spec?: bool, paths?: [abs glob]}` | `result {}` |
+| `ask_mode` | `{on: bool, spec?: bool, paths?: [abs glob]}` | `result {shown?}` |
 | `ask_here` | `{on: bool, auto?: bool}` (`auto` when the bridge moves unseen questions; refused, with `in_chat: false`, if someone used a page since the pending set was shown) | `result {in_chat: bool, closed?: qs_id}`; a pending set closes with `ask_result {status: "ask_in_chat"}` |
 | `cwd` | `{}`, sent before the bridge resolves a relative path | `result {cwd?: abs}` (the session's folder from the hook; empty when none was reported) |
 | `bye` | `{}` | (none; the bridge closes) |

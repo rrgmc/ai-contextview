@@ -165,6 +165,32 @@ func (d *Daemon) switchToAsked(w *Workspace, req *protocol.Ask) {
 	}
 }
 
+// showExisting shows a spec-mode path that names an existing markdown file,
+// so a spec written before spec mode started shows at once. Only a plain
+// path counts, not a glob. It returns the path shown, or ""; d.mu is held.
+func (d *Daemon) showExisting(w *Workspace) string {
+	wd := &w.work
+	if !wd.spec || wd.explicit || (wd.doc != "" && !wd.provisional) {
+		return ""
+	}
+	for _, p := range wd.paths {
+		if strings.ContainsAny(p, "*?[") || !specsrc.IsMarkdown(p) {
+			continue
+		}
+		p = filepath.Clean(p)
+		if fi, err := os.Stat(p); err != nil || !fi.Mode().IsRegular() {
+			continue
+		}
+		if p == wd.doc && !wd.provisional {
+			return p
+		}
+		if d.showWorking(w, p) {
+			return p
+		}
+	}
+	return ""
+}
+
 // showWorking shows path as the working document and tells the bridge, so
 // its spec_quote and replay follow; d.mu is held.
 func (d *Daemon) showWorking(w *Workspace, path string) bool {

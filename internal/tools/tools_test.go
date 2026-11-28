@@ -675,3 +675,46 @@ func TestAskAnswerBeforeNudge(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, protocol.StatusAnswered, out.Status)
 }
+
+func TestSpecPathFindsOtherWorktrees(t *testing.T) {
+	base, err := filepath.EvalSymlinks(t.TempDir())
+	require.NoError(t, err)
+	main := filepath.Join(base, "repo")
+	require.NoError(t, os.MkdirAll(filepath.Join(main, ".git"), 0o755))
+	wt := func(name string) string {
+		root := filepath.Join(main, ".claude", "worktrees", name)
+		meta := filepath.Join(main, ".git", "worktrees", name)
+		require.NoError(t, os.MkdirAll(meta, 0o755))
+		require.NoError(t, os.MkdirAll(root, 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(meta, "gitdir"), []byte(filepath.Join(root, ".git")+"\n"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(meta, "commondir"), []byte("../..\n"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(root, ".git"), []byte("gitdir: "+meta+"\n"), 0o644))
+		return root
+	}
+	spec := filepath.Join("docs", "specs", "SW-1.md")
+	write := func(root string, at time.Time) string {
+		p := filepath.Join(root, spec)
+		require.NoError(t, os.MkdirAll(filepath.Dir(p), 0o755))
+		require.NoError(t, os.WriteFile(p, []byte("# SW-1\n"), 0o644))
+		require.NoError(t, os.Chtimes(p, at, at))
+		return p
+	}
+	now := time.Now()
+	older := write(wt("older"), now.Add(-time.Hour))
+	newer := write(wt("newer"), now)
+	session := wt("session")
+
+	b := &Bridge{Cwd: session}
+	// The session's folder has no copy: the newest worktree copy wins.
+	assert.Equal(t, newer, b.specPath(spec))
+	assert.NotEqual(t, older, b.specPath(spec))
+	// A glob and a missing file stay relative to the session's folder.
+	assert.Equal(t, filepath.Join(session, "docs/specs/*.md"), b.specPath("docs/specs/*.md"))
+	assert.Equal(t, filepath.Join(session, "docs/specs/SW-2.md"), b.specPath("docs/specs/SW-2.md"))
+	// The session's own copy wins, even when older.
+	own := write(session, now.Add(-2*time.Hour))
+	assert.Equal(t, own, b.specPath(spec))
+	// Outside a repository nothing changes.
+	out := &Bridge{Cwd: t.TempDir()}
+	assert.Equal(t, filepath.Join(out.Cwd, spec), out.specPath(spec))
+}

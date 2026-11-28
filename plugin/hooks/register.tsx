@@ -393,7 +393,9 @@ async function askMode($: EngineInterface, args: Args) {
   await update($, modeAtom, () => on)
   await update($, releasedAtom, () => !on)
   const spec = on && args.spec === true
-  const paths = spec ? ((args.paths as string[] | undefined) ?? []).map(p => p.trim()).filter(p => p !== '').map(abs) : []
+  const given = spec ? ((args.paths as string[] | undefined) ?? []).map(p => p.trim()).filter(p => p !== '') : []
+  const paths: string[] = []
+  for (const p of given) paths.push(await specPath($, p))
   await update($, workAtom, w =>
     on ? { ...w, spec, paths } : { ...noWork(), explicit: w.explicit, autoShown: w.autoShown },
   )
@@ -409,7 +411,106 @@ async function askMode($: EngineInterface, args: Args) {
     await update($, uiAtom, () => ({ file: '', shown: -1, codeTab: 0 }))
   }
   if (!on) return { on, next: OFF_NEXT }
-  return spec ? { on, spec } : { on }
+  if (!spec) return { on }
+  const shown = await showExisting($, paths)
+  return shown ? { on, spec, shown } : { on, spec }
+}
+
+/**
+ * Shows a spec-mode path that names an existing markdown file, so a spec
+ * written before spec mode started shows at once. Only a plain path counts,
+ * not a glob. Returns the path shown, or ''.
+ */
+async function showExisting($: EngineInterface, paths: string[]): Promise<string> {
+  const w = await read($, workAtom)
+  if (w.explicit || (w.doc !== '' && !w.provisional)) return ''
+  for (const raw of paths) {
+    const p = clean(raw)
+    if (/[*?[]/.test(p) || !MARKDOWN.test(p)) continue
+    if (!(await $.fs.exists(p)) || (await $.fs.stat(p)).kind === 'dir') continue
+    if (p === w.doc && !w.provisional) return p
+    await showWorking($, p)
+    return p
+  }
+  return ''
+}
+
+/** Whether p is an existing file, not a folder. */
+async function isFile($: EngineInterface, p: string): Promise<boolean> {
+  return (await $.fs.exists(p)) && (await $.fs.stat(p)).kind !== 'dir'
+}
+
+/** Reads a small file, or '' when it cannot. */
+async function readSmall($: EngineInterface, p: string): Promise<string> {
+  try {
+    return (await $.fs.exists(p)) ? (await $.fs.read(p)).trim() : ''
+  } catch {
+    return ''
+  }
+}
+
+/** The root of the git worktree that holds dir and its git folder, from the .git files, as the bridge's gitwt.Root. */
+async function gitRoot($: EngineInterface, dir: string): Promise<{ root: string; gitDir: string } | null> {
+  for (let d = clean(dir); ; d = dirOf(d)) {
+    const p = join(d, '.git')
+    if (await $.fs.exists(p)) {
+      if ((await $.fs.stat(p)).kind === 'dir') return { root: d, gitDir: p }
+      const m = /^gitdir:\s*(.+)$/.exec(await readSmall($, p))
+      if (!m) return null
+      return { root: d, gitDir: clean(m[1].startsWith('/') ? m[1] : join(d, m[1])) }
+    }
+    if (d === '/') return null
+  }
+}
+
+/** The roots of every worktree of the repository that holds dir, the main one first, as the bridge's gitwt.Worktrees. */
+async function worktrees($: EngineInterface, dir: string): Promise<string[]> {
+  const r = await gitRoot($, dir)
+  if (!r) return []
+  let common = r.gitDir
+  const c = await readSmall($, join(r.gitDir, 'commondir'))
+  if (c) common = clean(c.startsWith('/') ? c : join(r.gitDir, c))
+  const out: string[] = []
+  const add = async (root: string) => {
+    root = clean(root)
+    if (!out.includes(root) && (await $.fs.exists(root)) && (await $.fs.stat(root)).kind === 'dir') out.push(root)
+  }
+  if (common.endsWith('/.git')) await add(dirOf(common))
+  const meta = join(common, 'worktrees')
+  if (await $.fs.exists(meta)) {
+    for (const e of await $.fs.list(meta)) {
+      const g = await readSmall($, join(join(meta, e.name), 'gitdir'))
+      if (g.startsWith('/')) await add(dirOf(g))
+    }
+  }
+  return out
+}
+
+/**
+ * A spec-mode path made absolute, as the bridge's specPath: a relative path
+ * with no glob that names no file under the session's folder is looked up in
+ * the other worktrees of its repository, the most recently changed copy
+ * first. With no copy anywhere it stays relative to the session's folder.
+ */
+async function specPath($: EngineInterface, p: string): Promise<string> {
+  const full = clean(abs(p))
+  const q = expand(p)
+  if (q.startsWith('/') || /[*?[]/.test(q) || (await isFile($, full))) return full
+  const r = await gitRoot($, ctx.cwd)
+  if (!r) return full
+  const sub = ctx.cwd.length > r.root.length ? ctx.cwd.slice(r.root.length + 1) : ''
+  let best = ''
+  let bestTime = -1
+  for (const wt of await worktrees($, ctx.cwd)) {
+    const c = clean(join(sub ? join(wt, sub) : wt, q))
+    if (!(await isFile($, c))) continue
+    const t = (await $.fs.stat(c)).mtimeMs ?? 0
+    if (t > bestTime) {
+      best = c
+      bestTime = t
+    }
+  }
+  return best || full
 }
 
 /** Shows a written file as the working document, as spec_show would. */
