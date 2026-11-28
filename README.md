@@ -36,10 +36,10 @@ ai-contextview runs on Linux, macOS and Windows 10 or later. Install the binary
 from the latest release:
 
 ```bash
-go install github.com/rrgmc/ai-contextview/cmd/ai-contextview@v1.8.1
+go install github.com/rrgmc/ai-contextview/cmd/ai-contextview@v1.9.0
 ```
 
-Releases are git tags such as `v1.8.1` (see the
+Releases are git tags such as `v1.9.0` (see the
 [tags](https://github.com/rrgmc/ai-contextview/tags)). To install another release,
 put its tag after the `@`.
 

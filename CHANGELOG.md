@@ -14,6 +14,18 @@ release is tagged.
 
 See [changelog.d/](changelog.d/).
 
+## [1.9.0] - 2026-11-28
+
+### Added
+
+- Questions follow you to the chat when you are away from the machine, for
+  example on Remote Control from another device: when a question waits 45
+  seconds and nobody uses the viewer page, Claude asks it in the chat, until
+  you use the viewer again. The page shows "Questions in chat" meanwhile.
+  `/ai-contextview:ask-here` moves the questions to the chat at once, and
+  `/ai-contextview:ask-here off` sends them back. `AI_CONTEXTVIEW_AWAY=wait`
+  keeps the previous behavior.
+
 ## [1.8.1] - 2026-11-27
 
 ### Fixed
@@ -405,7 +417,8 @@ See [changelog.d/](changelog.d/).
 
 - The Changes tab stays on the file shown in the Spec tab.
 
-[Unreleased]: https://github.com/rrgmc/ai-contextview/compare/v1.8.1...HEAD
+[Unreleased]: https://github.com/rrgmc/ai-contextview/compare/v1.9.0...HEAD
+[1.9.0]: https://github.com/rrgmc/ai-contextview/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/rrgmc/ai-contextview/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/rrgmc/ai-contextview/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/rrgmc/ai-contextview/compare/v1.6.0...v1.7.0
